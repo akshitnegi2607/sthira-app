@@ -1,0 +1,45 @@
+import { UserProfile, Goals } from '@/types/database';
+
+export const INITIAL_USER_PROFILE: UserProfile = {
+  id: 'user_primary',
+  name: 'Jay',
+  current_weight: 64.0,
+  height: 167.0,
+  target_weight: 67.0,
+  goal_type: 'lean_bulk',
+  target_rate_kg_per_week: 0.15,
+  diet_type: 'Vegetarian',
+  eats_eggs: 0,
+  eats_onion: 1,
+  eats_garlic: 1,
+  eats_mushrooms: 0,
+  cuisine_preferences: JSON.stringify([
+    'Indian',
+    'Mexican',
+    'Mediterranean',
+    'Italian',
+    'Asian',
+    'Middle Eastern',
+  ]),
+  gym_days_per_week: 4,
+  tuesday_activity: 'Yoga',
+  sunday_activity: 'Swimming',
+  saturday_rest: 1,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+export const INITIAL_GOALS: Goals = {
+  id: 'goals_primary',
+  calories_target: 2450,
+  protein_target_min: 110,
+  protein_target_max: 125,
+  fat_target_min: 65,
+  fat_target_max: 80,
+  carbs_target: 335,
+  water_target_liters: 2.5,
+  sleep_hours_target: 8.0,
+  workout_days_target: 4,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};

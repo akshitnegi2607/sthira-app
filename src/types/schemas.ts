@@ -1,0 +1,88 @@
+import { z } from 'zod';
+
+export const UserProfileSchema = z.object({
+  id: z.string().default('user_default'),
+  name: z.string().min(1, 'Name is required'),
+  current_weight: z.number().positive('Weight must be positive'),
+  height: z.number().positive('Height must be positive'),
+  target_weight: z.number().positive('Target weight must be positive'),
+  goal_type: z.enum(['lean_bulk', 'cut', 'maintain']),
+  target_rate_kg_per_week: z.number().nonnegative(),
+  diet_type: z.string().min(1),
+  eats_eggs: z.number().int().min(0).max(1),
+  eats_onion: z.number().int().min(0).max(1),
+  eats_garlic: z.number().int().min(0).max(1),
+  eats_mushrooms: z.number().int().min(0).max(1),
+  cuisine_preferences: z.string(),
+  gym_days_per_week: z.number().int().min(0).max(7),
+  tuesday_activity: z.string(),
+  sunday_activity: z.string(),
+  saturday_rest: z.number().int().min(0).max(1),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const GoalsSchema = z.object({
+  id: z.string().default('goals_default'),
+  calories_target: z.number().positive(),
+  protein_target_min: z.number().positive(),
+  protein_target_max: z.number().positive(),
+  fat_target_min: z.number().positive(),
+  fat_target_max: z.number().positive(),
+  carbs_target: z.number().positive(),
+  water_target_liters: z.number().positive(),
+  sleep_hours_target: z.number().positive(),
+  workout_days_target: z.number().int().min(1).max(7),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const DailyLogSchema = z.object({
+  id: z.string(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
+  calories_consumed: z.number().nonnegative(),
+  protein_consumed: z.number().nonnegative(),
+  carbs_consumed: z.number().nonnegative(),
+  fat_consumed: z.number().nonnegative(),
+  water_liters: z.number().nonnegative(),
+  weight: z.number().positive().nullable().optional(),
+  sleep_hours: z.number().nonnegative().nullable().optional(),
+  energy_rating: z.number().min(1).max(10).nullable().optional(),
+  mood_rating: z.number().min(1).max(10).nullable().optional(),
+  hunger_rating: z.number().min(1).max(10).nullable().optional(),
+  recovery_rating: z.number().min(1).max(10).nullable().optional(),
+  soreness_rating: z.number().min(1).max(10).nullable().optional(),
+  stress_rating: z.number().min(1).max(10).nullable().optional(),
+  coach_status: z.enum(['ON TRACK', 'ATTENTION', 'NEEDS ACTION']),
+  coach_summary: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const FoodItemSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  category: z.string(),
+  serving_size: z.string(),
+  serving_unit: z.string(),
+  serving_grams: z.number().positive().nullable().optional(),
+  calories: z.number().nonnegative(),
+  protein: z.number().nonnegative(),
+  carbs: z.number().nonnegative(),
+  fat: z.number().nonnegative(),
+  fiber: z.number().nonnegative().optional(),
+  is_custom: z.number().int().min(0).max(1),
+  created_at: z.string(),
+});
+
+export const WorkoutSetSchema = z.object({
+  id: z.string(),
+  workout_exercise_id: z.string(),
+  set_number: z.number().int().positive(),
+  weight_kg: z.number().nonnegative(),
+  reps: z.number().int().nonnegative(),
+  perceived_difficulty: z.string().nullable().optional(),
+  rir: z.number().int().nonnegative().nullable().optional(),
+  is_completed: z.number().int().min(0).max(1),
+  created_at: z.string(),
+});
