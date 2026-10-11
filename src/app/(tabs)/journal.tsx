@@ -1,162 +1,312 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Card } from '@/components/ui/Card';
-import { useDashboardStore } from '@/stores/useDashboardStore';
+import { useJournalStore } from '@/stores/useJournalStore';
+import { ReadinessScoreCard } from '@/features/journal/components/ReadinessScoreCard';
+import { MorningCheckInModal } from '@/features/journal/components/MorningCheckInModal';
+import { EveningWindDownModal } from '@/features/journal/components/EveningWindDownModal';
+import { DailyCoachSummaryCard } from '@/features/journal/components/DailyCoachSummaryCard';
+import { JournalTimelineCard } from '@/features/journal/components/JournalTimelineCard';
 
 export default function JournalScreen() {
   const { colors, isDark } = useAppTheme();
-  const todayLog = useDashboardStore((s) => s.todayLog);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const {
+    selectedDate,
+    dailyLog,
+    morningEntry,
+    eveningEntry,
+    recentHistory,
+    readiness,
+    aiReview,
+    isMorningModalOpen,
+    isEveningModalOpen,
+    isLoading,
+    setSelectedDate,
+    loadJournalData,
+    saveMorningCheckIn,
+    saveEveningReflection,
+    generateAndSaveDailyReview,
+    setMorningModalOpen,
+    setEveningModalOpen,
+  } = useJournalStore();
+
+  useEffect(() => {
+    loadJournalData();
+  }, [loadJournalData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    loadJournalData(selectedDate);
+    setRefreshing(false);
+  };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isToday = selectedDate === todayStr;
+
+  const handlePrevDay = () => {
+    const cur = new Date(selectedDate);
+    cur.setDate(cur.getDate() - 1);
+    setSelectedDate(cur.toISOString().split('T')[0]);
+  };
+
+  const handleNextDay = () => {
+    const cur = new Date(selectedDate);
+    cur.setDate(cur.getDate() + 1);
+    setSelectedDate(cur.toISOString().split('T')[0]);
+  };
+
+  const isMorningDone = !!morningEntry;
+  const isEveningDone = !!eveningEntry;
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}>
-      {/* Today's Reflection Card */}
-      <Card elevated style={styles.card}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-            DAILY JOURNAL
-          </Text>
-          <Text style={[styles.dateText, { color: colors.textMuted }]}>
-            {todayLog.date}
-          </Text>
-        </View>
-
-        <Text style={[styles.journalExcerpt, { color: colors.text }]}>
-          "Felt energetic today. Gym session was good (pushed 32.5kg on machine chest press), but felt slightly hungry around 5pm."
-        </Text>
-
-        <View style={styles.metricsRow}>
-          <View style={styles.metricItem}>
-            <Text style={[styles.mLabel, { color: colors.textMuted }]}>Energy</Text>
-            <Text style={[styles.mVal, { color: colors.accent }]}>8 / 10</Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={[styles.mLabel, { color: colors.textMuted }]}>Mood</Text>
-            <Text style={[styles.mVal, { color: colors.text }]}>8 / 10</Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={[styles.mLabel, { color: colors.textMuted }]}>Hunger</Text>
-            <Text style={[styles.mVal, { color: colors.calories }]}>5 / 10</Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={[styles.mLabel, { color: colors.textMuted }]}>Soreness</Text>
-            <Text style={[styles.mVal, { color: colors.textMuted }]}>3 / 10</Text>
-          </View>
-        </View>
-      </Card>
-
-      {/* Injury & Pain Safety Preview */}
-      <Card style={styles.card}>
-        <View style={styles.iconHeading}>
-          <View
+    <View style={styles.screen}>
+      <ScrollView
+        style={[styles.container, { backgroundColor: 'transparent' }]}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+          />
+        }>
+        {/* Date Selector Header */}
+        <View style={styles.dateSelector}>
+          <TouchableOpacity
+            onPress={handlePrevDay}
             style={[
-              styles.iconWrapper,
+              styles.dateNavBtn,
               {
-                backgroundColor: isDark
-                  ? 'rgba(16, 185, 129, 0.16)'
-                  : 'rgba(5, 150, 105, 0.12)',
+                backgroundColor: colors.cardElevated,
+                borderColor: colors.cardBorder,
               },
-            ]}>
-            <Ionicons name="shield-checkmark-outline" size={18} color={colors.accent} />
+            ]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={16} color={colors.text} />
+          </TouchableOpacity>
+
+          <View style={styles.dateInfo}>
+            <Text style={[styles.dateTitle, { color: colors.text }]}>
+              {isToday ? 'Today, ' : ''}
+              {selectedDate}
+            </Text>
+            <Text style={[styles.dateSub, { color: colors.textMuted }]}>
+              Daily Mindset & Recovery Log
+            </Text>
           </View>
-          <View>
+
+          <TouchableOpacity
+            onPress={handleNextDay}
+            disabled={isToday}
+            style={[
+              styles.dateNavBtn,
+              {
+                backgroundColor: colors.cardElevated,
+                borderColor: colors.cardBorder,
+              },
+              isToday && { opacity: 0.3 },
+            ]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-forward" size={16} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Quick Check-In Action Cards */}
+        <View style={styles.actionCardsRow}>
+          {/* Morning Check-In Button */}
+          <TouchableOpacity
+            style={[
+              styles.checkInCard,
+              {
+                backgroundColor: colors.cardElevated,
+                borderColor: isMorningDone ? colors.accent : colors.cardBorder,
+              },
+            ]}
+            onPress={() => setMorningModalOpen(true)}
+            activeOpacity={0.8}>
+            <View style={styles.cardTop}>
+              <View
+                style={[
+                  styles.cardIconBox,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(245, 158, 11, 0.16)'
+                      : 'rgba(217, 119, 6, 0.12)',
+                  },
+                ]}>
+                <Ionicons name="sunny" size={16} color={colors.calories} />
+              </View>
+              {isMorningDone ? (
+                <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+              ) : null}
+            </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
-              Pain & Injury Safety Guardrails
+              Morning Readiness
             </Text>
             <Text style={[styles.cardSub, { color: colors.textMuted }]}>
-              Section 32 Safety Rules
+              {isMorningDone
+                ? `Energy: ${dailyLog?.energy_rating ?? 8}/10`
+                : 'Log sleep & freshness'}
             </Text>
-          </View>
+          </TouchableOpacity>
+
+          {/* Evening Wind-Down Button */}
+          <TouchableOpacity
+            style={[
+              styles.checkInCard,
+              {
+                backgroundColor: colors.cardElevated,
+                borderColor: isEveningDone ? colors.accent : colors.cardBorder,
+              },
+            ]}
+            onPress={() => setEveningModalOpen(true)}
+            activeOpacity={0.8}>
+            <View style={styles.cardTop}>
+              <View
+                style={[
+                  styles.cardIconBox,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(99, 102, 241, 0.16)'
+                      : 'rgba(79, 70, 229, 0.12)',
+                  },
+                ]}>
+                <Ionicons name="moon" size={16} color="#818CF8" />
+              </View>
+              {isEveningDone ? (
+                <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+              ) : null}
+            </View>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              Evening Wind-Down
+            </Text>
+            <Text style={[styles.cardSub, { color: colors.textMuted }]}>
+              {isEveningDone
+                ? `Hunger: ${dailyLog?.hunger_rating ?? 5}/10`
+                : 'Review day & stress'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
-          If pain or excessive soreness is recorded, the AI coach avoids aggressive progressive overload, suggests deloads or exercise substitutions, and never provides unqualified medical diagnoses.
-        </Text>
-      </Card>
-    </ScrollView>
+        {/* 1. Readiness Score Card */}
+        <ReadinessScoreCard
+          readiness={readiness}
+          onOpenCheckIn={() => setMorningModalOpen(true)}
+        />
+
+        {/* 2. Holistic AI Coach Summary */}
+        <DailyCoachSummaryCard
+          review={aiReview}
+          onRegenerate={() => generateAndSaveDailyReview(selectedDate)}
+          isLoading={isLoading}
+        />
+
+        {/* 3. Recent Reflections Timeline */}
+        <JournalTimelineCard entries={recentHistory} />
+      </ScrollView>
+
+      {/* Morning Check-In Modal */}
+      <MorningCheckInModal
+        visible={isMorningModalOpen}
+        onClose={() => setMorningModalOpen(false)}
+        onSave={saveMorningCheckIn}
+        initialSleep={dailyLog?.sleep_hours}
+        initialEnergy={dailyLog?.energy_rating}
+        initialMood={dailyLog?.mood_rating}
+        initialSoreness={dailyLog?.soreness_rating}
+        initialNotes={morningEntry?.notes}
+      />
+
+      {/* Evening Wind-Down Modal */}
+      <EveningWindDownModal
+        visible={isEveningModalOpen}
+        onClose={() => setEveningModalOpen(false)}
+        onSave={saveEveningReflection}
+        initialHunger={dailyLog?.hunger_rating}
+        initialStress={dailyLog?.stress_rating}
+        initialNotes={eveningEntry?.notes}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
   content: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxxl,
+    paddingBottom: Spacing.xxxl * 2,
   },
-  card: {
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  headerRow: {
+  dateSelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.md,
   },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  dateText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  journalExcerpt: {
-    fontSize: 14.5,
-    lineHeight: 22,
-    fontStyle: 'italic',
-    marginBottom: Spacing.md,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
-  },
-  metricItem: {
-    alignItems: 'center',
-  },
-  mLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  mVal: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  iconHeading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  iconWrapper: {
-    width: 32,
-    height: 32,
+  dateNavBtn: {
+    padding: 8,
     borderRadius: BorderRadius.md,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Spacing.md,
+  },
+  dateInfo: {
+    alignItems: 'center',
+  },
+  dateTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  dateSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  actionCardsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  checkInCard: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs + 2,
+  },
+  cardIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
   },
   cardSub: {
     fontSize: 11,
-  },
-  bodyText: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: Spacing.xs,
+    marginTop: 2,
   },
 });

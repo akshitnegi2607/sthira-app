@@ -1,5 +1,5 @@
 import { getDatabase } from '../db';
-import { DailyLog } from '@/types/database';
+import { DailyLog } from '../../types/database';
 
 export const DailyLogsRepository = {
   getLogByDate(dateStr: string): DailyLog | null {
@@ -7,9 +7,8 @@ export const DailyLogsRepository = {
     return db.getFirstSync<DailyLog>('SELECT * FROM DailyLogs WHERE date = ?', [dateStr]);
   },
 
-  getTodayLog(): DailyLog {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const existing = this.getLogByDate(todayStr);
+  getOrCreateLog(dateStr: string): DailyLog {
+    const existing = this.getLogByDate(dateStr);
     if (existing) {
       return existing;
     }
@@ -17,8 +16,8 @@ export const DailyLogsRepository = {
     const db = getDatabase();
     const now = new Date().toISOString();
     const newLog: DailyLog = {
-      id: `log_${todayStr}`,
-      date: todayStr,
+      id: `log_${dateStr}`,
+      date: dateStr,
       calories_consumed: 0,
       protein_consumed: 0,
       carbs_consumed: 0,
@@ -71,9 +70,14 @@ export const DailyLogsRepository = {
     return newLog;
   },
 
+  getTodayLog(): DailyLog {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return this.getOrCreateLog(todayStr);
+  },
+
   updateDailyLog(dateStr: string, updates: Partial<DailyLog>): void {
     const db = getDatabase();
-    const current = this.getLogByDate(dateStr) || this.getTodayLog();
+    const current = this.getOrCreateLog(dateStr);
     const merged = { ...current, ...updates, updated_at: new Date().toISOString() };
 
     db.runSync(

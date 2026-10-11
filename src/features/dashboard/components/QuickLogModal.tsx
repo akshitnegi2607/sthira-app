@@ -13,6 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
+import { analyzeMeal } from '@/services/mealParser';
+import { MealRepository } from '@/database/repositories/mealRepository';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
 export type QuickLogType = 'food' | 'weight' | 'workout' | 'activity' | 'water' | 'journal' | null;
 
@@ -48,6 +51,38 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
       const val = parseFloat(inputValue);
       if (!isNaN(val) && val > 0) {
         onSubmitWeight(val);
+      }
+    } else if (type === 'food') {
+      if (inputValue.trim()) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const parsed = analyzeMeal(inputValue.trim(), 'snack');
+        if (parsed.items.length > 0) {
+          MealRepository.createMeal(
+            {
+              date: todayStr,
+              meal_type: 'snack',
+              raw_text: parsed.rawText,
+              total_calories: parsed.totalCalories,
+              total_protein: parsed.totalProtein,
+              total_carbs: parsed.totalCarbs,
+              total_fat: parsed.totalFat,
+              confidence: parsed.confidence,
+              is_verified_by_user: 1,
+            },
+            parsed.items.map((it) => ({
+              food_name: it.food_name,
+              quantity: it.quantity,
+              unit: it.unit,
+              calories_estimated: it.calories,
+              protein_estimated: it.protein,
+              carbs_estimated: it.carbs,
+              fat_estimated: it.fat,
+              confidence_score: it.confidence_score,
+              clarification_needed: it.clarification_needed,
+            }))
+          );
+          useDashboardStore.getState().loadDashboard();
+        }
       }
     }
     setInputValue('');
@@ -130,18 +165,44 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
       case 'food':
         return (
           <View>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Log Meal</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Quick Food Log</Text>
             <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
-              Jump to the Nutrition screen for natural language meal parsing and macro breakdown.
+              Type your meal naturally (e.g. "100g paneer with a banana") or open the nutrition tracker.
             </Text>
+
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.cardElevated,
+                  borderColor: colors.cardBorder,
+                  color: colors.text,
+                },
+              ]}
+              placeholder="e.g. 2 besan chillas with curd"
+              placeholderTextColor={colors.textMuted}
+              value={inputValue}
+              onChangeText={setInputValue}
+              autoFocus
+            />
+
             <Button
-              title="Open Nutrition Tracker"
+              title="Quick Log Meal"
+              onPress={handleSave}
+              disabled={!inputValue.trim()}
+              style={{ marginTop: Spacing.md }}
+            />
+
+            <TouchableOpacity
+              style={{ marginTop: Spacing.md, alignItems: 'center' }}
               onPress={() => {
                 onClose();
                 onNavigateTab('nutrition');
-              }}
-              style={{ marginTop: Spacing.md }}
-            />
+              }}>
+              <Text style={{ color: colors.protein, fontSize: 13, fontWeight: '600' }}>
+                Open Full Nutrition Screen &gt;
+              </Text>
+            </TouchableOpacity>
           </View>
         );
 

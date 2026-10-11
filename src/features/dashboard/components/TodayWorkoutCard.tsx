@@ -4,19 +4,51 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Card } from '@/components/ui/Card';
+import { WorkoutSession } from '@/types/database';
 
 interface TodayWorkoutCardProps {
   planTitle?: string;
   isCompleted?: boolean;
+  isInProgress?: boolean;
+  session?: WorkoutSession | null;
   onPressWorkout?: () => void;
 }
 
 export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
-  planTitle = 'Upper Body A',
-  isCompleted = true,
+  planTitle = 'Rest Day',
+  isCompleted = false,
+  isInProgress = false,
+  session,
   onPressWorkout,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const isRest = planTitle.toLowerCase().includes('rest');
+
+  let badgeText = 'PLANNED';
+  let badgeColor: string = colors.statusAttention;
+  let badgeIcon: 'time' | 'checkmark-circle' | 'barbell' | 'bed' = 'time';
+  let badgeBg: string = isDark ? 'rgba(245, 158, 11, 0.18)' : 'rgba(217, 119, 6, 0.12)';
+
+  if (isInProgress) {
+    badgeText = 'IN PROGRESS';
+    badgeColor = colors.accent;
+    badgeIcon = 'barbell';
+    badgeBg = isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(5, 150, 105, 0.12)';
+  } else if (isCompleted) {
+    badgeText = 'COMPLETED';
+    badgeColor = colors.accent;
+    badgeIcon = 'checkmark-circle';
+    badgeBg = isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(5, 150, 105, 0.12)';
+  } else if (isRest) {
+    badgeText = 'REST DAY';
+    badgeColor = colors.textMuted;
+    badgeIcon = 'bed';
+    badgeBg = isDark ? 'rgba(255, 255, 255, 0.06)' : '#F1F5F9';
+  }
+
+  const durationMins = session?.duration_seconds
+    ? Math.floor(session.duration_seconds / 60)
+    : 0;
 
   return (
     <Card style={styles.card}>
@@ -28,60 +60,54 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
           <Text style={[styles.title, { color: colors.text }]}>{planTitle}</Text>
         </View>
 
-        {isCompleted ? (
-          <View
-            style={[
-              styles.completedBadge,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(16, 185, 129, 0.18)'
-                  : 'rgba(5, 150, 105, 0.12)',
-              },
-            ]}>
-            <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
-            <Text style={[styles.completedText, { color: colors.accent }]}>
-              COMPLETED
-            </Text>
-          </View>
-        ) : (
-          <View
-            style={[
-              styles.completedBadge,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(245, 158, 11, 0.18)'
-                  : 'rgba(217, 119, 6, 0.12)',
-              },
-            ]}>
-            <Ionicons name="time" size={16} color={colors.statusAttention} />
-            <Text style={[styles.completedText, { color: colors.statusAttention }]}>
-              PLANNED
-            </Text>
-          </View>
-        )}
+        <View style={[styles.completedBadge, { backgroundColor: badgeBg }]}>
+          <Ionicons name={badgeIcon} size={15} color={badgeColor} />
+          <Text style={[styles.completedText, { color: badgeColor }]}>{badgeText}</Text>
+        </View>
       </View>
 
       <View style={styles.detailsRow}>
-        <View style={styles.detailItem}>
-          <Ionicons name="barbell-outline" size={15} color={colors.textMuted} />
-          <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-            7 Exercises
-          </Text>
-        </View>
-        <View style={styles.bulletDot} />
-        <View style={styles.detailItem}>
-          <Ionicons name="repeat-outline" size={15} color={colors.textMuted} />
-          <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-            21 Sets • 226 Reps
-          </Text>
-        </View>
-        <View style={styles.bulletDot} />
-        <View style={styles.detailItem}>
-          <Ionicons name="trending-up-outline" size={15} color={colors.accent} />
-          <Text style={[styles.detailText, { color: colors.accent }]}>
-            3 Progressed
-          </Text>
-        </View>
+        {isInProgress ? (
+          <View style={styles.detailItem}>
+            <Ionicons name="timer-outline" size={15} color={colors.accent} />
+            <Text style={[styles.detailText, { color: colors.accent, fontWeight: '700' }]}>
+              Session is actively running
+            </Text>
+          </View>
+        ) : isCompleted ? (
+          <>
+            <View style={styles.detailItem}>
+              <Ionicons name="checkmark-done-outline" size={15} color={colors.accent} />
+              <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                {durationMins > 0 ? `${durationMins} mins` : 'Completed today'}
+              </Text>
+            </View>
+            {session?.difficulty_perceived ? (
+              <>
+                <View style={styles.bulletDot} />
+                <View style={styles.detailItem}>
+                  <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                    Felt: {session.difficulty_perceived}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+          </>
+        ) : isRest ? (
+          <View style={styles.detailItem}>
+            <Ionicons name="leaf-outline" size={15} color={colors.textMuted} />
+            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+              Recovery, mobility & relaxation
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.detailItem}>
+            <Ionicons name="barbell-outline" size={15} color={colors.textMuted} />
+            <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+              Scheduled for today • Ready when you are
+            </Text>
+          </View>
+        )}
       </View>
 
       <TouchableOpacity
@@ -95,7 +121,13 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
         ]}
         onPress={onPressWorkout}>
         <Text style={[styles.actionButtonText, { color: colors.text }]}>
-          {isCompleted ? 'View Workout Performance' : 'Start Workout Session'}
+          {isInProgress
+            ? 'Resume Live Workout'
+            : isCompleted
+            ? 'View Workout Performance'
+            : isRest
+            ? 'Log Light Recovery Activity'
+            : 'Start Workout Session'}
         </Text>
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </TouchableOpacity>
@@ -119,55 +151,53 @@ const styles = StyleSheet.create({
   },
   subheading: {
     fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    marginBottom: 2,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   completedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
     paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: BorderRadius.full,
+    gap: 4,
   },
   completedText: {
-    fontSize: 11,
-    fontWeight: '700',
-    marginLeft: 4,
-    letterSpacing: 0.4,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
     marginBottom: Spacing.md,
+    gap: 6,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   detailText: {
-    fontSize: 12.5,
-    fontWeight: '500',
-    marginLeft: 4,
+    fontSize: 12,
   },
   bulletDot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#64748B',
-    marginHorizontal: 8,
+    backgroundColor: '#94A3B8',
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm + 4,
     paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
   },

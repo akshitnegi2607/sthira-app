@@ -1,4 +1,4 @@
-import { UserProfile, Goals } from '@/types/database';
+import { UserProfile, Goals } from '../types/database';
 
 export const INITIAL_USER_PROFILE: UserProfile = {
   id: 'user_primary',

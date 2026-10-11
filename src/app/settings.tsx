@@ -16,6 +16,7 @@ import { BorderRadius, Spacing } from '@/constants/theme';
 import { useProfileStore } from '@/stores/useProfileStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
 
 export default function SettingsScreen() {
   const { colors, isDark } = useAppTheme();
@@ -88,7 +89,7 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: 'transparent' }]}
       contentContainerStyle={styles.content}>
       {/* Profile Section */}
       <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>
@@ -309,8 +310,15 @@ export default function SettingsScreen() {
       <Button
         title={savedSuccess ? 'Changes Saved ✓' : 'Save Profile Changes'}
         onPress={handleSave}
-        style={{ marginTop: Spacing.md, marginBottom: Spacing.xxxl }}
+        style={{ marginTop: Spacing.md }}
       />
+
+      <View style={styles.footerBranding}>
+        <SthiraBrandLogo size="medium" showTagline />
+        <Text style={[styles.versionText, { color: colors.textMuted }]}>
+          v1.0.0 • Offline-First Personal AI Coach
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -318,6 +326,17 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  footerBranding: {
+    alignItems: 'center',
+    marginVertical: Spacing.xl,
+    paddingBottom: Spacing.xxl,
+    gap: Spacing.xs,
+  },
+  versionText: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 4,
   },
   content: {
     padding: Spacing.lg,

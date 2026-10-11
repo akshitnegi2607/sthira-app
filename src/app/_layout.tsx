@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { runMigrations } from '@/database/migrations';
 import { useProfileStore } from '@/stores/useProfileStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useAppTheme } from '@/hooks/use-theme';
+import { NarayanaEntryScreen } from '@/components/ui/NarayanaEntryScreen';
+import { NarayanaAppBackground } from '@/components/ui/NarayanaAppBackground';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const { colors, isDark } = useAppTheme();
   const [dbReady, setDbReady] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
   const loadProfile = useProfileStore((s) => s.loadProfile);
   const loadDashboard = useDashboardStore((s) => s.loadDashboard);
 
@@ -34,31 +37,36 @@ export default function RootLayout() {
     prepare();
   }, [loadProfile, loadDashboard]);
 
-  if (!dbReady) {
+  // Sacred App Entry Screen on loading
+  if (!hasEntered) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={[styles.loadingText, { color: colors.textMuted }]}>
-          Setting up your personal coach...
-        </Text>
-      </View>
+      <>
+        <StatusBar style="light" />
+        <NarayanaEntryScreen
+          isReady={dbReady}
+          onReadyToEnter={() => setHasEntered(true)}
+        />
+      </>
     );
   }
 
   return (
-    <>
+    <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      {/* Faint ambient presence of Lord Narayana everywhere in background */}
+      <NarayanaAppBackground />
+
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: colors.background,
+            backgroundColor: 'transparent',
           },
           headerTintColor: colors.text,
           headerTitleStyle: {
             fontWeight: '700',
           },
           contentStyle: {
-            backgroundColor: colors.background,
+            backgroundColor: 'transparent',
           },
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -71,19 +79,12 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  rootContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    fontWeight: '500',
   },
 });

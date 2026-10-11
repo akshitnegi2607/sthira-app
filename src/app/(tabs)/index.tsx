@@ -29,6 +29,9 @@ export default function HomeScreen() {
   const quickAddWater = useDashboardStore((s) => s.quickAddWater);
   const quickLogWeight = useDashboardStore((s) => s.quickLogWeight);
 
+  const activeSession = useDashboardStore((s) => s.activeSession);
+  const todayCompletedSession = useDashboardStore((s) => s.todayCompletedSession);
+
   const [refreshing, setRefreshing] = useState(false);
   const [modalType, setModalType] = useState<QuickLogType>(null);
 
@@ -39,7 +42,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: 'transparent' }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -59,8 +62,15 @@ export default function HomeScreen() {
 
         {/* 2. MIDDLE: Today's Planned Workout / Activity */}
         <TodayWorkoutCard
-          planTitle={todayPlan?.name || "Upper Body A"}
-          isCompleted={true}
+          planTitle={
+            activeSession?.session.title ||
+            todayCompletedSession?.title ||
+            todayPlan?.name ||
+            'Rest & Recovery'
+          }
+          isCompleted={todayCompletedSession !== null}
+          isInProgress={activeSession !== null}
+          session={todayCompletedSession}
           onPressWorkout={() => router.push('/workout')}
         />
 

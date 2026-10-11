@@ -1,5 +1,5 @@
 import { getDatabase } from '../db';
-import { UserProfile, Goals } from '@/types/database';
+import { UserProfile, Goals } from '../../types/database';
 
 export const ProfileRepository = {
   getProfile(): UserProfile | null {

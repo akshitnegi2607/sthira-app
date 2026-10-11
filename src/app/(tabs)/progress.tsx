@@ -1,208 +1,173 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  RefreshControl,
+  TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
-import { Card } from '@/components/ui/Card';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { useProfileStore } from '@/stores/useProfileStore';
-import { useDashboardStore } from '@/stores/useDashboardStore';
+import { useProgressStore } from '@/stores/useProgressStore';
+import { WeightTrendChart } from '@/features/progress/components/WeightTrendChart';
+import { LeanBulkTrajectoryCard } from '@/features/progress/components/LeanBulkTrajectoryCard';
+import { WeeklyReviewCard } from '@/features/progress/components/WeeklyReviewCard';
+import { SleepRecoveryCorrelationCard } from '@/features/progress/components/SleepRecoveryCorrelationCard';
+import { WeightHistoryList } from '@/features/progress/components/WeightHistoryList';
+import { LogWeightModal } from '@/features/progress/components/LogWeightModal';
 
 export default function ProgressScreen() {
   const { colors, isDark } = useAppTheme();
-  const profile = useProfileStore((s) => s.profile);
-  const todayLog = useDashboardStore((s) => s.todayLog);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const currentWeight = todayLog.weight ?? profile.current_weight;
-  const targetWeight = profile.target_weight;
-  const diff = (targetWeight - currentWeight).toFixed(1);
+  const {
+    timeframe,
+    weightHistory,
+    emaSeries,
+    weeklyGainRate,
+    calorieAdaptation,
+    sleepCorrelation,
+    leanBulkTrajectory,
+    isLogWeightModalVisible,
+    isLoading,
+    currentWeight,
+    currentEmaWeight,
+    targetWeight,
+    currentCalorieTarget,
+    loadProgressData,
+    setTimeframe,
+    logScaleWeight,
+    deleteWeightEntry,
+    applyCalorieAdjustment,
+    setLogWeightModalVisible,
+  } = useProgressStore();
+
+  useEffect(() => {
+    loadProgressData();
+  }, [loadProgressData]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    loadProgressData();
+    setRefreshing(false);
+  };
+
+  // Convert weight entries to WeightDataPoint for chart
+  const rawPoints = weightHistory.map((w) => ({
+    date: w.date,
+    weightKg: w.weight_kg,
+  }));
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}>
-      {/* Weight Trend Summary */}
-      <Card elevated style={styles.card}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-            BODY WEIGHT TREND
+    <View style={styles.screen}>
+      <ScrollView
+        style={[styles.container, { backgroundColor: 'transparent' }]}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+          />
+        }>
+        {/* Measured vs Estimated Principle Badge */}
+        <View
+          style={[
+            styles.principleCard,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255, 255, 255, 0.03)'
+                : 'rgba(0, 0, 0, 0.02)',
+              borderColor: colors.cardBorder,
+            },
+          ]}>
+          <View style={styles.principleHeader}>
+            <Ionicons name="shield-checkmark" size={14} color={colors.accent} />
+            <Text style={[styles.principleTitle, { color: colors.text }]}>
+              Data Integrity Framework
+            </Text>
+          </View>
+          <Text style={[styles.principleBody, { color: colors.textMuted }]}>
+            Scale weights and logged reps are strictly measured. Rolling EMA trends,
+            calorie adaptations, and completion dates are mathematically estimated.
           </Text>
-          <StatusBadge status="ON TRACK" />
         </View>
 
-        <View style={styles.weightRow}>
-          <View>
-            <Text style={[styles.weightBig, { color: colors.text }]}>
-              {currentWeight.toFixed(1)} <Text style={[styles.unit, { color: colors.textMuted }]}>kg</Text>
-            </Text>
-            <Text style={[styles.weightSub, { color: colors.textMuted }]}>
-              Target: {targetWeight} kg ({diff} kg to lean bulk target)
-            </Text>
-          </View>
-        </View>
+        {/* 1. Weight Trend & EMA Chart */}
+        <WeightTrendChart
+          timeframe={timeframe}
+          onSelectTimeframe={setTimeframe}
+          rawPoints={rawPoints}
+          emaPoints={emaSeries}
+          targetWeight={targetWeight}
+          currentWeight={currentWeight}
+          currentEma={currentEmaWeight}
+          weeklyRate={weeklyGainRate}
+          onOpenLogModal={() => setLogWeightModalVisible(true)}
+        />
 
-        <View style={styles.metricsGrid}>
-          <View style={[styles.metricTile, { backgroundColor: colors.cardElevated, borderColor: colors.cardBorder }]}>
-            <Text style={[styles.metricLabel, { color: colors.textMuted }]}>7-Day Average</Text>
-            <Text style={[styles.metricVal, { color: colors.text }]}>64.1 kg</Text>
-            <Text style={[styles.metricDelta, { color: colors.accent }]}>+0.15 kg/wk</Text>
-          </View>
+        {/* 2. Lean Bulk Trajectory Card */}
+        <LeanBulkTrajectoryCard trajectory={leanBulkTrajectory} />
 
-          <View style={[styles.metricTile, { backgroundColor: colors.cardElevated, borderColor: colors.cardBorder }]}>
-            <Text style={[styles.metricLabel, { color: colors.textMuted }]}>Target Rate</Text>
-            <Text style={[styles.metricVal, { color: colors.text }]}>+0.1–0.2</Text>
-            <Text style={[styles.metricDelta, { color: colors.textMuted }]}>kg / week</Text>
-          </View>
-        </View>
-      </Card>
+        {/* 3. Weekly Calorie Adaptation Card */}
+        <WeeklyReviewCard
+          currentCalorieTarget={currentCalorieTarget}
+          adaptation={calorieAdaptation}
+          onApplyAdjustment={applyCalorieAdjustment}
+        />
 
-      {/* Analytics Engine Preview */}
-      <Card style={styles.card}>
-        <View style={styles.iconHeading}>
-          <View
-            style={[
-              styles.iconWrapper,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(16, 185, 129, 0.16)'
-                  : 'rgba(5, 150, 105, 0.12)',
-              },
-            ]}>
-            <Ionicons name="analytics-outline" size={18} color={colors.accent} />
-          </View>
-          <View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              Deterministic Analytics Engine
-            </Text>
-            <Text style={[styles.cardSub, { color: colors.textMuted }]}>
-              Section 45 Architecture
-            </Text>
-          </View>
-        </View>
+        {/* 4. Sleep & Gym Volume Correlation Card */}
+        <SleepRecoveryCorrelationCard correlation={sleepCorrelation} />
 
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
-          All 7-day, 14-day, and 30-day rolling averages, volume trends, and rate calculations are computed deterministically in TypeScript, then provided to the AI coach for context-aware interpretation.
-        </Text>
-      </Card>
+        {/* 5. Recent Scale Entries List */}
+        <WeightHistoryList
+          entries={weightHistory}
+          onDelete={deleteWeightEntry}
+        />
+      </ScrollView>
 
-      {/* Weekly Review Preview */}
-      <Card style={styles.card}>
-        <View style={styles.iconHeading}>
-          <View
-            style={[
-              styles.iconWrapper,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(245, 158, 11, 0.16)'
-                  : 'rgba(217, 119, 6, 0.12)',
-              },
-            ]}>
-            <Ionicons name="calendar-outline" size={18} color={colors.calories} />
-          </View>
-          <View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              Weekly Progress Review
-            </Text>
-            <Text style={[styles.cardSub, { color: colors.textMuted }]}>
-              Scheduled for Phase 4 & 5
-            </Text>
-          </View>
-        </View>
-
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
-          "Starting: 64.0 kg • Ending: 64.2 kg (+0.2 kg). 4/4 gym sessions completed. Average sleep 7h 12m. You are progressing at an appropriate rate. Keep calories unchanged."
-        </Text>
-      </Card>
-    </ScrollView>
+      {/* Log Weight Modal */}
+      <LogWeightModal
+        visible={isLogWeightModalVisible}
+        onClose={() => setLogWeightModalVisible(false)}
+        onSave={logScaleWeight}
+        currentWeight={currentWeight}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
   content: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxxl,
+    paddingBottom: Spacing.xxxl * 2,
   },
-  card: {
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  weightRow: {
-    marginVertical: Spacing.xs,
-  },
-  weightBig: {
-    fontSize: 32,
-    fontWeight: '800',
-  },
-  unit: {
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  weightSub: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  metricTile: {
-    flex: 1,
+  principleCard: {
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
+    marginBottom: Spacing.md,
   },
-  metricLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  metricVal: {
-    fontSize: 17,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  metricDelta: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  iconHeading: {
+  principleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    gap: 6,
+    marginBottom: 4,
   },
-  iconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  cardTitle: {
-    fontSize: 15,
+  principleTitle: {
+    fontSize: 12,
     fontWeight: '700',
   },
-  cardSub: {
+  principleBody: {
     fontSize: 11,
-  },
-  bodyText: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: Spacing.xs,
+    lineHeight: 16,
   },
 });

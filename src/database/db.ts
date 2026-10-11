@@ -1,15 +1,32 @@
-import * as SQLite from 'expo-sqlite';
-import { Platform } from 'react-native';
+declare const require: any;
+
+export interface AppDatabase {
+  execSync: (sql: string) => void;
+  getFirstSync: <T = any>(sql: string, params?: any[]) => T | null;
+  getAllSync: <T = any>(sql: string, params?: any[]) => T[];
+  runSync: (sql: string, params?: any[]) => { changes: number; lastInsertRowId: number };
+}
 
 const DB_NAME = 'aicoach.db';
 
-let databaseInstance: SQLite.SQLiteDatabase | null = null;
+let databaseInstance: AppDatabase | null = null;
 
-export function getDatabase(): SQLite.SQLiteDatabase {
-  if (!databaseInstance) {
-    databaseInstance = SQLite.openDatabaseSync(DB_NAME);
+export function getDatabase(): AppDatabase {
+  if (databaseInstance) return databaseInstance;
+
+  try {
+    const SQLite = require('expo-sqlite');
+    if (SQLite && typeof SQLite.openDatabaseSync === 'function') {
+      databaseInstance = SQLite.openDatabaseSync(DB_NAME);
+      return databaseInstance!;
+    }
+  } catch {
+    // Native SQLite not available (e.g. web or test environment)
   }
-  return databaseInstance;
+
+  const { getDatabase: getWebDb } = require('./db.web');
+  databaseInstance = getWebDb();
+  return databaseInstance!;
 }
 
 export function executeSqlSync(sql: string) {

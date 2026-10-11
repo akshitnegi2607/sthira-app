@@ -57,12 +57,50 @@ This project was initialized and verified in **Phase 1**. When working in this r
   - Zero TypeScript errors (`npx tsc --noEmit` clean).
   - Multi-platform bundling verified (`npx expo export`).
 
-- **PHASE 2 (NEXT STEP)**:
-  - Daily Nutrition Screen (visual macro rings/progress bars, remaining calories/protein)
-  - Food Logging UI (Meal entries: breakfast, lunch, dinner, snacks)
-  - Natural Language Food Parser (`analyzeMeal` interface & local rules engine)
-  - Confidence scoring (High, Medium, Low with clarification modal)
-  - Cuisine Exploration feature (Mexican, Mediterranean, Italian, Asian, Indian suggestions under calorie & protein constraints)
+- **PHASE 2 (COMPLETED)**:
+  - Daily Nutrition Screen (`(tabs)/nutrition.tsx`) with visual SVG circular calorie gauge & macro progress bars.
+  - Measured vs. Estimated distinction pill ("ESTIMATED DATA" badge).
+  - Food Logging UI for all meal slots: Breakfast, Lunch, Dinner, Snacks.
+  - Natural Language Food Parser (`analyzeMeal` & local rules engine in `src/services/mealParser.ts`) with portion extraction, scaling, and dietary check (flags eggs, mushrooms, and non-veg).
+  - Confidence scoring (`HIGH`, `MED`, `LOW`) with interactive `ClarificationModal` allowing kitchen scale gram adjustments and manual macro overrides.
+  - Cuisine Exploration feature (`src/features/nutrition/components/CuisineExplorationSection.tsx`) with 12 authentic vegetarian recipes across 6 cuisines (Indian, Mexican, Mediterranean, Italian, Asian, Middle Eastern) and one-tap diary logging.
+  - Repositories (`mealRepository.ts`, `recipeRepository.ts`) with automatic DailyLogs synchronization.
+  - 36/36 tests passing in `scripts/verify-phase2.ts`.
+
+- **PHASE 3 (COMPLETED)**:
+  - Workout & Training Screen (`(tabs)/workout.tsx`) with weekly split schedule (Upper A, Lower A, Upper B, Lower B, Yoga, Swimming, Rest).
+  - Active Session Logger (`ActiveWorkoutModal.tsx`): live elapsed timer, pause/resume, sets logging (weight, reps, RIR, checkmark completion), and auto-triggered rest timer.
+  - Built-in Rest Timer (`RestTimerBanner.tsx`): animated progress bar, countdown, +30s adjustment, skip action.
+  - Progressive Overload Engine (`src/services/progressiveOverload.ts`): sports-science double progression (+1.25kg arms/isolation, +2.5kg upper compounds, +2.5–5kg leg compounds), RIR evaluation, and explicit `isEstimated: true` tags.
+  - Exercise Substitution System (`src/services/exerciseSubstitution.ts`, `ExerciseSubstitutionModal.tsx`): instant one-tap alternatives with matched stimulus and starting load guidance.
+  - Exercise Form & Cue Guide (`ExerciseDetailModal.tsx`): step-by-step instructions, target muscles, common mistakes to avoid.
+  - Workout Finish Flow (`WorkoutFinishModal.tsx`): summary duration, total volume (kg), completed sets, perceived exertion (Easy/Good/Hard/Very hard), and post-workout notes.
+  - Pain & Joint Fatigue Tracking (`PainLoggingModal.tsx`): standalone & post-workout logging with automatic 15% deload caution flags in progressive overload calculations.
+  - Repositories & State: `WorkoutRepository.ts` and `useWorkoutStore.ts` with clean SQLite persistence.
+  - 40/40 tests passing in `scripts/verify-phase3.ts`.
+
+- **PHASE 4 (COMPLETED)**:
+  - Progress & Analytics Screen (`(tabs)/progress.tsx`) with full reactive SQLite state management.
+  - Exponential Moving Average (EMA) Engine (`src/services/progressAnalytics.ts`): $\alpha = 0.1$ smoothing filter dampening water weight, sodium, and digestion shifts while strictly preserving measured raw scale dots.
+  - Interactive SVG Weight Trend Chart (`WeightTrendChart.tsx`): dynamic viewBox, timeframe filters (7D, 30D, 90D, ALL), 7-day velocity badge (+0.15 kg/week), "MEASURED SCALE" vs "ESTIMATED TREND" legend badges.
+  - Deterministic Calorie Adaptation Engine (`calculateCalorieAdaptation`): sports-science energy balance adjustments (+125 kcal on stall, -100 kcal on excess fat gain, 0 on track), undereating compliance guard, and one-tap "Apply +125 kcal Target" to Goals table.
+  - Sleep & Recovery Correlation Engine (`correlateSleepAndWorkout`, `SleepRecoveryCorrelationCard.tsx`): volume lifted on $\ge 7.5\text{h}$ sleep vs. $< 7.0\text{h}$ sleep (+18% volume) with actionable hypertrophy takeaways.
+  - Lean Bulk Trajectory Modeling (`calculateLeanBulkTrajectory`, `LeanBulkTrajectoryCard.tsx`): 64.0 kg $\rightarrow$ 67.0 kg (+3.0 kg target) progress bar, weeks remaining, and projected completion date.
+  - Scale Weigh-In Modal (`LogWeightModal.tsx`): stepper adjustment (±0.1, ±0.5 kg), date picker, notes, and instant synchronization with `DailyLogs.weight` and `UserProfile.current_weight`.
+  - Repositories & State: `ProgressRepository.ts` and `useProgressStore.ts`.
+  - 46/46 tests passing in `scripts/verify-phase4.ts` (122/122 tests passing project-wide).
+
+- **PHASE 5 (COMPLETED)**:
+  - Daily Journal & Mindset Reflection Screen (`(tabs)/journal.tsx`) with date selector and quick check-in cards.
+  - Morning Readiness Engine (`src/services/journalAnalytics.ts`): physiological weighting (sleep duration up to 35 pts, energy up to 25 pts, soreness/freshness up to 20 pts, mood up to 20 pts) yielding a deterministic 0–100% score and training intensity advice (Optimal / Moderate / Fatigued).
+  - Visual Circular Readiness Gauge (`ReadinessScoreCard.tsx`) with SVG progress stroke and sub-score breakdown.
+  - Morning Check-In Modal (`MorningCheckInModal.tsx`): sleep steppers (±0.5h), 1–10 rating bars for energy, mood, soreness, and reflection notes.
+  - Evening Wind-Down Modal (`EveningWindDownModal.tsx`): 1–10 appetite & stress ratings, reflection notes, and real-time sentiment/theme tag extraction.
+  - Holistic Daily AI Coach Review Engine (`generateDailyCoachReview`): evaluates nutrition surplus & protein compliance, workout completion & volume, and readiness; renders structured status (`ON TRACK`, `ATTENTION`, `NEEDS ACTION`), coach narrative, and actionable tomorrow checklist.
+  - Daily Coach Review Card (`DailyCoachSummaryCard.tsx`) with instant refresh action.
+  - Reflection Timeline (`JournalTimelineCard.tsx`) rendering morning intentions and evening reflections with sentiment tags.
+  - Repositories & State: `JournalRepository.ts` and `useJournalStore.ts` with SQLite persistence.
+  - 36/36 tests passing in `scripts/verify-phase5.ts` (158/158 tests passing project-wide).
 
 ---
 

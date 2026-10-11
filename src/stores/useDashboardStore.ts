@@ -1,11 +1,14 @@
 import { create } from 'zustand';
-import { DailyLog, WorkoutPlan } from '@/types/database';
+import { DailyLog, WorkoutPlan, WorkoutSession } from '@/types/database';
 import { DailyLogsRepository } from '@/database/repositories/dailyLogsRepository';
 import { ExerciseRepository } from '@/database/repositories/exerciseRepository';
+import { WorkoutRepository, PopulatedSession } from '@/database/repositories/workoutRepository';
 
 interface DashboardState {
   todayLog: DailyLog;
   todayPlan: WorkoutPlan | null;
+  activeSession: PopulatedSession | null;
+  todayCompletedSession: WorkoutSession | null;
   isLoading: boolean;
   loadDashboard: () => void;
   updateLog: (updates: Partial<DailyLog>) => void;
@@ -18,22 +21,21 @@ const fallbackDate = new Date().toISOString().split('T')[0];
 const initialLog: DailyLog = {
   id: `log_${fallbackDate}`,
   date: fallbackDate,
-  calories_consumed: 2320,
-  protein_consumed: 114,
-  carbs_consumed: 290,
-  fat_consumed: 68,
-  water_liters: 1.9,
-  weight: 64.2,
-  sleep_hours: 7.25,
-  energy_rating: 8,
-  mood_rating: 8,
-  hunger_rating: 5,
-  recovery_rating: 8,
-  soreness_rating: 3,
-  stress_rating: 3,
+  calories_consumed: 0,
+  protein_consumed: 0,
+  carbs_consumed: 0,
+  fat_consumed: 0,
+  water_liters: 0,
+  weight: null,
+  sleep_hours: null,
+  energy_rating: null,
+  mood_rating: null,
+  hunger_rating: null,
+  recovery_rating: null,
+  soreness_rating: null,
+  stress_rating: null,
   coach_status: 'ON TRACK',
-  coach_summary:
-    "You're on track today. Calories are slightly below target (2,320 / 2,450 kcal) but very reasonable. Protein target is almost achieved (114 / 120 g). You completed today's Upper Body A session. Hydration is at 1.9L / 2.5L. If comfortably full, no need to force meals; a small snack like banana + peanut butter can close the calorie gap.",
+  coach_summary: 'Starting your day. Fuel up and stay hydrated!',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -41,16 +43,38 @@ const initialLog: DailyLog = {
 export const useDashboardStore = create<DashboardState>((set, get) => ({
   todayLog: initialLog,
   todayPlan: null,
+  activeSession: null,
+  todayCompletedSession: null,
   isLoading: false,
 
   loadDashboard: () => {
     try {
       const log = DailyLogsRepository.getTodayLog();
       const plan = ExerciseRepository.getTodayPlan();
-      set({ todayLog: log, todayPlan: plan });
+      const activeSession = WorkoutRepository.getActiveSession();
+      const history = WorkoutRepository.getCompletedHistory(5);
+      const todayStr = log.date;
+      const todayCompletedSession = history.find((h) => h.date === todayStr) || null;
+
+      // Dynamic coach summary if not set or empty
+      if (!log.coach_summary || log.coach_summary.includes('2,320 / 2,450')) {
+        let summary = 'Starting your day. Log your meals, hydration, and training to receive guidance.';
+        if (log.calories_consumed > 0) {
+          summary = `Logged ${log.calories_consumed} kcal and ${log.protein_consumed}g protein so far. Stay hydrated and keep steady!`;
+        }
+        log.coach_summary = summary;
+      }
+
+      set({
+        todayLog: log,
+        todayPlan: plan,
+        activeSession,
+        todayCompletedSession,
+        isLoading: false,
+      });
     } catch (e) {
       console.warn('Failed to load dashboard from SQLite, using initial fallback', e);
-      set({ todayLog: initialLog });
+      set({ todayLog: initialLog, isLoading: false });
     }
   },
 

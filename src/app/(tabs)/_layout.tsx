@@ -3,6 +3,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
+import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
 
 export default function TabsLayout() {
   const { colors, isDark } = useAppTheme();
@@ -12,6 +13,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
+        sceneStyle: {
+          backgroundColor: 'transparent',
+        },
         headerStyle: {
           backgroundColor: colors.background,
           elevation: 0,
@@ -53,7 +57,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          headerTitle: 'Personal AI Coach',
+          headerTitle: () => <SthiraBrandLogo size="small" />,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
