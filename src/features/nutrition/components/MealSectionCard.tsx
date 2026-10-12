@@ -110,74 +110,98 @@ export const MealSectionCard: React.FC<MealSectionCardProps> = ({
 
               {/* Items Breakdown */}
               <View style={styles.itemsList}>
-                {meal.items.map((item) => {
-                  const badgeStyle = getConfidenceBadgeColor(item.confidence_score);
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[
-                        styles.itemRow,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255, 255, 255, 0.03)'
-                            : 'rgba(0, 0, 0, 0.02)',
-                        },
-                      ]}
-                      onPress={() => onEditEstimate(item)}
-                      activeOpacity={0.7}>
-                      <View style={styles.itemInfoCol}>
-                        <View style={styles.itemTopRow}>
-                          <Text style={[styles.itemName, { color: colors.text }]}>
-                            {item.quantity} {item.unit} {item.food_name}
-                          </Text>
-                          <View
-                            style={[
-                              styles.confidencePill,
-                              { backgroundColor: badgeStyle.bg },
-                            ]}>
-                            <Text
-                              style={[
-                                styles.confidencePillText,
-                                { color: badgeStyle.text },
-                              ]}>
-                              {item.confidence_score.toUpperCase()}
+                {meal.items && meal.items.length > 0 ? (
+                  meal.items.map((item) => {
+                    const badgeStyle = getConfidenceBadgeColor(item.confidence_score);
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[
+                          styles.itemRow,
+                          {
+                            backgroundColor: isDark
+                              ? 'rgba(255, 255, 255, 0.03)'
+                              : 'rgba(0, 0, 0, 0.02)',
+                          },
+                        ]}
+                        onPress={() => onEditEstimate(item)}
+                        activeOpacity={0.7}>
+                        <View style={styles.itemInfoCol}>
+                          <View style={styles.itemTopRow}>
+                            <Text style={[styles.itemName, { color: colors.text }]}>
+                              {item.quantity} {item.unit} {item.food_name}
                             </Text>
+                            <View
+                              style={[
+                                styles.confidencePill,
+                                { backgroundColor: badgeStyle.bg },
+                              ]}>
+                              <Text
+                                style={[
+                                  styles.confidencePillText,
+                                  { color: badgeStyle.text },
+                                ]}>
+                                {item.confidence_score.toUpperCase()}
+                              </Text>
+                            </View>
                           </View>
+
+                          <Text style={[styles.itemMacros, { color: colors.textMuted }]}>
+                            {Math.round(item.calories_estimated)} kcal •{' '}
+                            {item.protein_estimated}g P • {item.carbs_estimated}g C •{' '}
+                            {item.fat_estimated}g F
+                          </Text>
+
+                          {item.clarification_needed === 1 && (
+                            <View style={styles.clarifyHintRow}>
+                              <Ionicons
+                                name="information-circle-outline"
+                                size={12}
+                                color={colors.statusAttention}
+                              />
+                              <Text
+                                style={[
+                                  styles.clarifyHintText,
+                                  { color: colors.statusAttention },
+                                ]}>
+                                Standard serving assumed. Tap to adjust grams.
+                              </Text>
+                            </View>
+                          )}
                         </View>
 
-                        <Text style={[styles.itemMacros, { color: colors.textMuted }]}>
-                          {Math.round(item.calories_estimated)} kcal •{' '}
-                          {item.protein_estimated}g P • {item.carbs_estimated}g C •{' '}
-                          {item.fat_estimated}g F
+                        <Ionicons
+                          name="pencil-outline"
+                          size={14}
+                          color={colors.textMuted}
+                          style={{ marginLeft: Spacing.sm }}
+                        />
+                      </TouchableOpacity>
+                    );
+                  })
+                ) : (
+                  <View
+                    style={[
+                      styles.itemRow,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.03)'
+                          : 'rgba(0, 0, 0, 0.02)',
+                      },
+                    ]}>
+                    <View style={styles.itemInfoCol}>
+                      <View style={styles.itemTopRow}>
+                        <Text style={[styles.itemName, { color: colors.text }]}>
+                          {meal.raw_text || 'Logged Meal'}
                         </Text>
-
-                        {item.clarification_needed === 1 && (
-                          <View style={styles.clarifyHintRow}>
-                            <Ionicons
-                              name="information-circle-outline"
-                              size={12}
-                              color={colors.statusAttention}
-                            />
-                            <Text
-                              style={[
-                                styles.clarifyHintText,
-                                { color: colors.statusAttention },
-                              ]}>
-                              Standard serving assumed. Tap to adjust grams.
-                            </Text>
-                          </View>
-                        )}
                       </View>
-
-                      <Ionicons
-                        name="pencil-outline"
-                        size={14}
-                        color={colors.textMuted}
-                        style={{ marginLeft: Spacing.sm }}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
+                      <Text style={[styles.itemMacros, { color: colors.textMuted }]}>
+                        {Math.round(meal.total_calories)} kcal • {meal.total_protein}g P •{' '}
+                        {meal.total_carbs}g C • {meal.total_fat}g F
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
           ))}

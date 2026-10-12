@@ -635,11 +635,24 @@ export default function WorkoutScreen() {
                       : 'Starting load'}
                   </Text>
                 </View>
-                <View style={styles.infoLink}>
-                  <Text style={[styles.infoLinkText, { color: colors.textMuted }]}>
-                    Form Guide
+                <View
+                  style={[
+                    styles.infoLink,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(56, 189, 248, 0.12)'
+                        : 'rgba(2, 132, 199, 0.08)',
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 12,
+                      gap: 4,
+                    },
+                  ]}>
+                  <Ionicons name="videocam-outline" size={13} color={colors.protein} />
+                  <Text style={[styles.infoLinkText, { color: colors.protein, fontWeight: '600' }]}>
+                    Animated Form
                   </Text>
-                  <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={12} color={colors.protein} />
                 </View>
               </View>
             </Card>

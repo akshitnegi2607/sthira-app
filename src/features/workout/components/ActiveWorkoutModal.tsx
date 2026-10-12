@@ -23,6 +23,7 @@ import { useWorkoutStore } from '@/stores/useWorkoutStore';
 import { RestTimerBanner } from './RestTimerBanner';
 import { WorkoutFinishModal } from './WorkoutFinishModal';
 import { ExerciseSubstitutionModal } from './ExerciseSubstitutionModal';
+import { ExerciseDetailModal } from './ExerciseDetailModal';
 import { calculateProgressiveOverload } from '@/services/progressiveOverload';
 import { getAssociatedBodyArea } from '@/services/exerciseSubstitution';
 import { PopulatedWorkoutExercise } from '@/database/repositories/workoutRepository';
@@ -47,6 +48,8 @@ export const ActiveWorkoutModal: React.FC = () => {
   const deleteSet = useWorkoutStore((s) => s.deleteSet);
   const openSubstitutionModal = useWorkoutStore((s) => s.openSubstitutionModal);
   const openExerciseInfo = useWorkoutStore((s) => s.openExerciseInfo);
+  const closeExerciseInfo = useWorkoutStore((s) => s.closeExerciseInfo);
+  const selectedExerciseForInfo = useWorkoutStore((s) => s.selectedExerciseForInfo);
   const addExerciseToWorkout = useWorkoutStore((s) => s.addExerciseToWorkout);
   const allExercises = useWorkoutStore((s) => s.exercises);
   const recentPain = useWorkoutStore((s) => s.recentPain);
@@ -258,6 +261,10 @@ export const ActiveWorkoutModal: React.FC = () => {
         {/* Overlays mounted directly inside active workout hierarchy */}
         <ExerciseSubstitutionModal />
         <WorkoutFinishModal />
+        <ExerciseDetailModal
+          exercise={selectedExerciseForInfo}
+          onClose={closeExerciseInfo}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -337,14 +344,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={[styles.actionIconBtn, { backgroundColor: colors.cardBorder }]}
-            onPress={onSwap}>
-            <Ionicons name="swap-horizontal" size={15} color={colors.text} />
+            style={[
+              styles.gifPillBtn,
+              {
+                backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.1)',
+                borderColor: colors.protein,
+              },
+            ]}
+            onPress={onInfo}
+            activeOpacity={0.7}>
+            <Ionicons name="videocam" size={13} color={colors.protein} />
+            <Text style={[styles.gifPillText, { color: colors.protein }]}>Form GIF</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionIconBtn, { backgroundColor: colors.cardBorder }]}
-            onPress={onInfo}>
-            <Ionicons name="information" size={15} color={colors.text} />
+            onPress={onSwap}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="swap-horizontal" size={15} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -815,6 +831,19 @@ const styles = StyleSheet.create({
   pickerItemSub: {
     fontSize: 11,
     marginTop: 1,
+  },
+  gifPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  gifPillText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   bottomFinishBtn: {
     flexDirection: 'row',

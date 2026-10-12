@@ -65,11 +65,19 @@ export default function NutritionScreen() {
     }, [loadNutritionData, selectedDate])
   );
 
-  // Group meals by meal type
-  const breakfastMeals = meals.filter((m) => m.meal_type === 'breakfast');
-  const lunchMeals = meals.filter((m) => m.meal_type === 'lunch');
-  const dinnerMeals = meals.filter((m) => m.meal_type === 'dinner');
-  const snackMeals = meals.filter((m) => m.meal_type === 'snack');
+  // Group meals safely by meal type with case-insensitivity & fallback
+  const normalizeMealType = (type?: string): 'breakfast' | 'lunch' | 'dinner' | 'snack' => {
+    const t = (type || '').toLowerCase().trim();
+    if (t.includes('break')) return 'breakfast';
+    if (t.includes('lunch')) return 'lunch';
+    if (t.includes('din')) return 'dinner';
+    return 'snack';
+  };
+
+  const breakfastMeals = meals.filter((m) => normalizeMealType(m.meal_type) === 'breakfast');
+  const lunchMeals = meals.filter((m) => normalizeMealType(m.meal_type) === 'lunch');
+  const dinnerMeals = meals.filter((m) => normalizeMealType(m.meal_type) === 'dinner');
+  const snackMeals = meals.filter((m) => normalizeMealType(m.meal_type) === 'snack');
 
   const handleOpenLogger = (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack') => {
     setActiveMealType(mealType);
@@ -210,6 +218,7 @@ export default function NutritionScreen() {
         <View style={styles.mealsSection}>
           <Text style={[styles.sectionHeading, { color: colors.textMuted }]}>
             {isToday ? "TODAY'S FOOD DIARY" : `${dateFormatted.toUpperCase()} FOOD DIARY`}
+            {meals.length > 0 ? ` (${meals.length} LOGGED)` : ''}
           </Text>
 
           <MealSectionCard

@@ -221,10 +221,18 @@ export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {
 
   try {
     // Check if one-time baseline cleanup has already been performed
-    const alreadyCleaned = db.getFirstSync<{ value: string }>(
-      'SELECT value FROM AppSettings WHERE key = ?',
+    let alreadyCleaned = db.getFirstSync<{ key: string; value: string }>(
+      'SELECT * FROM AppSettings WHERE key = ?',
       ['baseline_cleaned_day1_v1']
     );
+
+    if (!alreadyCleaned && typeof window !== 'undefined' && window.localStorage) {
+      const lsFlag = window.localStorage.getItem('sthira_baseline_cleaned_day1_v1');
+      if (lsFlag) {
+        alreadyCleaned = { key: 'baseline_cleaned_day1_v1', value: 'done' };
+      }
+    }
+
     if (alreadyCleaned) {
       // Baseline already established! Never delete user's real logged data!
       return;
@@ -294,6 +302,10 @@ export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {
       'INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)',
       ['baseline_cleaned_day1_v1', 'done', now]
     );
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('sthira_baseline_cleaned_day1_v1', 'done');
+    }
   } catch (e) {
     console.warn('cleanPastDummyDataAndSetBaseline error:', e);
   }

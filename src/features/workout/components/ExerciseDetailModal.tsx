@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Exercise } from '@/types/database';
+import { ExerciseVisualGuide } from './ExerciseVisualGuide';
 
 interface ExerciseDetailModalProps {
   exercise: Exercise | null;
@@ -53,6 +54,12 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
           </View>
 
           <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+            {/* Visual Guide with Animated GIF & Photos */}
+            <ExerciseVisualGuide
+              exerciseId={exercise.id}
+              exerciseName={exercise.name}
+            />
+
             {/* Quick Metrics */}
             <View style={[styles.metricsRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC' }]}>
               <View style={styles.metricItem}>
