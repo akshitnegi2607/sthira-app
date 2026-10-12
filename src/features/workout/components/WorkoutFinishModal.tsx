@@ -135,6 +135,53 @@ export const WorkoutFinishModal: React.FC = () => {
               </View>
             </View>
 
+            {/* Exercises Included */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                EXERCISES COMPLETED ({activeSession.exercises.length})
+              </Text>
+              <View
+                style={[
+                  styles.finishExList,
+                  {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
+                    borderColor: colors.cardBorder,
+                  },
+                ]}>
+                {activeSession.exercises.map((item, idx) => {
+                  const completedOrLogged = item.sets.filter((s) => s.is_completed || s.reps > 0);
+                  const count = completedOrLogged.length > 0 ? completedOrLogged.length : item.sets.length;
+                  const maxWeight = Math.max(...item.sets.map((s) => s.weight_kg), 0);
+
+                  return (
+                    <View
+                      key={item.workoutExercise.id}
+                      style={[
+                        styles.finishExItem,
+                        idx > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder },
+                      ]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.finishExTitle, { color: colors.text }]}>
+                          {item.exercise.name}
+                        </Text>
+                        <Text style={[styles.finishExSub, { color: colors.textMuted }]}>
+                          {item.exercise.primary_muscle} • {item.exercise.equipment}
+                        </Text>
+                      </View>
+                      <View style={styles.finishExStats}>
+                        <Text style={[styles.finishExSetsText, { color: colors.accent }]}>
+                          {count} sets
+                        </Text>
+                        <Text style={[styles.finishExWeightText, { color: colors.textMuted }]}>
+                          {maxWeight > 0 ? `${maxWeight} kg` : 'Bodyweight'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
             {/* Notes */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
@@ -382,6 +429,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     minHeight: 60,
     textAlignVertical: 'top',
+  },
+  finishExList: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  finishExItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+  },
+  finishExTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  finishExSub: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  finishExStats: {
+    alignItems: 'flex-end',
+  },
+  finishExSetsText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  finishExWeightText: {
+    fontSize: 11,
+    marginTop: 2,
   },
   painSection: {
     borderTopWidth: StyleSheet.hairlineWidth,

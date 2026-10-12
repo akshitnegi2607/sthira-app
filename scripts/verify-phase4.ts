@@ -226,7 +226,7 @@ assert(trajectory.projectedTargetDate.length > 5, `Generated target projected da
 console.log('\n[6/6] Testing SQLite Progress Repository CRUD & Goal Adjustments...');
 
 // Log new scale weight
-const testDate = '2026-10-10';
+const testDate = new Date().toISOString().split('T')[0];
 const loggedEntry = ProgressRepository.logWeight(64.2, testDate, 'Morning fasted verification weigh-in');
 assert(loggedEntry.weight_kg === 64.2, `Scale weight logged successfully: ${loggedEntry.weight_kg} kg.`);
 assert(loggedEntry.date === testDate, `Date matched: ${loggedEntry.date}.`);

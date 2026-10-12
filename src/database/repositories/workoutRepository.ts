@@ -395,7 +395,15 @@ export const WorkoutRepository = {
     const db = getDatabase();
     const now = new Date().toISOString();
 
-    // 1. Update session status
+    // 1. Auto-complete any sets that have reps > 0 for this session
+    db.runSync(
+      `UPDATE WorkoutSets SET is_completed = 1
+       WHERE workout_exercise_id IN (SELECT id FROM WorkoutExercises WHERE session_id = ?)
+       AND reps > 0`,
+      [sessionId]
+    );
+
+    // 2. Update session status
     db.runSync(
       `UPDATE WorkoutSessions SET
         status = 'completed',
@@ -413,7 +421,7 @@ export const WorkoutRepository = {
       ]
     );
 
-    // 2. Log pain if user reported discomfort
+    // 3. Log pain if user reported discomfort
     if (data.painEntry && data.painEntry.painLevel > 0) {
       this.logPainEntry({
         date: now.split('T')[0],
@@ -424,7 +432,7 @@ export const WorkoutRepository = {
       });
     }
 
-    // 3. Load full session and recent pain
+    // 4. Load full session and recent pain
     const populated = this.getPopulatedSession(sessionId);
     if (!populated) throw new Error('Session not found');
 
@@ -511,6 +519,83 @@ export const WorkoutRepository = {
       `SELECT * FROM WorkoutSessions WHERE status = 'completed' ORDER BY date DESC, created_at DESC LIMIT ?`,
       [limit]
     );
+  },
+
+  /**
+   * Retrieves past completed workout sessions fully populated with exercises, sets, volume, and reps.
+   */
+  getCompletedHistoryWithDetails(limit = 20): PopulatedSession[] {
+    const sessions = this.getCompletedHistory(limit);
+    return sessions
+      .map((s) => this.getPopulatedSession(s.id))
+      .filter((p): p is PopulatedSession => p !== null);
+  },
+
+  /**
+   * Permanently deletes a workout session and its child exercises/sets.
+   */
+  deleteSession(sessionId: string): void {
+    const db = getDatabase();
+    db.runSync('DELETE FROM WorkoutSets WHERE workout_exercise_id IN (SELECT id FROM WorkoutExercises WHERE session_id = ?)', [sessionId]);
+    db.runSync('DELETE FROM WorkoutExercises WHERE session_id = ?', [sessionId]);
+    db.runSync('DELETE FROM WorkoutSessions WHERE id = ?', [sessionId]);
+  },
+
+  /**
+   * Self-healing migration utility:
+   * 1. Marks any sets with reps > 0 in completed sessions as completed.
+   * 2. Recalculates and updates Exercises (last_weight_kg & recommended weight)
+   *    so all completed exercises from previous workouts are properly reflected.
+   */
+  healCompletedWorkoutSets(): void {
+    const db = getDatabase();
+    try {
+      db.runSync(
+        `UPDATE WorkoutSets SET is_completed = 1
+         WHERE reps > 0
+         AND (is_completed = 0 OR is_completed IS NULL)
+         AND workout_exercise_id IN (
+           SELECT we.id FROM WorkoutExercises we
+           JOIN WorkoutSessions ws ON we.session_id = ws.id
+           WHERE ws.status = 'completed'
+         )`
+      );
+
+      const completed = this.getCompletedHistory(10);
+      for (const sess of completed) {
+        const pop = this.getPopulatedSession(sess.id);
+        if (pop) {
+          for (const item of pop.exercises) {
+            const compSets = item.sets.filter((s) => s.is_completed === 1);
+            if (compSets.length > 0) {
+              const lastWeight = Math.max(...compSets.map((s) => s.weight_kg));
+              const overload = calculateProgressiveOverload({
+                exerciseId: item.exercise.id,
+                exerciseName: item.exercise.name,
+                category: item.exercise.category,
+                primaryMuscle: item.exercise.primary_muscle,
+                targetSets: item.exercise.target_sets,
+                targetRepRange: item.exercise.target_rep_range,
+                lastWeightKg: lastWeight,
+                completedSets: compSets.map((s) => ({
+                  setNumber: s.set_number,
+                  weightKg: s.weight_kg,
+                  reps: s.reps,
+                  rir: s.rir ?? null,
+                  isCompleted: true,
+                })),
+              });
+              db.runSync(
+                `UPDATE Exercises SET last_weight_kg = ?, current_recommended_weight_kg = ? WHERE id = ?`,
+                [lastWeight, overload.recommendedWeightKg, item.exercise.id]
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('healCompletedWorkoutSets error:', e);
+    }
   },
 
   /**

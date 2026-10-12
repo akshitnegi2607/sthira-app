@@ -24,6 +24,7 @@ import { useWorkoutStore } from '@/stores/useWorkoutStore';
 import { ActiveWorkoutModal } from '@/features/workout/components/ActiveWorkoutModal';
 import { ExerciseDetailModal } from '@/features/workout/components/ExerciseDetailModal';
 import { PainLoggingModal } from '@/features/workout/components/PainLoggingModal';
+import { WorkoutHistoryDetailModal } from '@/features/workout/components/WorkoutHistoryDetailModal';
 import { WorkoutPlan, Exercise } from '@/types/database';
 
 export default function WorkoutScreen() {
@@ -44,6 +45,7 @@ export default function WorkoutScreen() {
   const selectedExerciseForInfo = useWorkoutStore((s) => s.selectedExerciseForInfo);
   const closeExerciseInfo = useWorkoutStore((s) => s.closeExerciseInfo);
   const openPainModal = useWorkoutStore((s) => s.openPainModal);
+  const openHistoryModal = useWorkoutStore((s) => s.openHistoryModal);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [exerciseQuery, setExerciseQuery] = useState<string>('');
@@ -284,43 +286,109 @@ export default function WorkoutScreen() {
       {/* 4. Recent Workout History */}
       {history.length > 0 && (
         <View style={styles.section}>
-          <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>
-            RECENT COMPLETED SESSIONS
-          </Text>
+          <View style={styles.histSectionHeader}>
+            <Text style={[styles.sectionHeading, { color: colors.textSecondary, marginBottom: 0 }]}>
+              RECENT COMPLETED SESSIONS
+            </Text>
+            <View style={[styles.histCountPillWrap, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)' }]}>
+              <Text style={[styles.histCountPill, { color: colors.accent }]}>
+                {history.length} logged
+              </Text>
+            </View>
+          </View>
 
-          {history.slice(0, 3).map((sess) => {
+          {history.slice(0, 4).map((item) => {
+            const sess = item.session;
             const mins = Math.floor((sess.duration_seconds || 0) / 60);
 
             return (
-              <Card key={sess.id} style={styles.historyCard}>
-                <View style={styles.histHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.histTitle, { color: colors.text }]}>
-                      {sess.title}
-                    </Text>
-                    <Text style={[styles.histDate, { color: colors.textMuted }]}>
-                      {sess.date} • {mins > 0 ? `${mins} mins` : 'Completed'}
-                    </Text>
+              <TouchableOpacity
+                key={sess.id}
+                activeOpacity={0.85}
+                onPress={() => openHistoryModal(item)}>
+                <Card style={styles.historyCard}>
+                  <View style={styles.histHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.histTitle, { color: colors.text }]}>
+                        {sess.title}
+                      </Text>
+                      <Text style={[styles.histDate, { color: colors.textMuted }]}>
+                        {sess.date} • {mins > 0 ? `${mins} mins` : 'Completed'}
+                      </Text>
+                    </View>
+                    {sess.difficulty_perceived && (
+                      <View
+                        style={[
+                          styles.diffBadge,
+                          {
+                            backgroundColor:
+                              sess.difficulty_perceived === 'Very hard' || sess.difficulty_perceived === 'Hard'
+                                ? 'rgba(245, 158, 11, 0.12)'
+                                : 'rgba(16, 185, 129, 0.12)',
+                          },
+                        ]}>
+                        <Text
+                          style={[
+                            styles.diffBadgeText,
+                            {
+                              color:
+                                sess.difficulty_perceived === 'Very hard' || sess.difficulty_perceived === 'Hard'
+                                  ? colors.statusAttention
+                                  : colors.accent,
+                            },
+                          ]}>
+                          {sess.difficulty_perceived}
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                  {sess.difficulty_perceived && (
-                    <View
-                      style={[
-                        styles.diffBadge,
-                        { backgroundColor: 'rgba(16, 185, 129, 0.12)' },
-                      ]}>
-                      <Text style={[styles.diffBadgeText, { color: colors.accent }]}>
-                        {sess.difficulty_perceived}
+
+                  {/* Volume and Sets Row */}
+                  <View style={styles.histMetricsRow}>
+                    <View style={styles.histMetricChip}>
+                      <Ionicons name="barbell-outline" size={13} color={colors.accent} />
+                      <Text style={[styles.histMetricText, { color: colors.text }]}>
+                        {item.totalVolumeKg > 0 ? `${item.totalVolumeKg.toLocaleString()} kg` : 'Bodyweight'}
+                      </Text>
+                    </View>
+                    <View style={styles.histMetricChip}>
+                      <Ionicons name="layers-outline" size={13} color={colors.textMuted} />
+                      <Text style={[styles.histMetricText, { color: colors.text }]}>
+                        {item.completedSetsCount} sets
+                      </Text>
+                    </View>
+                    <View style={styles.histMetricChip}>
+                      <Ionicons name="fitness-outline" size={13} color={colors.textMuted} />
+                      <Text style={[styles.histMetricText, { color: colors.text }]}>
+                        {item.exercises.length} exercises
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Exercises Tags */}
+                  {item.exercises.length > 0 && (
+                    <View style={styles.histExercisesRow}>
+                      <Text style={[styles.histExerciseNames, { color: colors.textMuted }]} numberOfLines={1}>
+                        {item.exercises.map((e) => e.exercise.name).join(' • ')}
                       </Text>
                     </View>
                   )}
-                </View>
 
-                {sess.notes ? (
-                  <Text style={[styles.histNotes, { color: colors.textMuted }]}>
-                    "{sess.notes}"
-                  </Text>
-                ) : null}
-              </Card>
+                  {sess.notes ? (
+                    <Text style={[styles.histNotes, { color: colors.textMuted }]} numberOfLines={2}>
+                      "{sess.notes}"
+                    </Text>
+                  ) : null}
+
+                  {/* Tap to View Details CTA */}
+                  <View style={[styles.histFooter, { borderTopColor: colors.cardBorder }]}>
+                    <Text style={[styles.histFooterCta, { color: colors.accent }]}>
+                      View full workout details & sets
+                    </Text>
+                    <Ionicons name="chevron-forward" size={13} color={colors.accent} />
+                  </View>
+                </Card>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -443,6 +511,7 @@ export default function WorkoutScreen() {
         onClose={closeExerciseInfo}
       />
       <PainLoggingModal />
+      <WorkoutHistoryDetailModal />
     </ScrollView>
   );
 }
@@ -660,6 +729,61 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     marginTop: Spacing.xs,
+  },
+  histSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+  },
+  histCountPillWrap: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  histCountPill: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  histMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  histMetricChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  histMetricText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  histExercisesRow: {
+    marginTop: 6,
+  },
+  histExerciseNames: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  histFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.sm,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  histFooterCta: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   libraryHeader: {
     flexDirection: 'row',

@@ -18,7 +18,7 @@ interface WorkoutStoreState {
   plans: WorkoutPlan[];
   exercises: Exercise[];
   todayPlan: WorkoutPlan | null;
-  history: WorkoutSession[];
+  history: PopulatedSession[];
   recentPain: PainEntry[];
   isLoading: boolean;
 
@@ -40,6 +40,8 @@ interface WorkoutStoreState {
   selectedExerciseForInfo: Exercise | null;
   isFinishModalOpen: boolean;
   isPainModalOpen: boolean;
+  selectedHistorySession: PopulatedSession | null;
+  isHistoryModalOpen: boolean;
 
   // Actions
   init: () => void;
@@ -84,6 +86,9 @@ interface WorkoutStoreState {
   closeFinishModal: () => void;
   openPainModal: () => void;
   closePainModal: () => void;
+  openHistoryModal: (session: PopulatedSession) => void;
+  closeHistoryModal: () => void;
+  deleteHistorySession: (sessionId: string) => void;
 }
 
 export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
@@ -109,6 +114,8 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
   selectedExerciseForInfo: null,
   isFinishModalOpen: false,
   isPainModalOpen: false,
+  selectedHistorySession: null,
+  isHistoryModalOpen: false,
 
   init: () => {
     get().loadData();
@@ -119,7 +126,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       const plans = WorkoutRepository.getAllPlans();
       const exercises = WorkoutRepository.getAllExercises();
       const todayPlan = WorkoutRepository.getTodayPlan();
-      const history = WorkoutRepository.getCompletedHistory(15);
+      const history = WorkoutRepository.getCompletedHistoryWithDetails(20);
       const recentPain = WorkoutRepository.getRecentPainEntries(14);
       const activeSession = WorkoutRepository.getActiveSession();
 
@@ -226,7 +233,11 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
   },
 
   updateSet: (setId, data) => {
-    WorkoutRepository.updateSet(setId, data);
+    const enrichedData = { ...data };
+    if (enrichedData.reps !== undefined && enrichedData.reps > 0 && enrichedData.is_completed === undefined) {
+      enrichedData.is_completed = 1;
+    }
+    WorkoutRepository.updateSet(setId, enrichedData);
     const active = get().activeSession;
     if (active) {
       const refreshed = WorkoutRepository.getPopulatedSession(active.session.id);
@@ -369,4 +380,29 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
 
   openPainModal: () => set({ isPainModalOpen: true }),
   closePainModal: () => set({ isPainModalOpen: false }),
+
+  openHistoryModal: (session) =>
+    set({
+      selectedHistorySession: session,
+      isHistoryModalOpen: true,
+    }),
+  closeHistoryModal: () =>
+    set({
+      selectedHistorySession: null,
+      isHistoryModalOpen: false,
+    }),
+
+  deleteHistorySession: (sessionId) => {
+    WorkoutRepository.deleteSession(sessionId);
+    set({
+      selectedHistorySession: null,
+      isHistoryModalOpen: false,
+    });
+    get().loadData();
+    try {
+      useDashboardStore.getState().loadDashboard();
+    } catch (e) {
+      // Ignore
+    }
+  },
 }));

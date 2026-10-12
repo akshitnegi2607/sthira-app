@@ -4,6 +4,7 @@ import { INITIAL_USER_PROFILE, INITIAL_GOALS } from '../constants/initialProfile
 import { INITIAL_EXERCISES, INITIAL_WORKOUT_PLANS } from '../constants/initialWorkouts';
 import { INITIAL_FOOD_DATABASE } from '../constants/initialFoods';
 import { INITIAL_CUISINE_RECIPES } from '../constants/initialRecipes';
+import { WorkoutRepository } from './repositories/workoutRepository';
 
 export function runMigrations() {
   const db = getDatabase();
@@ -492,4 +493,7 @@ export function runMigrations() {
       }
     }
   }
+
+  // 12. Run self-healing check on completed workout sets and progressions
+  WorkoutRepository.healCompletedWorkoutSets();
 }
