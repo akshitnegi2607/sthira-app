@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/Button';
 import { analyzeMeal } from '@/services/mealParser';
 import { MealRepository } from '@/database/repositories/mealRepository';
 import { useDashboardStore } from '@/stores/useDashboardStore';
+import { useNutritionStore } from '@/stores/useNutritionStore';
+import { getTodayDateString } from '@/utils/date';
 
 export type QuickLogType = 'food' | 'weight' | 'workout' | 'activity' | 'water' | 'journal' | null;
 
@@ -54,7 +56,7 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
       }
     } else if (type === 'food') {
       if (inputValue.trim()) {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getTodayDateString();
         const parsed = analyzeMeal(inputValue.trim(), 'snack');
         if (parsed.items.length > 0) {
           MealRepository.createMeal(
@@ -82,6 +84,7 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
             }))
           );
           useDashboardStore.getState().loadDashboard();
+          useNutritionStore.getState().loadNutritionData(todayStr);
         }
       }
     }

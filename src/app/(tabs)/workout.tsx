@@ -26,6 +26,7 @@ import { ExerciseDetailModal } from '@/features/workout/components/ExerciseDetai
 import { PainLoggingModal } from '@/features/workout/components/PainLoggingModal';
 import { WorkoutHistoryDetailModal } from '@/features/workout/components/WorkoutHistoryDetailModal';
 import { WorkoutPlan, Exercise } from '@/types/database';
+import { getTodayDateString } from '@/utils/date';
 
 export default function WorkoutScreen() {
   const { colors, isDark } = useAppTheme();
@@ -56,6 +57,19 @@ export default function WorkoutScreen() {
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const todayDayIndex = new Date().getDay();
+  const todayStr = getTodayDateString();
+
+  // Find if today's session has already been completed
+  const todayCompleted = history.find(
+    (h) => h.session.date === todayStr && h.session.status === 'completed'
+  );
+
+  // Monday-first week order: Mon(1)->1, Tue(2)->2, Wed(3)->3, Thu(4)->4, Fri(5)->5, Sat(6)->6, Sun(0)->7
+  const toWeekOrder = (d: number | null | undefined) => {
+    if (d === null || d === undefined) return 0;
+    return d === 0 ? 7 : d;
+  };
+  const todayOrder = toWeekOrder(todayDayIndex);
 
   const categories = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
 
@@ -76,7 +90,7 @@ export default function WorkoutScreen() {
       style={[styles.container, { backgroundColor: 'transparent' }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
-      {/* 1. Today's Training Banner / Active Workout Card */}
+      {/* 1. Today's Training Banner / Active Workout Card / Completed Card */}
       {isSessionActive && activeSession ? (
         <Card
           style={[
@@ -114,6 +128,89 @@ export default function WorkoutScreen() {
             <Ionicons name="barbell-outline" size={18} color="#FFFFFF" />
             <Text style={styles.resumeBtnText}>Open Live Session</Text>
           </TouchableOpacity>
+        </Card>
+      ) : todayCompleted ? (
+        <Card
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)',
+              borderColor: colors.accent,
+              borderWidth: 1.5,
+            },
+          ]}>
+          <View style={styles.heroHeader}>
+            <View style={[styles.dayPill, { backgroundColor: 'rgba(16, 185, 129, 0.18)' }]}>
+              <Ionicons name="checkmark-circle" size={13} color={colors.accent} style={{ marginRight: 4 }} />
+              <Text style={[styles.dayPillText, { color: colors.accent }]}>
+                TODAY'S SESSION COMPLETED ✓
+              </Text>
+            </View>
+            {todayCompleted.session.difficulty_perceived ? (
+              <View
+                style={[
+                  styles.diffBadge,
+                  {
+                    backgroundColor:
+                      todayCompleted.session.difficulty_perceived === 'Very hard' ||
+                      todayCompleted.session.difficulty_perceived === 'Hard'
+                        ? 'rgba(245, 158, 11, 0.16)'
+                        : 'rgba(16, 185, 129, 0.16)',
+                  },
+                ]}>
+                <Text
+                  style={[
+                    styles.diffBadgeText,
+                    {
+                      color:
+                        todayCompleted.session.difficulty_perceived === 'Very hard' ||
+                        todayCompleted.session.difficulty_perceived === 'Hard'
+                          ? colors.statusAttention
+                          : colors.accent,
+                    },
+                  ]}>
+                  {todayCompleted.session.difficulty_perceived}
+                </Text>
+              </View>
+            ) : (
+              <Ionicons name="trophy-outline" size={20} color={colors.accent} />
+            )}
+          </View>
+
+          <Text style={[styles.heroTitle, { color: colors.text }]}>
+            {todayCompleted.session.title}
+          </Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textMuted }]}>
+            {todayCompleted.completedSetsCount} sets logged •{' '}
+            {todayCompleted.totalVolumeKg.toLocaleString()} kg lifted •{' '}
+            {Math.floor((todayCompleted.session.duration_seconds || 0) / 60)}m duration
+          </Text>
+
+          <View style={styles.heroActionsRow}>
+            <TouchableOpacity
+              style={[styles.startWorkoutBtn, { backgroundColor: colors.accent, flex: 1 }]}
+              onPress={() => openHistoryModal(todayCompleted)}>
+              <Ionicons name="eye-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.startWorkoutText}>View Completed Summary</Text>
+            </TouchableOpacity>
+
+            {todayPlan && (
+              <TouchableOpacity
+                style={[
+                  styles.secondaryActionBtn,
+                  {
+                    borderColor: colors.cardBorder,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+                  },
+                ]}
+                onPress={() => startWorkout(todayPlan.id, `${todayPlan.name} (Extra)`)}>
+                <Ionicons name="add" size={15} color={colors.textSecondary} />
+                <Text style={[styles.secondaryActionText, { color: colors.textSecondary }]}>
+                  Extra
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </Card>
       ) : todayPlan ? (
         <Card style={styles.heroCard}>
@@ -212,7 +309,10 @@ export default function WorkoutScreen() {
             plan.day_of_week !== null && plan.day_of_week !== undefined
               ? days[plan.day_of_week]
               : '';
-          const isToday = plan.day_of_week === todayDayIndex;
+          const planOrder = toWeekOrder(plan.day_of_week);
+          const isPlanToday = planOrder === todayOrder;
+          const isPastDay = planOrder < todayOrder;
+          const isFutureDay = planOrder > todayOrder;
           const isRest = plan.name.toLowerCase().includes('rest');
 
           return (
@@ -220,14 +320,15 @@ export default function WorkoutScreen() {
               key={plan.id}
               style={[
                 styles.scheduleCard,
-                isToday && { borderColor: colors.accent, borderWidth: 1.5 },
+                isPlanToday && { borderColor: colors.accent, borderWidth: 1.5 },
+                (isPastDay || isFutureDay) && { opacity: 0.8 },
               ]}>
               <View style={styles.schedDayRow}>
                 <View
                   style={[
                     styles.schedBadge,
                     {
-                      backgroundColor: isToday
+                      backgroundColor: isPlanToday
                         ? colors.accent
                         : isDark
                         ? 'rgba(255,255,255,0.05)'
@@ -237,13 +338,16 @@ export default function WorkoutScreen() {
                   <Text
                     style={[
                       styles.schedBadgeText,
-                      { color: isToday ? '#FFFFFF' : colors.textMuted },
+                      { color: isPlanToday ? '#FFFFFF' : colors.textMuted },
                     ]}>
                     {dayLabel}
                   </Text>
                 </View>
-                {isToday && (
+                {isPlanToday && (
                   <Text style={[styles.todayTag, { color: colors.accent }]}>TODAY</Text>
+                )}
+                {isFutureDay && (
+                  <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
                 )}
               </View>
 
@@ -256,27 +360,66 @@ export default function WorkoutScreen() {
                 {plan.description}
               </Text>
 
-              {!isRest && (
-                <TouchableOpacity
-                  style={[
-                    styles.schedStartBtn,
-                    {
-                      backgroundColor: isToday
-                        ? colors.accent
-                        : isDark
-                        ? 'rgba(255,255,255,0.06)'
-                        : '#F1F5F9',
-                    },
-                  ]}
-                  onPress={() => startWorkout(plan.id)}>
-                  <Text
+              {/* Action Button based on day status */}
+              {isPlanToday ? (
+                todayCompleted ? (
+                  <TouchableOpacity
                     style={[
-                      styles.schedStartText,
-                      { color: isToday ? '#FFFFFF' : colors.text },
+                      styles.schedCompletedBtn,
+                      {
+                        backgroundColor: isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.12)',
+                        borderColor: colors.accent,
+                      },
+                    ]}
+                    onPress={() => openHistoryModal(todayCompleted)}>
+                    <Ionicons name="checkmark-circle" size={13} color={colors.accent} />
+                    <Text style={[styles.schedCompletedText, { color: colors.accent }]}>
+                      Completed ✓
+                    </Text>
+                  </TouchableOpacity>
+                ) : isRest ? (
+                  <View
+                    style={[
+                      styles.schedLockedBtn,
+                      { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9' },
                     ]}>
-                    Start Session
+                    <Ionicons name="bed-outline" size={13} color={colors.textMuted} />
+                    <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
+                      Rest Day
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.schedStartBtn, { backgroundColor: colors.accent }]}
+                    onPress={() => startWorkout(plan.id)}>
+                    <Ionicons name="play" size={13} color="#FFFFFF" />
+                    <Text style={[styles.schedStartText, { color: '#FFFFFF' }]}>
+                      Start Session
+                    </Text>
+                  </TouchableOpacity>
+                )
+              ) : isPastDay ? (
+                <View
+                  style={[
+                    styles.schedLockedBtn,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' },
+                  ]}>
+                  <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                  <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
+                    Past Day
                   </Text>
-                </TouchableOpacity>
+                </View>
+              ) : (
+                <View
+                  style={[
+                    styles.schedLockedBtn,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' },
+                  ]}>
+                  <Ionicons name="lock-closed-outline" size={12} color={colors.textMuted} />
+                  <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
+                    Scheduled • {dayLabel}
+                  </Text>
+                </View>
               )}
             </Card>
           );
@@ -694,10 +837,54 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     alignItems: 'center',
     marginTop: Spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
   },
   schedStartText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  schedCompletedBtn: {
+    paddingVertical: 7,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+    borderWidth: 1,
+  },
+  schedCompletedText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  schedLockedBtn: {
+    paddingVertical: 7,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  schedLockedText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  secondaryActionBtn: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  secondaryActionText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   historyCard: {
     padding: Spacing.md,

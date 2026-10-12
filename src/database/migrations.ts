@@ -5,6 +5,7 @@ import { INITIAL_EXERCISES, INITIAL_WORKOUT_PLANS } from '../constants/initialWo
 import { INITIAL_FOOD_DATABASE } from '../constants/initialFoods';
 import { INITIAL_CUISINE_RECIPES } from '../constants/initialRecipes';
 import { WorkoutRepository } from './repositories/workoutRepository';
+import { getTodayDateString } from '../utils/date';
 
 export function runMigrations() {
   const db = getDatabase();
@@ -211,13 +212,24 @@ export function runMigrations() {
 /**
  * Ensures the database has zero fake historical data before today
  * and establishes today as the clean official Day 1 with Jay's scale weight (65.8 kg).
+ * Guarded by AppSettings so it runs once and never deletes real logged data afterwards.
  */
 export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {
   const db = getDatabase();
   const now = new Date().toISOString();
-  const todayStr = now.split('T')[0];
+  const todayStr = getTodayDateString();
 
   try {
+    // Check if one-time baseline cleanup has already been performed
+    const alreadyCleaned = db.getFirstSync<{ value: string }>(
+      'SELECT value FROM AppSettings WHERE key = ?',
+      ['baseline_cleaned_day1_v1']
+    );
+    if (alreadyCleaned) {
+      // Baseline already established! Never delete user's real logged data!
+      return;
+    }
+
     // 1. Wipe all mock past entries before today
     db.runSync('DELETE FROM WeightEntries WHERE date < ?', [todayStr]);
     db.runSync('DELETE FROM DailyLogs WHERE date < ?', [todayStr]);
@@ -276,7 +288,14 @@ export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {
         [`log_${todayStr}`, todayStr, startingWeightKg, now, now]
       );
     }
+
+    // Mark baseline as initialized in AppSettings so this never runs again
+    db.runSync(
+      'INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)',
+      ['baseline_cleaned_day1_v1', 'done', now]
+    );
   } catch (e) {
     console.warn('cleanPastDummyDataAndSetBaseline error:', e);
   }
 }
+

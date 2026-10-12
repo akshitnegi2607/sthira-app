@@ -10,11 +10,13 @@ import { DailyLogsRepository } from '@/database/repositories/dailyLogsRepository
 import { CuisineRecipe, NutritionEstimate, DailyLog } from '@/types/database';
 import { analyzeMeal, MealAnalysisResult } from '@/services/mealParser';
 import { useDashboardStore } from './useDashboardStore';
+import { getTodayDateString } from '@/utils/date';
 
 interface NutritionState {
   selectedDate: string;
   meals: MealEntryWithEstimates[];
   recipes: CuisineRecipe[];
+  customRecipes: CuisineRecipe[];
   currentLog: DailyLog | null;
   selectedCuisine: string;
   filterProteinMin: number;
@@ -35,6 +37,17 @@ interface NutritionState {
     recipe: CuisineRecipe,
     mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
   ) => void;
+  createCustomRecipe: (data: {
+    title: string;
+    description?: string;
+    estimated_calories: number;
+    estimated_protein: number;
+    estimated_carbs: number;
+    estimated_fat: number;
+    ingredients: { item: string; amount: string; calories?: number; protein?: number }[];
+    instructions?: string;
+  }) => CuisineRecipe;
+  deleteCustomRecipe: (id: string) => void;
   loadRecipes: () => void;
   setSelectedCuisine: (cuisine: string) => void;
   setFilters: (filters: { minProtein?: number; maxCalories?: number; query?: string }) => void;
@@ -45,12 +58,11 @@ interface NutritionState {
   clearAnalysis: () => void;
 }
 
-const getTodayDateStr = () => new Date().toISOString().split('T')[0];
-
 export const useNutritionStore = create<NutritionState>((set, get) => ({
-  selectedDate: getTodayDateStr(),
+  selectedDate: getTodayDateString(),
   meals: [],
   recipes: [],
+  customRecipes: [],
   currentLog: null,
   selectedCuisine: 'All',
   filterProteinMin: 0,
@@ -71,8 +83,9 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     try {
       const meals = MealRepository.getMealsByDate(targetDate);
       const recipes = RecipeRepository.getAllRecipes();
+      const customRecipes = RecipeRepository.getCustomRecipes();
       const currentLog = DailyLogsRepository.getOrCreateLog(targetDate);
-      set({ meals, recipes, currentLog, isLoading: false });
+      set({ meals, recipes, customRecipes, currentLog, isLoading: false });
     } catch (e) {
       console.warn('Failed to load nutrition data from SQLite', e);
       set({ isLoading: false });
@@ -82,6 +95,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   logMeal: (mealData, items) => {
     try {
       MealRepository.createMeal(mealData, items);
+      set({ selectedDate: mealData.date });
       get().loadNutritionData(mealData.date);
       // Synchronize dashboard store
       useDashboardStore.getState().loadDashboard();
@@ -133,28 +147,62 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       is_verified_by_user: 1,
     };
 
-    let itemsJson: { item: string; amount: string }[] = [];
+    let itemsJson: { item: string; amount: string; calories?: number; protein?: number }[] = [];
     try {
       itemsJson = JSON.parse(recipe.ingredients_json);
     } catch {
       itemsJson = [];
     }
 
-    const items: CreateEstimateInput[] = [
-      {
-        food_name: recipe.title,
-        quantity: 1,
-        unit: 'serving',
-        calories_estimated: recipe.estimated_calories,
-        protein_estimated: recipe.estimated_protein,
-        carbs_estimated: recipe.estimated_carbs,
-        fat_estimated: recipe.estimated_fat,
-        confidence_score: 'high',
-        clarification_needed: 0,
-      },
-    ];
+    const items: CreateEstimateInput[] =
+      itemsJson.length > 0
+        ? itemsJson.map((ing) => ({
+            food_name: ing.item,
+            quantity: 1,
+            unit: ing.amount,
+            calories_estimated:
+              ing.calories !== undefined
+                ? ing.calories
+                : Math.round(recipe.estimated_calories / itemsJson.length),
+            protein_estimated:
+              ing.protein !== undefined
+                ? ing.protein
+                : Math.round((recipe.estimated_protein / itemsJson.length) * 10) / 10,
+            carbs_estimated: Math.round((recipe.estimated_carbs / itemsJson.length) * 10) / 10,
+            fat_estimated: Math.round((recipe.estimated_fat / itemsJson.length) * 10) / 10,
+            confidence_score: 'high',
+            clarification_needed: 0,
+          }))
+        : [
+            {
+              food_name: recipe.title,
+              quantity: 1,
+              unit: 'serving',
+              calories_estimated: recipe.estimated_calories,
+              protein_estimated: recipe.estimated_protein,
+              carbs_estimated: recipe.estimated_carbs,
+              fat_estimated: recipe.estimated_fat,
+              confidence_score: 'high',
+              clarification_needed: 0,
+            },
+          ];
 
     get().logMeal(mealData, items);
+  },
+
+  createCustomRecipe: (data) => {
+    const created = RecipeRepository.createCustomRecipe(data);
+    const customRecipes = RecipeRepository.getCustomRecipes();
+    const recipes = RecipeRepository.getAllRecipes();
+    set({ customRecipes, recipes });
+    return created;
+  },
+
+  deleteCustomRecipe: (id) => {
+    RecipeRepository.deleteRecipe(id);
+    const customRecipes = RecipeRepository.getCustomRecipes();
+    const recipes = RecipeRepository.getAllRecipes();
+    set({ customRecipes, recipes });
   },
 
   loadRecipes: () => {

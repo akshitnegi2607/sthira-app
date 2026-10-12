@@ -16,6 +16,7 @@ import {
 import { INITIAL_WORKOUT_PLANS } from '../../constants/initialWorkouts';
 import { calculateProgressiveOverload, parseRepRange } from '../../services/progressiveOverload';
 import { getAssociatedBodyArea } from '../../services/exerciseSubstitution';
+import { getTodayDateString } from '../../utils/date';
 
 export interface PopulatedSet extends WorkoutSet {}
 
@@ -182,7 +183,7 @@ export const WorkoutRepository = {
   }): PopulatedSession {
     const db = getDatabase();
     const now = new Date().toISOString();
-    const todayStr = now.split('T')[0];
+    const todayStr = getTodayDateString();
     const sessionId = `sess_${Date.now()}`;
 
     db.runSync(
@@ -424,7 +425,7 @@ export const WorkoutRepository = {
     // 3. Log pain if user reported discomfort
     if (data.painEntry && data.painEntry.painLevel > 0) {
       this.logPainEntry({
-        date: now.split('T')[0],
+        date: getTodayDateString(),
         body_area: data.painEntry.bodyArea,
         pain_level: data.painEntry.painLevel,
         activity_context: 'Post-workout log',

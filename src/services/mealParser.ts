@@ -322,7 +322,7 @@ const FOOD_RULES: FoodAliasMap[] = [
   {
     foodId: 'food_rolled_oats',
     canonicalName: 'Rolled Oats (Dry)',
-    aliases: ['oats', 'rolled oats', 'oatmeal'],
+    aliases: ['oats', 'rolled oats', 'oatmeal', 'quick oats'],
     defaultUnit: 'g',
     defaultQty: 40,
     baseCalories: 150,
@@ -330,6 +330,150 @@ const FOOD_RULES: FoodAliasMap[] = [
     baseCarbs: 27.0,
     baseFat: 2.5,
     baseServingGrams: 40,
+  },
+  {
+    foodId: 'food_whey_protein',
+    canonicalName: 'Whey Protein Powder',
+    aliases: ['whey', 'whey protein', 'protein powder', 'plant protein', 'isolate', 'protein shake'],
+    defaultUnit: 'scoop',
+    defaultQty: 1,
+    baseCalories: 120,
+    baseProtein: 24.0,
+    baseCarbs: 2.0,
+    baseFat: 1.5,
+    baseServingGrams: 30,
+  },
+  {
+    foodId: 'food_milk_toned',
+    canonicalName: 'Milk (Cow / Toned)',
+    aliases: ['milk', 'toned milk', 'cow milk', 'whole milk', 'doodh'],
+    defaultUnit: 'ml',
+    defaultQty: 200,
+    baseCalories: 125,
+    baseProtein: 6.5,
+    baseCarbs: 9.5,
+    baseFat: 6.0,
+    baseServingGrams: 200,
+  },
+  {
+    foodId: 'food_almond_milk',
+    canonicalName: 'Almond Milk (Unsweetened)',
+    aliases: ['almond milk', 'soy milk', 'oat milk'],
+    defaultUnit: 'ml',
+    defaultQty: 200,
+    baseCalories: 60,
+    baseProtein: 3.0,
+    baseCarbs: 3.0,
+    baseFat: 3.5,
+    baseServingGrams: 200,
+  },
+  {
+    foodId: 'food_ghee',
+    canonicalName: 'Pure Desi Ghee / Butter',
+    aliases: ['ghee', 'desi ghee', 'butter', 'makhan', 'olive oil'],
+    defaultUnit: 'tsp',
+    defaultQty: 1,
+    baseCalories: 45,
+    baseProtein: 0.0,
+    baseCarbs: 0.0,
+    baseFat: 5.0,
+    baseServingGrams: 5,
+  },
+  {
+    foodId: 'food_almonds_nuts',
+    canonicalName: 'Almonds & Nuts (Raw)',
+    aliases: ['almonds', 'almond', 'badam', 'walnuts', 'cashews', 'mixed nuts'],
+    defaultUnit: 'piece',
+    defaultQty: 10,
+    baseCalories: 70,
+    baseProtein: 2.5,
+    baseCarbs: 2.5,
+    baseFat: 6.0,
+    baseServingGrams: 12,
+  },
+  {
+    foodId: 'food_chia_seeds',
+    canonicalName: 'Chia Seeds',
+    aliases: ['chia seeds', 'chia seed', 'flax seeds', 'flaxseed'],
+    defaultUnit: 'tbsp',
+    defaultQty: 1,
+    baseCalories: 60,
+    baseProtein: 2.0,
+    baseCarbs: 5.0,
+    baseFat: 4.0,
+    baseServingGrams: 12,
+  },
+  {
+    foodId: 'food_bread_toast',
+    canonicalName: 'Whole Wheat Bread / Toast',
+    aliases: ['bread', 'toast', 'whole wheat bread', 'brown bread', 'multigrain bread', 'slice bread'],
+    defaultUnit: 'slice',
+    defaultQty: 2,
+    baseCalories: 150,
+    baseProtein: 7.0,
+    baseCarbs: 28.0,
+    baseFat: 2.0,
+    baseServingGrams: 60,
+  },
+  {
+    foodId: 'food_paneer_bhurji',
+    canonicalName: 'Spiced Paneer Bhurji',
+    aliases: ['paneer bhurji', 'paneer scramble', 'scrambled paneer'],
+    defaultUnit: 'g',
+    defaultQty: 100,
+    baseCalories: 285,
+    baseProtein: 18.0,
+    baseCarbs: 5.0,
+    baseFat: 22.0,
+    baseServingGrams: 100,
+  },
+  {
+    foodId: 'food_khichdi',
+    canonicalName: 'Moong Dal Khichdi',
+    aliases: ['khichdi', 'dal khichdi', 'moong dal khichdi', 'kichdi'],
+    defaultUnit: 'bowl',
+    defaultQty: 1,
+    baseCalories: 275,
+    baseProtein: 9.0,
+    baseCarbs: 45.0,
+    baseFat: 6.0,
+    baseServingGrams: 250,
+  },
+  {
+    foodId: 'food_apple',
+    canonicalName: 'Apple (Fresh Medium)',
+    aliases: ['apple', 'apples', 'seb'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 95,
+    baseProtein: 0.5,
+    baseCarbs: 25.0,
+    baseFat: 0.3,
+    baseServingGrams: 180,
+  },
+  {
+    foodId: 'food_tea_chai',
+    canonicalName: 'Indian Masala Chai / Milk Tea',
+    aliases: ['chai', 'tea', 'masala chai', 'milk tea'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 75,
+    baseProtein: 2.0,
+    baseCarbs: 9.0,
+    baseFat: 3.0,
+    baseServingGrams: 150,
+  },
+  {
+    foodId: 'food_black_coffee',
+    canonicalName: 'Black Coffee (Espresso / Americano)',
+    aliases: ['coffee', 'black coffee', 'espresso', 'americano'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 5,
+    baseProtein: 0.3,
+    baseCarbs: 0.5,
+    baseFat: 0.0,
+    baseServingGrams: 200,
   },
 ];
 
@@ -439,8 +583,8 @@ function parsePhrase(phrase: string, index: number): ParsedItemResult {
   let unit: string = matchedRule ? matchedRule.defaultUnit : 'serving';
   let hasExplicitQuantity = false;
 
-  // Pattern: (\d+(?:\.\d+)?|\d+\/\d+|one|two|three|four|five|half|a|an)\s*(g|gm|gms|gram|grams|cup|cups|katori|katoris|piece|pieces|slice|slices|tbsp|tsp|plate|plates|ml)?
-  const qtyRegex = /(?:^|\s)(\d+(?:\.\d+)?|\d+\/\d+|one|two|three|four|five|half|quarter|a|an)\s*(g|gm|gms|gram|grams|cup|cups|katori|katoris|piece|pieces|slice|slices|tbsp|tablespoon|tsp|teaspoon|plate|plates|ml)?(?:\s|$)/i;
+  // Pattern: (\d+(?:\.\d+)?|\d+\/\d+|one|two|three|four|five|half|a|an)\s*(g|gm|gms|gram|grams|cup|cups|katori|katoris|piece|pieces|slice|slices|tbsp|tsp|plate|plates|ml|scoop|scoops|bowl|bowls)?
+  const qtyRegex = /(?:^|\s)(\d+(?:\.\d+)?|\d+\/\d+|one|two|three|four|five|half|quarter|a|an)\s*(g|gm|gms|gram|grams|cup|cups|katori|katoris|piece|pieces|slice|slices|tbsp|tablespoon|tsp|teaspoon|plate|plates|ml|scoop|scoops|bowl|bowls)?(?:\s|$)/i;
   const match = lower.match(qtyRegex);
 
   if (match) {
@@ -459,6 +603,8 @@ function parsePhrase(phrase: string, index: number): ParsedItemResult {
       else if (['tbsp', 'tablespoon'].includes(rawUnit)) unit = 'tbsp';
       else if (['tsp', 'teaspoon'].includes(rawUnit)) unit = 'tsp';
       else if (['plate', 'plates'].includes(rawUnit)) unit = 'plate';
+      else if (['scoop', 'scoops'].includes(rawUnit)) unit = 'scoop';
+      else if (['bowl', 'bowls'].includes(rawUnit)) unit = 'bowl';
       else if (rawUnit === 'ml') unit = 'ml';
     }
   }

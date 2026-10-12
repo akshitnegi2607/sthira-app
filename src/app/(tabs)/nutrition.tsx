@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { useProfileStore } from '@/stores/useProfileStore';
@@ -18,7 +19,10 @@ import { MealSectionCard } from '@/features/nutrition/components/MealSectionCard
 import { NaturalLanguageLoggerModal } from '@/features/nutrition/components/NaturalLanguageLoggerModal';
 import { ClarificationModal } from '@/features/nutrition/components/ClarificationModal';
 import { CuisineExplorationSection } from '@/features/nutrition/components/CuisineExplorationSection';
+import { SavedCustomMealsSection } from '@/features/nutrition/components/SavedCustomMealsSection';
+import { CustomMealModal } from '@/features/nutrition/components/CustomMealModal';
 import { NutritionEstimate } from '@/types/database';
+import { getTodayDateString, shiftDateString, formatDateLabel } from '@/utils/date';
 
 export default function NutritionScreen() {
   const { colors, isDark } = useAppTheme();
@@ -29,6 +33,7 @@ export default function NutritionScreen() {
     selectedDate,
     meals,
     recipes,
+    customRecipes,
     selectedCuisine,
     isLoading,
     setSelectedDate,
@@ -37,10 +42,13 @@ export default function NutritionScreen() {
     deleteMeal,
     updateEstimate,
     logRecipeAsMeal,
+    createCustomRecipe,
+    deleteCustomRecipe,
     setSelectedCuisine,
   } = useNutritionStore();
 
   const [loggerModalVisible, setLoggerModalVisible] = useState(false);
+  const [customMealModalVisible, setCustomMealModalVisible] = useState(false);
   const [activeMealType, setActiveMealType] = useState<
     'breakfast' | 'lunch' | 'dinner' | 'snack'
   >('lunch');
@@ -50,6 +58,12 @@ export default function NutritionScreen() {
   useEffect(() => {
     loadNutritionData();
   }, [loadNutritionData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNutritionData(selectedDate);
+    }, [loadNutritionData, selectedDate])
+  );
 
   // Group meals by meal type
   const breakfastMeals = meals.filter((m) => m.meal_type === 'breakfast');
@@ -63,18 +77,12 @@ export default function NutritionScreen() {
   };
 
   const handleDateShift = (direction: 'prev' | 'next') => {
-    const current = new Date(selectedDate);
-    current.setDate(current.getDate() + (direction === 'next' ? 1 : -1));
-    const newDateStr = current.toISOString().split('T')[0];
+    const newDateStr = shiftDateString(selectedDate, direction === 'next' ? 1 : -1);
     setSelectedDate(newDateStr);
   };
 
-  const isToday = selectedDate === new Date().toISOString().split('T')[0];
-  const dateFormatted = new Date(selectedDate).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
+  const isToday = selectedDate === getTodayDateString();
+  const dateFormatted = formatDateLabel(selectedDate);
 
   return (
     <View style={[styles.container, { backgroundColor: 'transparent' }]}>
@@ -93,7 +101,7 @@ export default function NutritionScreen() {
 
         <TouchableOpacity
           style={styles.dateCenter}
-          onPress={() => setSelectedDate(new Date().toISOString().split('T')[0])}>
+          onPress={() => setSelectedDate(getTodayDateString())}>
           <Text style={[styles.dateText, { color: colors.text }]}>
             {isToday ? `Today (${dateFormatted})` : dateFormatted}
           </Text>
@@ -131,38 +139,72 @@ export default function NutritionScreen() {
           fatTargetMax={goals.fat_target_max}
         />
 
-        {/* Quick Natural Language Logger Banner Button */}
-        <TouchableOpacity
-          style={[
-            styles.nlpQuickBanner,
-            {
-              backgroundColor: isDark
-                ? 'rgba(56, 189, 248, 0.12)'
-                : 'rgba(2, 132, 199, 0.08)',
-              borderColor: colors.protein,
-            },
-          ]}
-          onPress={() => handleOpenLogger('lunch')}
-          activeOpacity={0.8}>
-          <View style={styles.bannerLeft}>
-            <View
-              style={[
-                styles.bannerIconWrap,
-                { backgroundColor: colors.protein },
-              ]}>
-              <Ionicons name="mic-outline" size={16} color="#FFFFFF" />
+        {/* Quick Action Banners: NLP Logger & Custom Recipe Builder */}
+        <View style={styles.bannersRow}>
+          <TouchableOpacity
+            style={[
+              styles.actionBanner,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(56, 189, 248, 0.12)'
+                  : 'rgba(2, 132, 199, 0.08)',
+                borderColor: colors.protein,
+              },
+            ]}
+            onPress={() => handleOpenLogger('lunch')}
+            activeOpacity={0.8}>
+            <View style={styles.bannerLeft}>
+              <View
+                style={[
+                  styles.bannerIconWrap,
+                  { backgroundColor: colors.protein },
+                ]}>
+                <Ionicons name="mic-outline" size={16} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.bannerTitle, { color: colors.text }]}>
+                  Natural Language Meal Logger
+                </Text>
+                <Text style={[styles.bannerSub, { color: colors.textMuted }]} numberOfLines={1}>
+                  Type or speak meals: "2 besan chillas with 100g paneer"
+                </Text>
+              </View>
             </View>
-            <View>
-              <Text style={[styles.bannerTitle, { color: colors.text }]}>
-                Natural Language Meal Logger
-              </Text>
-              <Text style={[styles.bannerSub, { color: colors.textMuted }]}>
-                Tap to type or speak meals like "2 besan chillas with 100g paneer"
-              </Text>
+            <Ionicons name="arrow-forward" size={16} color={colors.protein} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionBanner,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(16, 185, 129, 0.12)'
+                  : 'rgba(16, 185, 129, 0.08)',
+                borderColor: colors.accent,
+              },
+            ]}
+            onPress={() => setCustomMealModalVisible(true)}
+            activeOpacity={0.8}>
+            <View style={styles.bannerLeft}>
+              <View
+                style={[
+                  styles.bannerIconWrap,
+                  { backgroundColor: colors.accent },
+                ]}>
+                <Ionicons name="restaurant-outline" size={16} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.bannerTitle, { color: colors.text }]}>
+                  Custom Meal & Recipe Builder
+                </Text>
+                <Text style={[styles.bannerSub, { color: colors.textMuted }]} numberOfLines={1}>
+                  Build meals with ingredients for 1-tap future logging
+                </Text>
+              </View>
             </View>
-          </View>
-          <Ionicons name="arrow-forward" size={18} color={colors.protein} />
-        </TouchableOpacity>
+            <Ionicons name="add" size={18} color={colors.accent} />
+          </TouchableOpacity>
+        </View>
 
         {/* Daily Meal Sections */}
         <View style={styles.mealsSection}>
@@ -211,6 +253,14 @@ export default function NutritionScreen() {
           />
         </View>
 
+        {/* Saved Custom Meals Section */}
+        <SavedCustomMealsSection
+          customRecipes={customRecipes}
+          onOpenCreateModal={() => setCustomMealModalVisible(true)}
+          onLogRecipe={logRecipeAsMeal}
+          onDeleteRecipe={deleteCustomRecipe}
+        />
+
         {/* Cuisine Exploration Feature */}
         <CuisineExplorationSection
           recipes={recipes}
@@ -227,6 +277,15 @@ export default function NutritionScreen() {
         dateStr={selectedDate}
         onClose={() => setLoggerModalVisible(false)}
         onSaveMeal={logMeal}
+      />
+
+      {/* Custom Meal / Recipe Builder Modal */}
+      <CustomMealModal
+        visible={customMealModalVisible}
+        initialMealType={activeMealType}
+        onClose={() => setCustomMealModalVisible(false)}
+        onSaveRecipe={createCustomRecipe}
+        onLogMealNow={logRecipeAsMeal}
       />
 
       {/* Clarification & Kitchen Scale Adjustment Modal */}
@@ -270,14 +329,17 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     paddingBottom: Spacing.xxxl,
   },
-  nlpQuickBanner: {
+  bannersRow: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  actionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    marginBottom: Spacing.lg,
   },
   bannerLeft: {
     flexDirection: 'row',
@@ -294,11 +356,11 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   bannerTitle: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
   },
   bannerSub: {
-    fontSize: 11.5,
+    fontSize: 11,
     marginTop: 1,
   },
   mealsSection: {

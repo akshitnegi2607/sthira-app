@@ -1,5 +1,6 @@
 import { getDatabase } from '../db';
 import { DailyLog } from '../../types/database';
+import { getTodayDateString } from '../../utils/date';
 
 export const DailyLogsRepository = {
   getLogByDate(dateStr: string): DailyLog | null {
@@ -71,7 +72,7 @@ export const DailyLogsRepository = {
   },
 
   getTodayLog(): DailyLog {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getTodayDateString();
     return this.getOrCreateLog(todayStr);
   },
 

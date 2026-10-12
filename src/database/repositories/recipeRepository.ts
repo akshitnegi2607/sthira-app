@@ -59,4 +59,71 @@ export const RecipeRepository = {
 
     return recipes;
   },
+
+  getCustomRecipes(): CuisineRecipe[] {
+    const db = getDatabase();
+    return db.getAllSync<CuisineRecipe>(
+      "SELECT * FROM CuisineRecipes WHERE cuisine = 'Custom' ORDER BY created_at DESC"
+    );
+  },
+
+  createCustomRecipe(data: {
+    title: string;
+    description?: string;
+    estimated_calories: number;
+    estimated_protein: number;
+    estimated_carbs: number;
+    estimated_fat: number;
+    ingredients: { item: string; amount: string; calories?: number; protein?: number }[];
+    instructions?: string;
+  }): CuisineRecipe {
+    const db = getDatabase();
+    const now = new Date().toISOString();
+    const id = `recipe_custom_${Date.now()}`;
+
+    db.runSync(
+      `INSERT INTO CuisineRecipes (
+        id, cuisine, title, description, estimated_calories, estimated_protein,
+        estimated_carbs, estimated_fat, ingredients_json, instructions,
+        is_vegetarian, has_eggs, has_onion, has_garlic, has_mushrooms, created_at
+      ) VALUES (?, 'Custom', ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 1, 1, 0, ?)`,
+      [
+        id,
+        data.title,
+        data.description || 'Custom crafted meal with ingredients',
+        data.estimated_calories,
+        data.estimated_protein,
+        data.estimated_carbs,
+        data.estimated_fat,
+        JSON.stringify(data.ingredients),
+        data.instructions || '',
+        now,
+      ]
+    );
+
+    return {
+      id,
+      cuisine: 'Custom',
+      title: data.title,
+      description: data.description || 'Custom crafted meal with ingredients',
+      estimated_calories: data.estimated_calories,
+      estimated_protein: data.estimated_protein,
+      estimated_carbs: data.estimated_carbs,
+      estimated_fat: data.estimated_fat,
+      ingredients_json: JSON.stringify(data.ingredients),
+      instructions: data.instructions || '',
+      is_vegetarian: 1,
+      has_eggs: 0,
+      has_onion: 1,
+      has_garlic: 1,
+      has_mushrooms: 0,
+      created_at: now,
+    };
+  },
+
+  deleteRecipe(id: string): void {
+    const db = getDatabase();
+    db.runSync('DELETE FROM CuisineRecipes WHERE id = ?', [id]);
+  },
 };
+

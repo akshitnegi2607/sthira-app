@@ -12,6 +12,7 @@ import {
 } from '@/database/repositories/workoutRepository';
 import { Exercise, WorkoutPlan, WorkoutSession, PainEntry, WorkoutSet } from '@/types/database';
 import { useDashboardStore } from './useDashboardStore';
+import { getTodayDateString } from '@/utils/date';
 
 interface WorkoutStoreState {
   // Plans & Library
@@ -348,7 +349,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
   },
 
   logPain: (bodyArea, painLevel, notes) => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getTodayDateString();
     WorkoutRepository.logPainEntry({
       date: todayStr,
       body_area: bodyArea,
