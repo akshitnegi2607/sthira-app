@@ -3,7 +3,7 @@ import { UserProfile, Goals } from '../types/database';
 export const INITIAL_USER_PROFILE: UserProfile = {
   id: 'user_primary',
   name: 'Jay',
-  current_weight: 64.0,
+  current_weight: 65.8,
   height: 167.0,
   target_weight: 67.0,
   goal_type: 'lean_bulk',

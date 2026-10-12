@@ -67,9 +67,9 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   isLogWeightModalVisible: false,
   isLoading: false,
 
-  currentWeight: 64.0,
-  currentEmaWeight: 64.0,
-  startWeight: 64.0,
+  currentWeight: 65.8,
+  currentEmaWeight: 65.8,
+  startWeight: 65.8,
   targetWeight: 67.0,
   currentCalorieTarget: 2450,
 
@@ -81,7 +81,6 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       const goals = ProfileRepository.getGoals();
       const currentCalorieTarget = goals?.calories_target || 2450;
       const targetGainRate = profile?.target_rate_kg_per_week || 0.15;
-      const startWeight = 64.0;
       const targetWeight = profile?.target_weight || 67.0;
 
       // 1. Load full weight history
@@ -96,20 +95,15 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       // Calculate full EMA series
       const fullEma = calculateWeightEma(rawPoints, 0.1);
 
-      // Latest weight and EMA
-      const latestRaw = allWeights.length > 0 ? allWeights[allWeights.length - 1].weight_kg : profile?.current_weight || 64.0;
+      // Initial start weight, latest weight and EMA
+      const startWeight = allWeights.length > 0 ? allWeights[0].weight_kg : profile?.current_weight || 65.8;
+      const latestRaw = allWeights.length > 0 ? allWeights[allWeights.length - 1].weight_kg : profile?.current_weight || 65.8;
       const latestEma = fullEma.length > 0 ? fullEma[fullEma.length - 1].emaKg : latestRaw;
 
       // 2. Weekly rate of change
       const weeklyGainRate = calculateWeeklyGainRate(fullEma, 7);
 
-      // 3. Calorie adaptation calculation
-      // Find EMA 7 days ago
-      const pastIdx = Math.max(0, fullEma.length - 8);
-      const pastEma = fullEma.length > 0 ? fullEma[pastIdx].emaKg : latestEma;
-      const daysBetween = fullEma.length > 0 ? Math.max(1, fullEma.length - 1 - pastIdx) : 7;
-
-      // Average calorie & protein intake from last 14 days
+      // Average calorie & protein intake from recent daily logs
       const recentLogs = ProgressRepository.getDailyLogsForPeriod(14);
       const activeLogs = recentLogs.filter((l) => (l.calories_consumed || 0) > 0);
       const avgCalories =
@@ -121,16 +115,37 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
           ? activeLogs.reduce((sum, l) => sum + (l.protein_consumed || 0), 0) / activeLogs.length
           : 115;
 
-      const calorieAdaptation = calculateCalorieAdaptation({
-        currentEmaKg: latestEma,
-        pastEmaKg: pastEma,
-        daysBetween: daysBetween,
-        targetGainRateKgPerWeek: targetGainRate,
-        currentCalorieTarget: currentCalorieTarget,
-        averageCalorieIntake: avgCalories,
-        averageProteinIntake: avgProtein,
-        targetProteinMin: goals?.protein_target_min || 110,
-      });
+      // 3. Calorie adaptation calculation
+      // If we have fewer than 7 days of real weigh-ins, we are in initial baseline period
+      let calorieAdaptation: CalorieAdaptationResult;
+      if (fullEma.length < 7) {
+        calorieAdaptation = {
+          actualRateKgPerWeek: weeklyGainRate,
+          targetRateKgPerWeek: targetGainRate,
+          rateDeltaKgPerWeek: 0,
+          recommendedCalorieDelta: 0,
+          newRecommendedCalories: currentCalorieTarget,
+          action: 'maintain',
+          statusBadge: 'ON TRACK',
+          rationale: `Baseline established at ${latestRaw.toFixed(1)} kg. Log daily weights over your first week to begin adaptive calorie optimization toward your 67.0 kg goal.`,
+          isEstimated: true,
+        };
+      } else {
+        const pastIdx = Math.max(0, fullEma.length - 8);
+        const pastEma = fullEma[pastIdx].emaKg;
+        const daysBetween = Math.max(1, fullEma.length - 1 - pastIdx);
+
+        calorieAdaptation = calculateCalorieAdaptation({
+          currentEmaKg: latestEma,
+          pastEmaKg: pastEma,
+          daysBetween: daysBetween,
+          targetGainRateKgPerWeek: targetGainRate,
+          currentCalorieTarget: currentCalorieTarget,
+          averageCalorieIntake: avgCalories,
+          averageProteinIntake: avgProtein,
+          targetProteinMin: goals?.protein_target_min || 110,
+        });
+      }
 
       // 4. Sleep & Workout correlation
       const workoutSessions = ProgressRepository.getWorkoutSessionsWithVolume(30);

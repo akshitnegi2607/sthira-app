@@ -23,7 +23,7 @@ import { NutritionEstimate } from '@/types/database';
 export default function NutritionScreen() {
   const { colors, isDark } = useAppTheme();
   const goals = useProfileStore((s) => s.goals);
-  const todayLog = useDashboardStore((s) => s.todayLog);
+  const currentLog = useNutritionStore((s) => s.currentLog);
 
   const {
     selectedDate,
@@ -120,14 +120,14 @@ export default function NutritionScreen() {
         }>
         {/* Visual Macro Rings Card */}
         <MacroRingsCard
-          caloriesConsumed={todayLog.calories_consumed}
+          caloriesConsumed={currentLog?.calories_consumed || 0}
           caloriesTarget={goals.calories_target}
-          proteinConsumed={todayLog.protein_consumed}
+          proteinConsumed={currentLog?.protein_consumed || 0}
           proteinTargetMin={goals.protein_target_min}
           proteinTargetMax={goals.protein_target_max}
-          carbsConsumed={todayLog.carbs_consumed}
+          carbsConsumed={currentLog?.carbs_consumed || 0}
           carbsTarget={goals.carbs_target}
-          fatConsumed={todayLog.fat_consumed}
+          fatConsumed={currentLog?.fat_consumed || 0}
           fatTargetMax={goals.fat_target_max}
         />
 
@@ -167,7 +167,7 @@ export default function NutritionScreen() {
         {/* Daily Meal Sections */}
         <View style={styles.mealsSection}>
           <Text style={[styles.sectionHeading, { color: colors.textMuted }]}>
-            TODAY'S FOOD DIARY
+            {isToday ? "TODAY'S FOOD DIARY" : `${dateFormatted.toUpperCase()} FOOD DIARY`}
           </Text>
 
           <MealSectionCard

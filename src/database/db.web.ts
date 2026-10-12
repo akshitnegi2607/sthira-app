@@ -170,18 +170,35 @@ class WebSQLiteFallback {
   runSync(sql: string, params: any[] = []): { changes: number; lastInsertRowId: number } {
     const cleanSql = sql.trim().replace(/\s+/g, ' ');
 
-    // Handle DELETE FROM <table> WHERE <col> = ?
-    const deleteMatch = cleanSql.match(/DELETE FROM (\w+) WHERE (\w+)\s*=\s*\?/i);
+    // Handle DELETE FROM <table> [WHERE <col> <op> ?]
+    const deleteMatch = cleanSql.match(/DELETE FROM (\w+)(?:\s+WHERE\s+(\w+)\s*(=|<|>|<=|>=)\s*(\?|'[^']*'|\d+))?/i);
     if (deleteMatch) {
       const table = deleteMatch[1];
       const col = deleteMatch[2];
-      const val = params[0];
-      const rows = this.tables.get(table) || [];
+      const op = deleteMatch[3];
+      const valRaw = deleteMatch[4];
+      if (!this.tables.has(table)) {
+        return { changes: 0, lastInsertRowId: 0 };
+      }
+      let rows = this.tables.get(table)!;
       const initialCount = rows.length;
-      const remaining = rows.filter((r) => r[col] != val);
-      this.tables.set(table, remaining);
+      if (col && op && valRaw) {
+        const val: any = valRaw === '?' ? params[0] : (typeof valRaw === 'string' && valRaw.startsWith("'") ? valRaw.slice(1, -1) : Number(valRaw));
+        rows = rows.filter((r) => {
+          const itemVal = r[col];
+          if (op === '=') return itemVal != val;
+          if (op === '<') return !(itemVal < val);
+          if (op === '>') return !(itemVal > val);
+          if (op === '<=') return !(itemVal <= val);
+          if (op === '>=') return !(itemVal >= val);
+          return true;
+        });
+        this.tables.set(table, rows);
+      } else if (!col) {
+        this.tables.set(table, []);
+      }
       this.saveToStorage();
-      return { changes: initialCount - remaining.length, lastInsertRowId: 0 };
+      return { changes: initialCount - rows.length, lastInsertRowId: 0 };
     }
 
     // Handle INSERT INTO <table> (<cols>) VALUES (...)

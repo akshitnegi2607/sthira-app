@@ -201,299 +201,82 @@ export function runMigrations() {
     }
   }
 
-  // 8. Seed sample daily log for yesterday's history
-  const yesterday = new Date(Date.now() - 86400000);
-  const sampleDate = yesterday.toISOString().split('T')[0];
-  const todayStr = new Date().toISOString().split('T')[0];
+  // 8. Clean any past dummy data and establish today as Day 1 with Jay's baseline (65.8 kg)
+  cleanPastDummyDataAndSetBaseline(65.8);
 
-  // Clean up any old dummy seed for today so today starts fresh and real
+  // 9. Run self-healing check on completed workout sets and progressions
+  WorkoutRepository.healCompletedWorkoutSets();
+}
+
+/**
+ * Ensures the database has zero fake historical data before today
+ * and establishes today as the clean official Day 1 with Jay's scale weight (65.8 kg).
+ */
+export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {
+  const db = getDatabase();
+  const now = new Date().toISOString();
+  const todayStr = now.split('T')[0];
+
   try {
+    // 1. Wipe all mock past entries before today
+    db.runSync('DELETE FROM WeightEntries WHERE date < ?', [todayStr]);
+    db.runSync('DELETE FROM DailyLogs WHERE date < ?', [todayStr]);
+    db.runSync('DELETE FROM MealEntries WHERE date < ?', [todayStr]);
+    db.runSync('DELETE FROM NutritionEstimates WHERE meal_entry_id NOT IN (SELECT id FROM MealEntries)');
+    db.runSync('DELETE FROM WaterEntries WHERE date < ?', [todayStr]);
+    db.runSync('DELETE FROM SleepEntries WHERE date < ?', [todayStr]);
+    db.runSync('DELETE FROM JournalEntries WHERE date < ?', [todayStr]);
+    db.runSync('DELETE FROM PainEntries WHERE date < ?', [todayStr]);
+    db.runSync("DELETE FROM WorkoutSessions WHERE id LIKE 'sess_hist_%' OR date < ?", [todayStr]);
+    db.runSync("DELETE FROM WorkoutExercises WHERE session_id NOT IN (SELECT id FROM WorkoutSessions)");
+    db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
+
+    // 2. Set Jay's real starting baseline in UserProfile
     db.runSync(
-      `DELETE FROM MealEntries WHERE date = ? AND id LIKE 'meal_%'`,
+      `UPDATE UserProfile SET
+        current_weight = ?,
+        target_weight = 67.0,
+        updated_at = ?
+       WHERE id = 'user_primary'`,
+      [startingWeightKg, now]
+    );
+
+    // 3. Set or update today's scale weight marker in WeightEntries
+    const existingWeight = db.getFirstSync<{ id: string }>(
+      'SELECT id FROM WeightEntries WHERE date = ?',
       [todayStr]
     );
-    const existingTodayLog = db.getFirstSync<{ id: string; coach_summary?: string }>(
-      'SELECT id, coach_summary FROM DailyLogs WHERE date = ? LIMIT 1',
-      [todayStr]
-    );
-    if (existingTodayLog && existingTodayLog.coach_summary && existingTodayLog.coach_summary.includes('2,320 / 2,450')) {
-      db.runSync('DELETE FROM DailyLogs WHERE date = ?', [todayStr]);
-    }
-  } catch (e) {
-    // Ignore if tables not yet populated
-  }
-
-  const sampleRow = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM DailyLogs WHERE date = ?',
-    [sampleDate]
-  );
-
-  if (!sampleRow || sampleRow.count === 0) {
-    const now = new Date().toISOString();
-    db.runSync(
-      `INSERT INTO DailyLogs (
-        id, date, calories_consumed, protein_consumed, carbs_consumed,
-        fat_consumed, water_liters, weight, sleep_hours, energy_rating,
-        mood_rating, hunger_rating, recovery_rating, soreness_rating,
-        stress_rating, coach_status, coach_summary, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        `log_${sampleDate}`,
-        sampleDate,
-        2320,
-        114,
-        290,
-        68,
-        1.9,
-        64.2,
-        7.25, // 7h 15m
-        8,
-        8,
-        5,
-        8,
-        3,
-        3,
-        'ON TRACK',
-        "Yesterday's Upper Body session was completed. Calories and protein were on track.",
-        now,
-        now,
-      ]
-    );
-  }
-
-  // 9. Seed sample meal entries for yesterday if not present
-  const mealsRow = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM MealEntries WHERE date = ?',
-    [sampleDate]
-  );
-
-  if (!mealsRow || mealsRow.count === 0) {
-    const now = new Date().toISOString();
-
-    const sampleMeals = [
-      {
-        id: `meal_${sampleDate}_breakfast`,
-        meal_type: 'breakfast',
-        raw_text: '2 besan chillas with 100g paneer, 1 cup curd and 1 banana',
-        total_calories: 650,
-        total_protein: 36.2,
-        total_carbs: 70.0,
-        total_fat: 29.8,
-        confidence: 'high',
-        items: [
-          { name: 'Besan Chilla', quantity: 2, unit: 'piece', cal: 280, pro: 12.4, carbs: 36, fat: 9, conf: 'high' },
-          { name: 'Paneer (Raw / Low Fat)', quantity: 100, unit: 'g', cal: 265, pro: 18.3, carbs: 3.5, fat: 20, conf: 'high' },
-          { name: 'Banana (Medium Fresh)', quantity: 1, unit: 'piece', cal: 105, pro: 1.3, carbs: 27, fat: 0.3, conf: 'high' },
-        ],
-      },
-      {
-        id: `meal_${sampleDate}_lunch`,
-        meal_type: 'lunch',
-        raw_text: '1 cup rajma masala with 1 cup basmati rice, 1 cup curd and 1 roti',
-        total_calories: 635,
-        total_protein: 24.5,
-        total_carbs: 104.0,
-        total_fat: 11.5,
-        confidence: 'high',
-        items: [
-          { name: 'Rajma Masala (Kidney Beans)', quantity: 1, unit: 'cup', cal: 220, pro: 11.5, carbs: 32, fat: 5, conf: 'high' },
-          { name: 'White Basmati Rice', quantity: 1, unit: 'cup', cal: 210, pro: 4.3, carbs: 45, fat: 0.5, conf: 'high' },
-          { name: 'Curd / Dahi', quantity: 1, unit: 'cup', cal: 100, pro: 5.5, carbs: 7, fat: 5, conf: 'high' },
-          { name: 'Roti / Chapati', quantity: 1, unit: 'piece', cal: 105, pro: 3.2, carbs: 20, fat: 1, conf: 'high' },
-        ],
-      },
-      {
-        id: `meal_${sampleDate}_snack`,
-        meal_type: 'snack',
-        raw_text: 'Greek yogurt 150g with 1 cup steamed edamame',
-        total_calories: 318,
-        total_protein: 33.4,
-        total_carbs: 19.8,
-        total_fat: 12.0,
-        confidence: 'high',
-        items: [
-          { name: 'Greek Yogurt (Plain)', quantity: 150, unit: 'g', cal: 130, pro: 15.0, carbs: 6.0, fat: 4.0, conf: 'high' },
-          { name: 'Edamame (Steamed)', quantity: 1, unit: 'cup', cal: 188, pro: 18.4, carbs: 13.8, fat: 8.0, conf: 'high' },
-        ],
-      },
-      {
-        id: `meal_${sampleDate}_dinner`,
-        meal_type: 'dinner',
-        raw_text: '100g pan-seared firm tofu with 1 cup whole wheat pasta and lentil bolognese',
-        total_calories: 717,
-        total_protein: 39.9,
-        total_carbs: 96.2,
-        total_fat: 14.7,
-        confidence: 'high',
-        items: [
-          { name: 'Firm Tofu (Pan-seared)', quantity: 100, unit: 'g', cal: 144, pro: 15.5, carbs: 3.0, fat: 8.0, conf: 'high' },
-          { name: 'Whole Wheat Pasta', quantity: 1.5, unit: 'cup', cal: 261, pro: 11.2, carbs: 55.5, fat: 1.2, conf: 'high' },
-          { name: 'Red Lentil Bolognese Sauce', quantity: 1, unit: 'cup', cal: 190, pro: 11.0, carbs: 28.0, fat: 3.5, conf: 'high' },
-          { name: 'Grilled Halloumi Cheese', quantity: 40, unit: 'g', cal: 122, pro: 2.2, carbs: 9.7, fat: 2.0, conf: 'medium' },
-        ],
-      },
-    ];
-
-    for (const m of sampleMeals) {
+    if (existingWeight) {
       db.runSync(
-        `INSERT INTO MealEntries (
-          id, date, meal_type, raw_text, total_calories, total_protein,
-          total_carbs, total_fat, confidence, is_verified_by_user, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-        [
-          m.id,
-          sampleDate,
-          m.meal_type,
-          m.raw_text,
-          m.total_calories,
-          m.total_protein,
-          m.total_carbs,
-          m.total_fat,
-          m.confidence,
-          now,
-        ]
+        'UPDATE WeightEntries SET weight_kg = ?, notes = ? WHERE date = ?',
+        [startingWeightKg, 'Evening scale weigh-in marker (Day 1 baseline)', todayStr]
       );
-
-      for (let i = 0; i < m.items.length; i++) {
-        const item = m.items[i];
-        db.runSync(
-          `INSERT INTO NutritionEstimates (
-            id, meal_entry_id, food_name, quantity, unit,
-            calories_estimated, protein_estimated, carbs_estimated, fat_estimated,
-            confidence_score, clarification_needed, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
-          [
-            `est_${m.id}_${i}`,
-            m.id,
-            item.name,
-            item.quantity,
-            item.unit,
-            item.cal,
-            item.pro,
-            item.carbs,
-            item.fat,
-            item.conf,
-            now,
-          ]
-        );
-      }
-    }
-  }
-
-  // 9. Seed realistic historical weight entries and sleep logs if empty
-  const weightRow = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM WeightEntries'
-  );
-
-  if (!weightRow || weightRow.count === 0) {
-    const historicalWeights = [
-      { dayOffset: 14, weight: 63.8, sleep: 7.8, note: 'Morning weigh-in after fasting' },
-      { dayOffset: 13, weight: 63.9, sleep: 8.0, note: null },
-      { dayOffset: 12, weight: 63.7, sleep: 6.5, note: 'Restless night' },
-      { dayOffset: 11, weight: 63.9, sleep: 7.5, note: null },
-      { dayOffset: 10, weight: 64.0, sleep: 7.8, note: 'Post Lower session water retention' },
-      { dayOffset: 9, weight: 63.9, sleep: 8.2, note: null },
-      { dayOffset: 8, weight: 64.1, sleep: 7.0, note: null },
-      { dayOffset: 7, weight: 64.0, sleep: 8.0, note: 'Weekly weigh-in baseline' },
-      { dayOffset: 6, weight: 64.2, sleep: 6.8, note: null },
-      { dayOffset: 5, weight: 64.1, sleep: 7.6, note: null },
-      { dayOffset: 4, weight: 64.0, sleep: 6.4, note: 'Late night study' },
-      { dayOffset: 3, weight: 64.2, sleep: 8.0, note: 'Great recovery night' },
-      { dayOffset: 2, weight: 64.1, sleep: 7.5, note: null },
-      { dayOffset: 1, weight: 64.15, sleep: 7.8, note: 'Morning weigh-in' },
-    ];
-
-    for (const h of historicalWeights) {
-      const pastMs = Date.now() - h.dayOffset * 24 * 60 * 60 * 1000;
-      const pastDate = new Date(pastMs).toISOString().split('T')[0];
-      const entryId = `weight_${pastDate}`;
-
+    } else {
       db.runSync(
         `INSERT INTO WeightEntries (id, date, weight_kg, notes, created_at)
          VALUES (?, ?, ?, ?, ?)`,
-        [entryId, pastDate, h.weight, h.note, new Date(pastMs).toISOString()]
+        [`weight_${todayStr}`, todayStr, startingWeightKg, 'Evening scale weigh-in marker (Day 1 baseline)', now]
       );
-
-      // Also ensure DailyLogs exists for that day with sleep and weight
-      const existingDaily = db.getFirstSync<{ id: string }>(
-        'SELECT id FROM DailyLogs WHERE date = ?',
-        [pastDate]
-      );
-
-      if (existingDaily) {
-        db.runSync(
-          'UPDATE DailyLogs SET weight = ?, sleep_hours = ? WHERE date = ?',
-          [h.weight, h.sleep, pastDate]
-        );
-      } else {
-        db.runSync(
-          `INSERT INTO DailyLogs (
-            id, date, calories_consumed, protein_consumed, carbs_consumed,
-            fat_consumed, water_liters, weight, sleep_hours, energy_rating,
-            coach_status, coach_summary, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            `log_${pastDate}`,
-            pastDate,
-            2420,
-            118,
-            330,
-            68,
-            2.3,
-            h.weight,
-            h.sleep,
-            h.sleep >= 7.5 ? 8 : 6,
-            'ON TRACK',
-            'Solid adherence day.',
-            new Date(pastMs).toISOString(),
-            new Date(pastMs).toISOString(),
-          ]
-        );
-      }
     }
 
-    // Seed 4 past completed workout sessions with sets for correlation calculation
-    const pastSessions = [
-      { dayOffset: 13, title: 'Upper Body A', duration: 3420, diff: 'Good', sets: 18, vol: 7850 },
-      { dayOffset: 11, title: 'Lower Body A', duration: 3780, diff: 'Hard', sets: 17, vol: 8900 },
-      { dayOffset: 6, title: 'Upper Body B', duration: 3300, diff: 'Good', sets: 18, vol: 7920 },
-      { dayOffset: 4, title: 'Lower Body B', duration: 3600, diff: 'Very hard', sets: 16, vol: 7100 },
-    ];
-
-    for (const ps of pastSessions) {
-      const pastMs = Date.now() - ps.dayOffset * 24 * 60 * 60 * 1000;
-      const pastDate = new Date(pastMs).toISOString().split('T')[0];
-      const sessId = `sess_hist_${pastDate}`;
-
+    // 4. Ensure DailyLogs for today has Jay's 65.8 kg weight
+    const existingTodayLog = db.getFirstSync<{ id: string }>(
+      'SELECT id FROM DailyLogs WHERE date = ?',
+      [todayStr]
+    );
+    if (existingTodayLog) {
+      db.runSync('UPDATE DailyLogs SET weight = ?, updated_at = ? WHERE date = ?', [startingWeightKg, now, todayStr]);
+    } else {
       db.runSync(
-        `INSERT INTO WorkoutSessions (
-          id, date, workout_plan_id, title, duration_seconds, status, difficulty_perceived, created_at
-        ) VALUES (?, ?, null, ?, ?, 'completed', ?, ?)`,
-        [sessId, pastDate, ps.title, ps.duration, ps.diff, new Date(pastMs).toISOString()]
+        `INSERT INTO DailyLogs (
+          id, date, calories_consumed, protein_consumed, carbs_consumed,
+          fat_consumed, water_liters, weight, energy_rating, coach_status,
+          coach_summary, created_at, updated_at
+        ) VALUES (?, ?, 0, 0, 0, 0, 0, ?, 8, 'ON TRACK', 'Day 1 of Sthira. Starting strong at 65.8 kg!', ?, ?)`,
+        [`log_${todayStr}`, todayStr, startingWeightKg, now, now]
       );
-
-      // Create a workout exercise and sets so totalVolumeKg is computed accurately
-      const weId = `we_hist_${sessId}`;
-      db.runSync(
-        `INSERT INTO WorkoutExercises (id, session_id, exercise_id, order_index, created_at)
-         VALUES (?, ?, 'ex_bench_press', 1, ?)`,
-        [weId, sessId, new Date(pastMs).toISOString()]
-      );
-
-      // Split total volume across 4 sets
-      const reps = 10;
-      const weightPerSet = Math.round((ps.vol / 4 / reps) * 10) / 10;
-      for (let s = 1; s <= 4; s++) {
-        db.runSync(
-          `INSERT INTO WorkoutSets (
-            id, workout_exercise_id, set_number, weight_kg, reps, rir, is_completed, created_at
-          ) VALUES (?, ?, ?, ?, ?, 2, 1, ?)`,
-          [`set_hist_${weId}_${s}`, weId, s, weightPerSet, reps, new Date(pastMs).toISOString()]
-        );
-      }
     }
+  } catch (e) {
+    console.warn('cleanPastDummyDataAndSetBaseline error:', e);
   }
-
-  // 12. Run self-healing check on completed workout sets and progressions
-  WorkoutRepository.healCompletedWorkoutSets();
 }

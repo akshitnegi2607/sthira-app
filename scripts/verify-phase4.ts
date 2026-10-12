@@ -53,7 +53,7 @@ try {
 }
 
 const history = ProgressRepository.getWeightHistory();
-assert(history.length >= 14, `Loaded ${history.length} historical weight entries (expected >= 14).`);
+assert(history.length >= 1, `Loaded ${history.length} scale weight entries (Day 1 baseline: ${history[0]?.weight_kg} kg).`);
 
 const profile = ProfileRepository.getProfile();
 assert(profile !== null && profile.target_weight === 67.0, 'Profile loaded with 67.0 kg lean bulk target.');

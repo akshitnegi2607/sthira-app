@@ -6,7 +6,8 @@ import {
   CreateEstimateInput,
 } from '@/database/repositories/mealRepository';
 import { RecipeRepository } from '@/database/repositories/recipeRepository';
-import { CuisineRecipe, NutritionEstimate } from '@/types/database';
+import { DailyLogsRepository } from '@/database/repositories/dailyLogsRepository';
+import { CuisineRecipe, NutritionEstimate, DailyLog } from '@/types/database';
 import { analyzeMeal, MealAnalysisResult } from '@/services/mealParser';
 import { useDashboardStore } from './useDashboardStore';
 
@@ -14,6 +15,7 @@ interface NutritionState {
   selectedDate: string;
   meals: MealEntryWithEstimates[];
   recipes: CuisineRecipe[];
+  currentLog: DailyLog | null;
   selectedCuisine: string;
   filterProteinMin: number;
   filterCalorieMax: number;
@@ -49,6 +51,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   selectedDate: getTodayDateStr(),
   meals: [],
   recipes: [],
+  currentLog: null,
   selectedCuisine: 'All',
   filterProteinMin: 0,
   filterCalorieMax: 0,
@@ -68,7 +71,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     try {
       const meals = MealRepository.getMealsByDate(targetDate);
       const recipes = RecipeRepository.getAllRecipes();
-      set({ meals, recipes, isLoading: false });
+      const currentLog = DailyLogsRepository.getOrCreateLog(targetDate);
+      set({ meals, recipes, currentLog, isLoading: false });
     } catch (e) {
       console.warn('Failed to load nutrition data from SQLite', e);
       set({ isLoading: false });
