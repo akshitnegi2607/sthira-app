@@ -62,7 +62,7 @@ export const WeightHistoryList: React.FC<WeightHistoryListProps> = ({
 
             <View style={styles.itemRight}>
               <Text style={[styles.weightText, { color: colors.text }]}>
-                {item.weight_kg.toFixed(1)}{' '}
+                {(item.weight_kg ?? 65.8).toFixed(1)}{' '}
                 <Text style={[styles.unit, { color: colors.textMuted }]}>
                   kg
                 </Text>

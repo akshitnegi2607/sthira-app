@@ -127,7 +127,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
           newRecommendedCalories: currentCalorieTarget,
           action: 'maintain',
           statusBadge: 'ON TRACK',
-          rationale: `Baseline established at ${latestRaw.toFixed(1)} kg. Log daily weights over your first week to begin adaptive calorie optimization toward your 67.0 kg goal.`,
+          rationale: `Baseline established at ${(latestRaw ?? 65.8).toFixed(1)} kg. Log daily weights over your first week to begin adaptive calorie optimization toward your 67.0 kg goal.`,
           isEstimated: true,
         };
       } else {

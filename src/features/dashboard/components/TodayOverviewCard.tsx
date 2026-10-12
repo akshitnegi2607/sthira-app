@@ -20,9 +20,18 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
 }) => {
   const { colors } = useAppTheme();
 
-  const calorieProgress = goals.calories_target > 0 ? log.calories_consumed / goals.calories_target : 0;
-  const proteinProgress = goals.protein_target_max > 0 ? log.protein_consumed / goals.protein_target_max : 0;
-  const waterProgress = goals.water_target_liters > 0 ? log.water_liters / goals.water_target_liters : 0;
+  const calorieProgress =
+    (goals?.calories_target ?? 2450) > 0
+      ? (log?.calories_consumed ?? 0) / (goals?.calories_target ?? 2450)
+      : 0;
+  const proteinProgress =
+    (goals?.protein_target_max ?? 125) > 0
+      ? (log?.protein_consumed ?? 0) / (goals?.protein_target_max ?? 125)
+      : 0;
+  const waterProgress =
+    (goals?.water_target_liters ?? 2.5) > 0
+      ? (log?.water_liters ?? 0) / (goals?.water_target_liters ?? 2.5)
+      : 0;
 
   // Format sleep duration (e.g. 7.25h -> 7h 15m)
   const formatSleep = (hours: number | null | undefined) => {
@@ -31,6 +40,13 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
     const m = Math.round((hours - h) * 60);
     return `${h}h ${m > 0 ? `${m}m` : ''}`;
   };
+
+  const caloriesTarget = goals?.calories_target ?? 2450;
+  const caloriesConsumed = log?.calories_consumed ?? 0;
+  const proteinTargetMax = goals?.protein_target_max ?? 125;
+  const proteinConsumed = log?.protein_consumed ?? 0;
+  const waterLiters = log?.water_liters ?? 0;
+  const displayWeight = log?.weight ?? currentWeight ?? 65.8;
 
   return (
     <Card elevated style={styles.card}>
@@ -44,7 +60,7 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
             Daily Snapshot
           </Text>
         </View>
-        <StatusBadge status={log.coach_status} />
+        <StatusBadge status={log?.coach_status ?? 'ON TRACK'} />
       </View>
 
       {/* Primary 3 Pillars: Calories, Protein, Water */}
@@ -52,30 +68,30 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
         <View style={styles.gridRow}>
           <StatTile
             label="Calories"
-            value={log.calories_consumed.toLocaleString()}
-            target={`${goals.calories_target.toLocaleString()} kcal`}
+            value={caloriesConsumed.toLocaleString()}
+            target={`${caloriesTarget.toLocaleString()} kcal`}
             progress={calorieProgress}
             accentColor={colors.calories}
             isEstimated={true}
-            subtitle={`${Math.max(0, Math.round(goals.calories_target - log.calories_consumed))} kcal left`}
+            subtitle={`${Math.max(0, Math.round(caloriesTarget - caloriesConsumed))} kcal left`}
           />
           <View style={{ width: Spacing.sm }} />
           <StatTile
             label="Protein"
-            value={`${Math.round(log.protein_consumed)}`}
-            target={`${goals.protein_target_max} g`}
+            value={`${Math.round(proteinConsumed)}`}
+            target={`${proteinTargetMax} g`}
             progress={proteinProgress}
             accentColor={colors.protein}
             isEstimated={true}
-            subtitle={`${Math.max(0, Math.round(goals.protein_target_max - log.protein_consumed))} g left`}
+            subtitle={`${Math.max(0, Math.round(proteinTargetMax - proteinConsumed))} g left`}
           />
         </View>
 
         <View style={[styles.gridRow, { marginTop: Spacing.sm }]}>
           <StatTile
             label="Hydration"
-            value={`${log.water_liters.toFixed(1)}`}
-            target={`${goals.water_target_liters} L`}
+            value={`${waterLiters.toFixed(1)}`}
+            target={`${goals?.water_target_liters ?? 2.5} L`}
             progress={waterProgress}
             accentColor={colors.water}
             isEstimated={false}
@@ -84,7 +100,7 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
           <View style={{ width: Spacing.sm }} />
           <StatTile
             label="Weight"
-            value={`${(log.weight ?? currentWeight).toFixed(1)}`}
+            value={`${displayWeight.toFixed(1)}`}
             unit="kg"
             accentColor={colors.accent}
             isEstimated={false}

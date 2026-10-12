@@ -184,7 +184,7 @@ export const MorningCheckInModal: React.FC<MorningCheckInModalProps> = ({
 
                   <View style={styles.sleepDisplay}>
                     <Text style={[styles.sleepNum, { color: colors.text }]}>
-                      {sleepHours.toFixed(1)}
+                      {(sleepHours ?? 7.5).toFixed(1)}
                     </Text>
                     <Text style={[styles.sleepUnit, { color: colors.textMuted }]}>
                       hours

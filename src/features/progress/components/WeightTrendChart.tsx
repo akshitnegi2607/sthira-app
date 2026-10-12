@@ -171,7 +171,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
           </View>
           <View style={styles.weightNumberRow}>
             <Text style={[styles.bigWeight, { color: colors.text }]}>
-              {currentWeight.toFixed(1)}
+              {(currentWeight ?? 65.8).toFixed(1)}
               <Text style={[styles.unit, { color: colors.textMuted }]}> kg</Text>
             </Text>
             <View style={styles.trendPill}>
@@ -180,7 +180,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
               </Text>
               <Text style={[styles.trendValue, { color: colors.accent }]}>
                 {' '}
-                {currentEma.toFixed(2)} kg
+                {(currentEma ?? 65.8).toFixed(2)} kg
               </Text>
             </View>
           </View>
@@ -205,14 +205,17 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
               styles.rateVal,
               {
                 color:
-                  weeklyRate >= 0.1 && weeklyRate <= 0.2
+                  (weeklyRate ?? 0) >= 0.1 && (weeklyRate ?? 0) <= 0.2
                     ? colors.accent
-                    : weeklyRate > 0.2
+                    : (weeklyRate ?? 0) > 0.2
                     ? colors.statusAttention
                     : colors.textSecondary,
               },
             ]}>
-            {weeklyRate >= 0 ? `+${weeklyRate.toFixed(2)}` : weeklyRate.toFixed(2)} kg/wk
+            {(weeklyRate ?? 0) >= 0
+              ? `+${(weeklyRate ?? 0).toFixed(2)}`
+              : (weeklyRate ?? 0).toFixed(2)}{' '}
+            kg/wk
           </Text>
         </View>
         <StatusBadge status={rateStatus} />
@@ -292,7 +295,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
                   fill={colors.textMuted}
                   textAnchor="end"
                   fontWeight="600">
-                  {tick.toFixed(1)}
+                  {typeof tick === 'number' ? tick.toFixed(1) : ''}
                 </SvgText>
               </React.Fragment>
             );

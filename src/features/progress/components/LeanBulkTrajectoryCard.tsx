@@ -19,17 +19,17 @@ export const LeanBulkTrajectoryCard: React.FC<LeanBulkTrajectoryCardProps> = ({
   if (!trajectory) return null;
 
   const {
-    startWeightKg,
-    currentEmaKg,
-    targetWeightKg,
-    totalGainTargetKg,
-    gainedSoFarKg,
-    remainingKg,
-    progressPercent,
-    targetRateKgPerWeek,
-    projectedWeeksRemaining,
-    projectedTargetDate,
-  } = trajectory;
+    startWeightKg = 64,
+    currentEmaKg = 65.8,
+    targetWeightKg = 67,
+    totalGainTargetKg = 3,
+    gainedSoFarKg = 0,
+    remainingKg = 1.2,
+    progressPercent = 0,
+    targetRateKgPerWeek = 0.15,
+    projectedWeeksRemaining = 8,
+    projectedTargetDate = 'Dec 2026',
+  } = trajectory || {};
 
   return (
     <Card elevated style={styles.card}>
@@ -52,7 +52,7 @@ export const LeanBulkTrajectoryCard: React.FC<LeanBulkTrajectoryCardProps> = ({
               Lean Bulk Trajectory
             </Text>
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              {startWeightKg.toFixed(1)} kg → {targetWeightKg.toFixed(1)} kg Goal
+              {(startWeightKg ?? 64).toFixed(1)} kg → {(targetWeightKg ?? 67).toFixed(1)} kg Goal
             </Text>
           </View>
         </View>
@@ -79,13 +79,13 @@ export const LeanBulkTrajectoryCard: React.FC<LeanBulkTrajectoryCardProps> = ({
       <View style={styles.progressContainer}>
         <View style={styles.progressLabels}>
           <Text style={[styles.endpointLabel, { color: colors.textMuted }]}>
-            Start: {startWeightKg.toFixed(1)} kg
+            Start: {(startWeightKg ?? 64).toFixed(1)} kg
           </Text>
           <Text style={[styles.currentLabel, { color: colors.accent }]}>
-            {currentEmaKg.toFixed(1)} kg ({progressPercent}%)
+            {(currentEmaKg ?? 65.8).toFixed(1)} kg ({progressPercent}%)
           </Text>
           <Text style={[styles.endpointLabel, { color: colors.textMuted }]}>
-            Target: {targetWeightKg.toFixed(1)} kg
+            Target: {(targetWeightKg ?? 67).toFixed(1)} kg
           </Text>
         </View>
 
@@ -110,10 +110,10 @@ export const LeanBulkTrajectoryCard: React.FC<LeanBulkTrajectoryCardProps> = ({
             Gained (EMA)
           </Text>
           <Text style={[styles.tileVal, { color: colors.text }]}>
-            +{gainedSoFarKg.toFixed(1)} kg
+            +{(gainedSoFarKg ?? 0).toFixed(1)} kg
           </Text>
           <Text style={[styles.tileSub, { color: colors.textMuted }]}>
-            of {totalGainTargetKg.toFixed(1)} kg target
+            of {(totalGainTargetKg ?? 3).toFixed(1)} kg target
           </Text>
         </View>
 
@@ -129,7 +129,7 @@ export const LeanBulkTrajectoryCard: React.FC<LeanBulkTrajectoryCardProps> = ({
             Remaining
           </Text>
           <Text style={[styles.tileVal, { color: colors.text }]}>
-            {remainingKg.toFixed(1)} kg
+            {(remainingKg ?? 0).toFixed(1)} kg
           </Text>
           <Text style={[styles.tileSub, { color: colors.textMuted }]}>
             ~{projectedWeeksRemaining} weeks

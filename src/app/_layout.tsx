@@ -37,19 +37,6 @@ export default function RootLayout() {
     prepare();
   }, [loadProfile, loadDashboard]);
 
-  // Sacred App Entry Screen on loading
-  if (!hasEntered) {
-    return (
-      <>
-        <StatusBar style="light" />
-        <NarayanaEntryScreen
-          isReady={dbReady}
-          onReadyToEnter={() => setHasEntered(true)}
-        />
-      </>
-    );
-  }
-
   return (
     <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -79,6 +66,16 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+
+      {/* Sacred App Entry Screen rendered as top overlay during startup */}
+      {!hasEntered && (
+        <View style={StyleSheet.absoluteFill}>
+          <NarayanaEntryScreen
+            isReady={dbReady}
+            onReadyToEnter={() => setHasEntered(true)}
+          />
+        </View>
+      )}
     </View>
   );
 }

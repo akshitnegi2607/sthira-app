@@ -29,17 +29,17 @@ export const LogWeightModal: React.FC<LogWeightModalProps> = ({
   currentWeight,
 }) => {
   const { colors, isDark } = useAppTheme();
-  const [weightStr, setWeightStr] = useState<string>(currentWeight.toFixed(1));
+  const [weightStr, setWeightStr] = useState<string>((currentWeight ?? 65.8).toFixed(1));
   const [notes, setNotes] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const parsedWeight = parseFloat(weightStr) || currentWeight;
+  const parsedWeight = parseFloat(weightStr) || (currentWeight ?? 65.8);
 
   const handleAdjust = (delta: number) => {
-    const current = parseFloat(weightStr) || currentWeight;
+    const current = parseFloat(weightStr) || (currentWeight ?? 65.8);
     const next = Math.max(30, Math.min(200, current + delta));
     setWeightStr(next.toFixed(1));
   };
