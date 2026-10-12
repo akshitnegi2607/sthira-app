@@ -78,17 +78,6 @@ export const NarayanaEntryScreen: React.FC<NarayanaEntryScreenProps> = ({
           <Text style={styles.taglineSub}>Dedicated to Narayana</Text>
         </View>
 
-        {/* Shloka */}
-        <View style={styles.shlokaBox}>
-          <Text style={styles.shlokaLine}>
-            अनेकबाहूदरवक्त्रनेत्रं पश्यामि त्वां सर्वतोऽनन्तरूपम् ।
-          </Text>
-          <Text style={styles.shlokaLine}>
-            नान्तं न मध्यं न पुनस्तवादिं पश्यामि विश्वेश्वर विश्वरूप ॥
-          </Text>
-          <Text style={styles.shlokaRef}>— श्रीमद्भगवद्गीता ११.१६</Text>
-        </View>
-
         {/* Entry Status / Tap Prompt */}
         <View style={styles.footerPrompt}>
           {!isReady ? (
@@ -172,30 +161,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.8,
     marginTop: 2,
-  },
-  shlokaBox: {
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-  },
-  shlokaLine: {
-    color: '#E2E8F0',
-    fontSize: 12.5,
-    lineHeight: 20,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  shlokaRef: {
-    color: '#FBBF24',
-    fontSize: 10.5,
-    fontWeight: '700',
-    marginTop: 6,
-    letterSpacing: 0.6,
   },
   footerPrompt: {
     marginTop: Spacing.md,
