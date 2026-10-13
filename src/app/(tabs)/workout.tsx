@@ -87,7 +87,7 @@ export default function WorkoutScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: 'transparent' }]}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       {/* 1. Today's Training Banner / Active Workout Card / Completed Card */}

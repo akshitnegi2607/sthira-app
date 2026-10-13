@@ -14,7 +14,7 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: true,
         sceneStyle: {
-          backgroundColor: 'transparent',
+          backgroundColor: colors.background,
         },
         headerStyle: {
           backgroundColor: colors.background,

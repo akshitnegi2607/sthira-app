@@ -89,7 +89,7 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: 'transparent' }]}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}>
       {/* Profile Section */}
       <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>

@@ -61,9 +61,9 @@ export default function ProgressScreen() {
   }));
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={[styles.container, { backgroundColor: 'transparent' }]}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl

@@ -93,7 +93,7 @@ export default function NutritionScreen() {
   const dateFormatted = formatDateLabel(selectedDate);
 
   return (
-    <View style={[styles.container, { backgroundColor: 'transparent' }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Date Header Strip */}
       <View
         style={[
