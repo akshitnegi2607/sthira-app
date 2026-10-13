@@ -17,6 +17,7 @@ import { useProfileStore } from '@/stores/useProfileStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
+import { DataBackupSection } from '@/features/settings/components/DataBackupSection';
 
 export default function SettingsScreen() {
   const { colors, isDark } = useAppTheme();
@@ -312,6 +313,9 @@ export default function SettingsScreen() {
         onPress={handleSave}
         style={{ marginTop: Spacing.md }}
       />
+
+      {/* Local-first multi-device sync and JSON backup */}
+      <DataBackupSection />
 
       <View style={styles.footerBranding}>
         <SthiraBrandLogo size="medium" showTagline />
