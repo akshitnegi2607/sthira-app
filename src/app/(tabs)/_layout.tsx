@@ -11,6 +11,22 @@ export default function TabsLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  // On modern notch/Dynamic Island iPhones (both native and standalone PWA), the bottom home bar inset is 34px.
+  // On desktop browsers, insets.bottom is 0.
+  const isIosWeb =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  const bottomPadding =
+    insets.bottom > 0
+      ? insets.bottom
+      : Platform.OS === 'ios'
+      ? 34
+      : isIosWeb
+      ? 34
+      : 10;
+
   return (
     <Tabs
       screenOptions={{
@@ -34,13 +50,14 @@ export default function TabsLayout() {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
-          height: 56 + (insets.bottom > 0 ? insets.bottom : Platform.OS === 'ios' ? 28 : 10),
-          paddingBottom: insets.bottom > 0 ? insets.bottom : Platform.OS === 'ios' ? 24 : 8,
+          height: 60 + bottomPadding,
+          paddingBottom: bottomPadding,
           paddingTop: 8,
           elevation: 0,
         },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarItemStyle: {
+          paddingVertical: 0,
+        },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',

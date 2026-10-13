@@ -4,7 +4,6 @@ import {
   View,
   StyleSheet,
   RefreshControl,
-  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -42,7 +41,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -108,17 +107,17 @@ export default function HomeScreen() {
           else if (tab === 'progress') router.push('/progress');
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.xxxl,
   },
 });
