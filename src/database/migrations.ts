@@ -280,31 +280,42 @@ export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {
     }
 
     // 4. Ensure DailyLogs for today has Jay's 65.8 kg weight
-    const existingTodayLog = db.getFirstSync<{ id: string }>(
-      'SELECT id FROM DailyLogs WHERE date = ?',
+    const existingTodayLog = db.getFirstSync<{ id: string; protein_consumed?: any; calories_consumed?: any }>(
+      'SELECT id, protein_consumed, calories_consumed FROM DailyLogs WHERE date = ?',
       [todayStr]
     );
     if (existingTodayLog) {
-      db.runSync('UPDATE DailyLogs SET weight = ?, updated_at = ? WHERE date = ?', [startingWeightKg, now, todayStr]);
+      // Heal if corrupted by column shift
+      if (
+        typeof existingTodayLog.protein_consumed === 'string' ||
+        existingTodayLog.calories_consumed === startingWeightKg
+      ) {
+        db.runSync(
+          'UPDATE DailyLogs SET calories_consumed = 0, protein_consumed = 0, carbs_consumed = 0, fat_consumed = 0, weight = ?, coach_summary = ?, updated_at = ? WHERE date = ?',
+          [startingWeightKg, 'Day 1 of Sthira. Starting strong at 65.8 kg!', now, todayStr]
+        );
+      } else {
+        db.runSync('UPDATE DailyLogs SET weight = ?, updated_at = ? WHERE date = ?', [startingWeightKg, now, todayStr]);
+      }
     } else {
       db.runSync(
         `INSERT INTO DailyLogs (
           id, date, calories_consumed, protein_consumed, carbs_consumed,
           fat_consumed, water_liters, weight, energy_rating, coach_status,
           coach_summary, created_at, updated_at
-        ) VALUES (?, ?, 0, 0, 0, 0, 0, ?, 8, 'ON TRACK', 'Day 1 of Sthira. Starting strong at 65.8 kg!', ?, ?)`,
-        [`log_${todayStr}`, todayStr, startingWeightKg, now, now]
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [`log_${todayStr}`, todayStr, 0, 0, 0, 0, 0, startingWeightKg, 8, 'ON TRACK', 'Day 1 of Sthira. Starting strong at 65.8 kg!', now, now]
       );
     }
 
     // Mark baseline as initialized in AppSettings so this never runs again
     db.runSync(
       'INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)',
-      ['baseline_cleaned_day1_v1', 'done', now]
+      ['baseline_cleaned_day1_v2', 'done', now]
     );
 
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('sthira_baseline_cleaned_day1_v1', 'done');
+      window.localStorage.setItem('sthira_baseline_cleaned_day1_v2', 'done');
     }
   } catch (e) {
     console.warn('cleanPastDummyDataAndSetBaseline error:', e);

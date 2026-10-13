@@ -20,18 +20,18 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
 }) => {
   const { colors } = useAppTheme();
 
-  const calorieProgress =
-    (goals?.calories_target ?? 2450) > 0
-      ? (log?.calories_consumed ?? 0) / (goals?.calories_target ?? 2450)
-      : 0;
-  const proteinProgress =
-    (goals?.protein_target_max ?? 125) > 0
-      ? (log?.protein_consumed ?? 0) / (goals?.protein_target_max ?? 125)
-      : 0;
-  const waterProgress =
-    (goals?.water_target_liters ?? 2.5) > 0
-      ? (log?.water_liters ?? 0) / (goals?.water_target_liters ?? 2.5)
-      : 0;
+  const caloriesTarget = Number(goals?.calories_target) || 2450;
+  const caloriesConsumed = Number(log?.calories_consumed) || 0;
+  const proteinTargetMax = Number(goals?.protein_target_max) || 125;
+  const proteinConsumed = Number(log?.protein_consumed) || 0;
+  const waterLiters = Number(log?.water_liters) || 0;
+  const displayWeight = Number(log?.weight) || Number(currentWeight) || 65.8;
+
+  const calorieProgress = caloriesTarget > 0 ? caloriesConsumed / caloriesTarget : 0;
+  const proteinProgress = proteinTargetMax > 0 ? proteinConsumed / proteinTargetMax : 0;
+  const waterProgress = (Number(goals?.water_target_liters) || 2.5) > 0
+    ? waterLiters / (Number(goals?.water_target_liters) || 2.5)
+    : 0;
 
   // Format sleep duration (e.g. 7.25h -> 7h 15m)
   const formatSleep = (hours: number | null | undefined) => {
@@ -40,13 +40,6 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
     const m = Math.round((hours - h) * 60);
     return `${h}h ${m > 0 ? `${m}m` : ''}`;
   };
-
-  const caloriesTarget = goals?.calories_target ?? 2450;
-  const caloriesConsumed = log?.calories_consumed ?? 0;
-  const proteinTargetMax = goals?.protein_target_max ?? 125;
-  const proteinConsumed = log?.protein_consumed ?? 0;
-  const waterLiters = log?.water_liters ?? 0;
-  const displayWeight = log?.weight ?? currentWeight ?? 65.8;
 
   return (
     <Card elevated style={styles.card}>

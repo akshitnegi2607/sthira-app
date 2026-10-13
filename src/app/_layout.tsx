@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { runMigrations } from '@/database/migrations';
 import { useProfileStore } from '@/stores/useProfileStore';
@@ -38,45 +39,47 @@ export default function RootLayout() {
   }, [loadProfile, loadDashboard]);
 
   return (
-    <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      {/* Faint ambient presence of Lord Narayana everywhere in background */}
-      <NarayanaAppBackground />
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        {/* Faint ambient presence of Lord Narayana everywhere in background */}
+        <NarayanaAppBackground />
 
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.background,
-          },
-          headerTintColor: colors.text,
-          headerTitleStyle: {
-            fontWeight: '700',
-          },
-          contentStyle: {
-            backgroundColor: colors.background,
-          },
-        }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="settings"
-          options={{
-            presentation: 'modal',
-            title: 'Profile & Targets',
-            headerBackTitle: 'Done',
-          }}
-        />
-      </Stack>
-
-      {/* Sacred App Entry Screen rendered as top overlay during startup */}
-      {!hasEntered && (
-        <View style={StyleSheet.absoluteFill}>
-          <NarayanaEntryScreen
-            isReady={dbReady}
-            onReadyToEnter={() => setHasEntered(true)}
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: colors.background,
+            },
+            headerTintColor: colors.text,
+            headerTitleStyle: {
+              fontWeight: '700',
+            },
+            contentStyle: {
+              backgroundColor: colors.background,
+            },
+          }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="settings"
+            options={{
+              presentation: 'modal',
+              title: 'Profile & Targets',
+              headerBackTitle: 'Done',
+            }}
           />
-        </View>
-      )}
-    </View>
+        </Stack>
+
+        {/* Sacred App Entry Screen rendered as top overlay during startup */}
+        {!hasEntered && (
+          <View style={StyleSheet.absoluteFill}>
+            <NarayanaEntryScreen
+              isReady={dbReady}
+              onReadyToEnter={() => setHasEntered(true)}
+            />
+          </View>
+        )}
+      </View>
+    </SafeAreaProvider>
   );
 }
 

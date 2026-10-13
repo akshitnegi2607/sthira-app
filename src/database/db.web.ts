@@ -22,7 +22,23 @@ class WebSQLiteFallback {
         if (stored) {
           const parsed = JSON.parse(stored);
           for (const [table, rows] of Object.entries(parsed)) {
-            this.tables.set(table, rows as WebDBRecord[]);
+            const tableRows = rows as WebDBRecord[];
+            // Auto-heal DailyLogs if corrupted by column shift
+            if (table === 'DailyLogs' && Array.isArray(tableRows)) {
+              for (const row of tableRows) {
+                if (typeof row.protein_consumed === 'string' && (row.protein_consumed.includes('T') || row.protein_consumed.includes(':') || isNaN(Number(row.protein_consumed)))) {
+                  row.protein_consumed = 0;
+                  if (row.calories_consumed === 65.8) {
+                    row.calories_consumed = 0;
+                    row.weight = 65.8;
+                  }
+                  row.carbs_consumed = 0;
+                  row.fat_consumed = 0;
+                  row.coach_summary = 'Day 1 of Sthira. Starting strong at 65.8 kg!';
+                }
+              }
+            }
+            this.tables.set(table, tableRows);
           }
         }
       }
@@ -236,14 +252,27 @@ class WebSQLiteFallback {
     }
 
     // Handle INSERT (OR REPLACE / OR IGNORE) INTO <table> (<cols>) VALUES (...)
-    const insertMatch = cleanSql.match(/INSERT\s*(?:OR\s+REPLACE\s+|OR\s+IGNORE\s+)?INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES/i);
+    const insertMatch = cleanSql.match(/INSERT\s*(?:OR\s+REPLACE\s+|OR\s+IGNORE\s+)?INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([\s\S]+?)\)$/i);
     if (insertMatch) {
       const table = insertMatch[1];
       const cols = insertMatch[2].split(',').map((c) => c.trim());
+      const rawValues = insertMatch[3].split(',').map((v) => v.trim());
       const row: WebDBRecord = {};
 
+      let paramIdx = 0;
       cols.forEach((col, idx) => {
-        row[col] = params[idx];
+        const valExpr = rawValues[idx] || '?';
+        if (valExpr === '?') {
+          row[col] = params[paramIdx++];
+        } else if (valExpr.startsWith("'") && valExpr.endsWith("'")) {
+          row[col] = valExpr.slice(1, -1);
+        } else if (valExpr.toLowerCase() === 'null') {
+          row[col] = null;
+        } else if (!isNaN(Number(valExpr))) {
+          row[col] = Number(valExpr);
+        } else {
+          row[col] = params[paramIdx++];
+        }
       });
 
       if (!this.tables.has(table)) {

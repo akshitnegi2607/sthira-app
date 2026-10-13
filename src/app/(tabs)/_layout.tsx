@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
@@ -8,6 +9,7 @@ import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
 export default function TabsLayout() {
   const { colors, isDark } = useAppTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -32,8 +34,8 @@ export default function TabsLayout() {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+          height: 56 + (insets.bottom > 0 ? insets.bottom : Platform.OS === 'ios' ? 28 : 10),
+          paddingBottom: insets.bottom > 0 ? insets.bottom : Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 8,
           elevation: 0,
         },
