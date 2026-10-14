@@ -75,8 +75,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       }
 
       set({
-        todayLog: log,
-        todayPlan: plan,
+        todayLog: { ...log },
+        todayPlan: plan ? { ...plan } : null,
         activeSession,
         todayCompletedSession,
         isLoading: false,

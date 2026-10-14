@@ -10,6 +10,8 @@ import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useAppTheme } from '@/hooks/use-theme';
 import { NarayanaEntryScreen } from '@/components/ui/NarayanaEntryScreen';
 import { NarayanaAppBackground } from '@/components/ui/NarayanaAppBackground';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { SupabaseSyncService } from '@/services/supabaseSyncService';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -27,6 +29,13 @@ export default function RootLayout() {
         runMigrations();
         loadProfile();
         loadDashboard();
+
+        // Background non-blocking sync with Supabase if configured
+        if (isSupabaseConfigured()) {
+          SupabaseSyncService.syncAll().catch((err) => {
+            console.warn('[Startup] Supabase background sync failed:', err);
+          });
+        }
       } catch (e) {
         console.error('Error during app database startup:', e);
       } finally {

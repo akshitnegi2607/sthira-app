@@ -13,6 +13,8 @@ import {
 import { Exercise, WorkoutPlan, WorkoutSession, PainEntry, WorkoutSet } from '@/types/database';
 import { useDashboardStore } from './useDashboardStore';
 import { getTodayDateString } from '@/utils/date';
+import { isSupabaseConfigured, getSupabaseClient } from '@/services/supabaseClient';
+import { SupabaseSyncService } from '@/services/supabaseSyncService';
 
 interface WorkoutStoreState {
   // Plans & Library
@@ -327,6 +329,9 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     } catch (e) {
       // Ignore
     }
+    if (isSupabaseConfigured()) {
+      SupabaseSyncService.syncAll().catch(() => {});
+    }
   },
 
   cancelWorkout: () => {
@@ -360,6 +365,9 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
 
     const recentPain = WorkoutRepository.getRecentPainEntries(14);
     set({ recentPain, isPainModalOpen: false });
+    if (isSupabaseConfigured()) {
+      SupabaseSyncService.syncAll().catch(() => {});
+    }
   },
 
   openSubstitutionModal: (workoutExerciseId) =>
@@ -393,7 +401,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       isHistoryModalOpen: false,
     }),
 
-  deleteHistorySession: (sessionId) => {
+  deleteHistorySession: async (sessionId) => {
     WorkoutRepository.deleteSession(sessionId);
     set({
       selectedHistorySession: null,
@@ -404,6 +412,15 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       useDashboardStore.getState().loadDashboard();
     } catch (e) {
       // Ignore
+    }
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        try {
+          await supabase.from('WorkoutSessions').delete().eq('id', sessionId);
+        } catch {}
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     }
   },
 }));

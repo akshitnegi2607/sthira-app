@@ -26,6 +26,8 @@ import { ProgressRepository } from '../database/repositories/progressRepository'
 import { ProfileRepository } from '../database/repositories/profileRepository';
 import { useProfileStore } from './useProfileStore';
 import { useDashboardStore } from './useDashboardStore';
+import { isSupabaseConfigured, getSupabaseClient } from '@/services/supabaseClient';
+import { SupabaseSyncService } from '@/services/supabaseSyncService';
 
 export type ProgressTimeframe = '7d' | '30d' | '90d' | 'all';
 
@@ -160,8 +162,8 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       );
 
       set({
-        weightHistory: allWeights,
-        emaSeries: fullEma,
+        weightHistory: [...allWeights],
+        emaSeries: [...fullEma],
         weeklyGainRate,
         calorieAdaptation,
         sleepCorrelation,
@@ -191,6 +193,10 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       useProfileStore.getState().loadProfile();
       useDashboardStore.getState().loadDashboard();
       get().loadProgressData();
+
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     } catch (e) {
       console.error('Error logging scale weight:', e);
       throw e;
@@ -201,6 +207,15 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     try {
       ProgressRepository.deleteWeight(id);
       get().loadProgressData();
+      if (isSupabaseConfigured()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          try {
+            await supabase.from('WeightEntries').delete().eq('id', id);
+          } catch {}
+          SupabaseSyncService.syncAll().catch(() => {});
+        }
+      }
     } catch (e) {
       console.error('Error deleting weight entry:', e);
     }
@@ -211,6 +226,9 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       ProgressRepository.applyCalorieAdjustment(deltaKcal);
       useProfileStore.getState().loadProfile();
       get().loadProgressData();
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     } catch (e) {
       console.error('Error applying calorie adjustment:', e);
     }

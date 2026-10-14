@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
@@ -47,6 +48,12 @@ export default function ProgressScreen() {
   useEffect(() => {
     loadProgressData();
   }, [loadProgressData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProgressData();
+    }, [loadProgressData])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -17,6 +17,8 @@ import { DailyLogsRepository } from '../database/repositories/dailyLogsRepositor
 import { ProfileRepository } from '../database/repositories/profileRepository';
 import { WorkoutRepository } from '../database/repositories/workoutRepository';
 import { useDashboardStore } from './useDashboardStore';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { SupabaseSyncService } from '@/services/supabaseSyncService';
 
 interface JournalState {
   selectedDate: string;
@@ -197,6 +199,10 @@ export const useJournalStore = create<JournalState>((set, get) => ({
 
       // Auto-refresh daily review
       await get().generateAndSaveDailyReview(targetDate);
+
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     } catch (e) {
       console.error('Error saving morning check-in:', e);
       throw e;
@@ -220,6 +226,10 @@ export const useJournalStore = create<JournalState>((set, get) => ({
       });
 
       await get().generateAndSaveDailyReview(targetDate);
+
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     } catch (e) {
       console.error('Error saving evening reflection:', e);
       throw e;

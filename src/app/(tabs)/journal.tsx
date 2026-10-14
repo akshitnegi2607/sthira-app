@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
@@ -45,6 +46,12 @@ export default function JournalScreen() {
   useEffect(() => {
     loadJournalData();
   }, [loadJournalData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadJournalData(selectedDate);
+    }, [loadJournalData, selectedDate])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

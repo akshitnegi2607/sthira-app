@@ -21,13 +21,16 @@ export function cleanSupabaseUrl(rawUrl: string): string {
   return u;
 }
 
+export const DEFAULT_SUPABASE_URL = 'https://mnupkkaveffdghylxokn.supabase.co';
+export const DEFAULT_SUPABASE_KEY = 'sb_publishable_4sIO_02adW7ufGW_jkKzRQ_q6WFDYQF';
+
 /**
  * Retrieves saved Supabase credentials from local AppSettings table,
- * localStorage on web, falling back to EXPO_PUBLIC environment variables.
+ * localStorage on web, falling back to EXPO_PUBLIC environment variables or project defaults.
  */
 export function getSupabaseCredentials(): SupabaseConfig {
-  const envUrl = cleanSupabaseUrl(process.env.EXPO_PUBLIC_SUPABASE_URL || '');
-  const envKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+  const envUrl = cleanSupabaseUrl(process.env.EXPO_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL);
+  const envKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY).trim();
 
   let savedUrl = '';
   let savedKey = '';
@@ -53,8 +56,8 @@ export function getSupabaseCredentials(): SupabaseConfig {
   }
 
   return {
-    url: cleanSupabaseUrl(savedUrl || envUrl),
-    anonKey: (savedKey || envKey).trim(),
+    url: cleanSupabaseUrl(savedUrl || envUrl || DEFAULT_SUPABASE_URL),
+    anonKey: (savedKey || envKey || DEFAULT_SUPABASE_KEY).trim(),
   };
 }
 

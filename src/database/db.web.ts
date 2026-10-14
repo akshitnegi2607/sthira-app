@@ -23,8 +23,9 @@ class WebSQLiteFallback {
           const parsed = JSON.parse(stored);
           for (const [table, rows] of Object.entries(parsed)) {
             const tableRows = rows as WebDBRecord[];
-            // Auto-heal DailyLogs if corrupted by column shift
+            // Auto-heal and deduplicate DailyLogs by date
             if (table === 'DailyLogs' && Array.isArray(tableRows)) {
+              const dateMap = new Map<string, WebDBRecord>();
               for (const row of tableRows) {
                 if (typeof row.protein_consumed === 'string' && (row.protein_consumed.includes('T') || row.protein_consumed.includes(':') || isNaN(Number(row.protein_consumed)))) {
                   row.protein_consumed = 0;
@@ -36,7 +37,20 @@ class WebSQLiteFallback {
                   row.fat_consumed = 0;
                   row.coach_summary = 'Day 1 of Sthira. Starting strong at 65.8 kg!';
                 }
+
+                if (!dateMap.has(row.date)) {
+                  dateMap.set(row.date, row);
+                } else {
+                  const existing = dateMap.get(row.date)!;
+                  if (Number(row.calories_consumed || 0) > Number(existing.calories_consumed || 0)) {
+                    dateMap.set(row.date, { ...existing, ...row });
+                  } else {
+                    dateMap.set(row.date, { ...row, ...existing });
+                  }
+                }
               }
+              this.tables.set(table, Array.from(dateMap.values()));
+              continue;
             }
             this.tables.set(table, tableRows);
           }
@@ -80,7 +94,7 @@ class WebSQLiteFallback {
   }
 
   getAllSync<T>(sql: string, params: any[] = []): T[] {
-    const cleanSql = sql.trim().replace(/\s+/g, ' ');
+    const cleanSql = sql.trim().replace(/;+$/, '').replace(/\s+/g, ' ');
 
     // Handle SELECT COUNT(*) FROM <table>
     const countMatch = cleanSql.match(/SELECT COUNT\(\*\)\s*(?:as \w+)?\s*FROM (\w+)/i);
@@ -226,7 +240,7 @@ class WebSQLiteFallback {
   }
 
   runSync(sql: string, params: any[] = []): { changes: number; lastInsertRowId: number } {
-    const cleanSql = sql.trim().replace(/\s+/g, ' ');
+    const cleanSql = sql.trim().replace(/;+$/, '').replace(/\s+/g, ' ');
 
     // Handle DELETE FROM <table> [WHERE <col> <op> ?]
     const deleteMatch = cleanSql.match(/DELETE FROM (\w+)(?:\s+WHERE\s+(\w+)\s*(=|<|>|<=|>=)\s*(\?|'[^']*'|\d+))?/i);
@@ -295,11 +309,11 @@ class WebSQLiteFallback {
 
       const rows = this.tables.get(table)!;
       // If table has primary key 'id' or 'key' or 'date', replace or append
-      const keyCol = cols.includes('key') ? 'key' : cols.includes('id') ? 'id' : cols.includes('date') ? 'date' : null;
+      const keyCol = table === 'DailyLogs' ? 'date' : cols.includes('key') ? 'key' : cols.includes('id') ? 'id' : cols.includes('date') ? 'date' : null;
       if (keyCol && row[keyCol] !== undefined) {
-        const existingIdx = rows.findIndex((r) => r[keyCol] == row[keyCol]);
+        const existingIdx = rows.findIndex((r) => r[keyCol] == row[keyCol] || (table === 'DailyLogs' && r.date == row.date));
         if (existingIdx >= 0) {
-          rows[existingIdx] = row;
+          rows[existingIdx] = { ...rows[existingIdx], ...row };
         } else {
           rows.push(row);
         }

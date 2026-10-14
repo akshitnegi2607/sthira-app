@@ -7,6 +7,7 @@ import { useWorkoutStore } from '@/stores/useWorkoutStore';
 import { useProgressStore } from '@/stores/useProgressStore';
 import { useJournalStore } from '@/stores/useJournalStore';
 import { useNutritionStore } from '@/stores/useNutritionStore';
+import { MealRepository } from '@/database/repositories/mealRepository';
 
 export type SyncState = 'idle' | 'syncing' | 'synced' | 'error' | 'not_configured';
 
@@ -21,7 +22,7 @@ export interface SyncStatus {
 const SYNC_TABLES: { name: string; keyCol: string }[] = [
   { name: 'UserProfile', keyCol: 'id' },
   { name: 'Goals', keyCol: 'id' },
-  { name: 'DailyLogs', keyCol: 'id' },
+  { name: 'DailyLogs', keyCol: 'date' },
   { name: 'WeightEntries', keyCol: 'id' },
   { name: 'MealEntries', keyCol: 'id' },
   { name: 'FoodItems', keyCol: 'id' },
@@ -119,30 +120,8 @@ export const SupabaseSyncService = {
     let totalPulled = 0;
 
     try {
+      // 1. PULL: Fetch all rows from Supabase and upsert locally first
       for (const table of SYNC_TABLES) {
-        // 1. PUSH: Get local rows and upsert to Supabase
-        try {
-          const localRows = db.getAllSync(`SELECT * FROM ${table.name}`) || [];
-          if (localRows.length > 0) {
-            // Upsert in batches of 50
-            const batchSize = 50;
-            for (let i = 0; i < localRows.length; i += batchSize) {
-              const chunk = localRows.slice(i, i + batchSize);
-              const { error: pushErr } = await supabase
-                .from(table.name)
-                .upsert(chunk, { onConflict: table.keyCol });
-              if (pushErr) {
-                console.warn(`[SupabaseSync] Push error for ${table.name}:`, pushErr.message);
-              } else {
-                totalPushed += chunk.length;
-              }
-            }
-          }
-        } catch (localErr) {
-          console.warn(`[SupabaseSync] Error reading local table ${table.name}:`, localErr);
-        }
-
-        // 2. PULL: Fetch all rows from Supabase and upsert locally
         try {
           const { data: remoteRows, error: pullErr } = await supabase
             .from(table.name)
@@ -164,9 +143,71 @@ export const SupabaseSyncService = {
                 console.warn(`[SupabaseSync] Local insert error for ${table.name}:`, insErr);
               }
             }
+
+            // If WeightEntries were pulled, ensure latest weight is synced to UserProfile and DailyLogs
+            if (table.name === 'WeightEntries') {
+              const sorted = [...remoteRows].sort((a: any, b: any) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+              const latest = sorted[0];
+              if (latest && latest.weight_kg) {
+                try {
+                  db.runSync(
+                    'UPDATE UserProfile SET current_weight = ?, updated_at = ? WHERE id = ?',
+                    [latest.weight_kg, new Date().toISOString(), 'user_primary']
+                  );
+                } catch {}
+              }
+              for (const w of remoteRows) {
+                if (w.date && w.weight_kg) {
+                  try {
+                    db.runSync(
+                      'UPDATE DailyLogs SET weight = ?, updated_at = ? WHERE date = ?',
+                      [w.weight_kg, new Date().toISOString(), w.date]
+                    );
+                  } catch {}
+                }
+              }
+            }
           }
         } catch (remoteErr) {
           console.warn(`[SupabaseSync] Error pulling from ${table.name}:`, remoteErr);
+        }
+      }
+
+      // 2. Recalculate DailyLogs totals for all unique dates from pulled meals
+      try {
+        const allMealRows = db.getAllSync<{ date: string }>('SELECT date FROM MealEntries') || [];
+        const uniqueMealDates = Array.from(new Set(allMealRows.map((m: any) => m.date).filter(Boolean)));
+        for (const d of uniqueMealDates) {
+          try {
+            MealRepository.syncDailyLogTotals(d as string);
+          } catch (e) {
+            console.warn(`[SupabaseSync] Error syncing daily totals for ${d}:`, e);
+          }
+        }
+      } catch (calcErr) {
+        console.warn('[SupabaseSync] Error recalculating meal totals:', calcErr);
+      }
+
+      // 3. PUSH: Get local rows and upsert to Supabase
+      for (const table of SYNC_TABLES) {
+        try {
+          const localRows = db.getAllSync(`SELECT * FROM ${table.name}`) || [];
+          if (localRows.length > 0) {
+            const batchSize = 50;
+            for (let i = 0; i < localRows.length; i += batchSize) {
+              const chunk = localRows.slice(i, i + batchSize);
+              const { error: pushErr } = await supabase
+                .from(table.name)
+                .upsert(chunk, { onConflict: table.keyCol });
+              if (pushErr) {
+                console.warn(`[SupabaseSync] Push error for ${table.name}:`, pushErr.message);
+              } else {
+                totalPushed += chunk.length;
+              }
+            }
+          }
+        } catch (localErr) {
+          console.warn(`[SupabaseSync] Error reading local table ${table.name}:`, localErr);
         }
       }
 
@@ -201,7 +242,7 @@ export const SupabaseSyncService = {
 
       return {
         success: true,
-        message: `Synced successfully! Pushed ${totalPushed} records, pulled ${totalPulled} records.`,
+        message: `Sync complete! Pushed ${totalPushed} and pulled ${totalPulled} records from cloud.`,
         pushed: totalPushed,
         pulled: totalPulled,
       };

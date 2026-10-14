@@ -12,6 +12,9 @@ import { analyzeMeal, MealAnalysisResult } from '@/services/mealParser';
 import { useDashboardStore } from './useDashboardStore';
 import { getTodayDateString } from '@/utils/date';
 
+import { isSupabaseConfigured, getSupabaseClient } from '@/services/supabaseClient';
+import { SupabaseSyncService } from '@/services/supabaseSyncService';
+
 interface NutritionState {
   selectedDate: string;
   meals: MealEntryWithEstimates[];
@@ -85,7 +88,13 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       const recipes = RecipeRepository.getAllRecipes();
       const customRecipes = RecipeRepository.getCustomRecipes();
       const currentLog = DailyLogsRepository.getOrCreateLog(targetDate);
-      set({ meals, recipes, customRecipes, currentLog, isLoading: false });
+      set({
+        meals: [...meals],
+        recipes: [...recipes],
+        customRecipes: [...customRecipes],
+        currentLog: currentLog ? { ...currentLog } : null,
+        isLoading: false,
+      });
     } catch (e) {
       console.warn('Failed to load nutrition data from SQLite', e);
       set({ isLoading: false });
@@ -99,16 +108,29 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       get().loadNutritionData(mealData.date);
       // Synchronize dashboard store
       useDashboardStore.getState().loadDashboard();
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     } catch (e) {
       console.error('Failed to create meal in SQLite', e);
     }
   },
 
-  deleteMeal: (mealId) => {
+  deleteMeal: async (mealId) => {
     try {
       MealRepository.deleteMeal(mealId);
       get().loadNutritionData(get().selectedDate);
       useDashboardStore.getState().loadDashboard();
+      if (isSupabaseConfigured()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          try {
+            await supabase.from('NutritionEstimates').delete().eq('meal_entry_id', mealId);
+            await supabase.from('MealEntries').delete().eq('id', mealId);
+          } catch {}
+          SupabaseSyncService.syncAll().catch(() => {});
+        }
+      }
     } catch (e) {
       console.error('Failed to delete meal', e);
     }
@@ -119,6 +141,9 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       MealRepository.updateEstimate(estimateId, updates);
       get().loadNutritionData(get().selectedDate);
       useDashboardStore.getState().loadDashboard();
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     } catch (e) {
       console.error('Failed to update estimate', e);
     }
@@ -128,6 +153,9 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     try {
       MealRepository.verifyMeal(mealId);
       get().loadNutritionData(get().selectedDate);
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
     } catch (e) {
       console.error('Failed to verify meal', e);
     }
