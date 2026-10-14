@@ -2,13 +2,11 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from 'react-native';
 
 export function useAppTheme() {
-  const scheme = useColorScheme();
-  const isDark = scheme !== 'light'; // Default to dark for premium calm aesthetic
-  const colors = isDark ? Colors.dark : Colors.light;
-
+  // Sthira is strictly designed around a signature calm, premium obsidian aesthetic.
+  // Lock to dark mode permanently so device light-mode settings never bleach the header or footer.
   return {
-    isDark,
-    colors,
+    isDark: true,
+    colors: Colors.dark,
   };
 }
 
