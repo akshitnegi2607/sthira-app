@@ -11,12 +11,23 @@ export interface SupabaseConfig {
 }
 
 /**
+ * Sanitizes Supabase URL by removing trailing slashes and /rest/v1 paths.
+ */
+export function cleanSupabaseUrl(rawUrl: string): string {
+  if (!rawUrl) return '';
+  let u = rawUrl.trim();
+  u = u.replace(/\/rest\/v1\/?$/i, '');
+  u = u.replace(/\/+$/, '');
+  return u;
+}
+
+/**
  * Retrieves saved Supabase credentials from local AppSettings table,
  * localStorage on web, falling back to EXPO_PUBLIC environment variables.
  */
 export function getSupabaseCredentials(): SupabaseConfig {
-  const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-  const envKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+  const envUrl = cleanSupabaseUrl(process.env.EXPO_PUBLIC_SUPABASE_URL || '');
+  const envKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
   let savedUrl = '';
   let savedKey = '';
@@ -42,7 +53,7 @@ export function getSupabaseCredentials(): SupabaseConfig {
   }
 
   return {
-    url: (savedUrl || envUrl).trim(),
+    url: cleanSupabaseUrl(savedUrl || envUrl),
     anonKey: (savedKey || envKey).trim(),
   };
 }
@@ -51,7 +62,7 @@ export function getSupabaseCredentials(): SupabaseConfig {
  * Persists Supabase credentials into AppSettings table and localStorage, resetting client cache.
  */
 export function saveSupabaseCredentials(url: string, anonKey: string): void {
-  const cleanUrl = url.trim();
+  const cleanUrl = cleanSupabaseUrl(url);
   const cleanKey = anonKey.trim();
 
   // 1. Direct Web localStorage

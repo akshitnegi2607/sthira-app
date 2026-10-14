@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getDatabase } from '@/database/db';
-import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
+import { getSupabaseClient, isSupabaseConfigured, cleanSupabaseUrl } from './supabaseClient';
 import { useProfileStore } from '@/stores/useProfileStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useWorkoutStore } from '@/stores/useWorkoutStore';
@@ -69,7 +69,10 @@ export const SupabaseSyncService = {
    * Test connection to Supabase instance.
    */
   async testConnection(customUrl?: string, customKey?: string): Promise<{ success: boolean; message: string }> {
-    let supabase = customUrl && customKey ? createClient(customUrl.trim(), customKey.trim(), {
+    const cleanedUrl = customUrl ? cleanSupabaseUrl(customUrl) : undefined;
+    const cleanedKey = customKey ? customKey.trim() : undefined;
+
+    let supabase = cleanedUrl && cleanedKey ? createClient(cleanedUrl, cleanedKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     }) : getSupabaseClient();
 

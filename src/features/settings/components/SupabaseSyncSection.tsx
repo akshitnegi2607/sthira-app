@@ -19,6 +19,7 @@ import {
   getSupabaseCredentials,
   saveSupabaseCredentials,
   isSupabaseConfigured,
+  cleanSupabaseUrl,
 } from '@/services/supabaseClient';
 import { SupabaseSyncService, SyncStatus } from '@/services/supabaseSyncService';
 import { showAlert } from '@/utils/alert';
@@ -322,8 +323,10 @@ export const SupabaseSyncSection: React.FC = () => {
   }, []);
 
   const handleSaveAndTest = async () => {
-    const cleanUrl = url.trim();
+    const cleanUrl = cleanSupabaseUrl(url);
     const cleanKey = anonKey.trim();
+    setUrl(cleanUrl);
+    setAnonKey(cleanKey);
 
     if (!cleanUrl || !cleanKey) {
       showAlert('Configuration Required', 'Please enter both your Supabase Project URL and Anon API Key.');
@@ -352,9 +355,11 @@ export const SupabaseSyncSection: React.FC = () => {
   };
 
   const handleSyncNow = async () => {
-    const cleanUrl = url.trim();
+    const cleanUrl = cleanSupabaseUrl(url);
     const cleanKey = anonKey.trim();
     if (cleanUrl && cleanKey) {
+      setUrl(cleanUrl);
+      setAnonKey(cleanKey);
       saveSupabaseCredentials(cleanUrl, cleanKey);
     }
 
