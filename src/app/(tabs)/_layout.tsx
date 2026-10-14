@@ -11,21 +11,23 @@ export default function TabsLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // On modern notch/Dynamic Island iPhones (both native and standalone PWA), the bottom home bar inset is 34px.
-  // On desktop browsers, insets.bottom is 0.
-  const isIosWeb =
+  // Detect iOS PWA standalone mode (Add to Home Screen) vs standard Safari browser
+  const isStandalonePWA =
     Platform.OS === 'web' &&
     typeof window !== 'undefined' &&
-    /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    (Boolean((window.navigator as any)?.standalone) ||
+      Boolean(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches));
 
   const bottomPadding =
     insets.bottom > 0
       ? insets.bottom
       : Platform.OS === 'ios'
-      ? 34
-      : isIosWeb
-      ? 34
-      : 10;
+      ? 28
+      : isStandalonePWA
+      ? 30
+      : 8;
+
+  const inactiveColor = isDark ? '#94A3B8' : '#64748B';
 
   return (
     <Tabs
@@ -46,17 +48,19 @@ export default function TabsLayout() {
           fontWeight: '700',
           fontSize: 18,
         },
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: inactiveColor,
         tabBarStyle: {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
-          height: 60 + bottomPadding,
+          height: 56 + bottomPadding,
           paddingBottom: bottomPadding,
-          paddingTop: 8,
+          paddingTop: 6,
           elevation: 0,
         },
         tabBarItemStyle: {
-          paddingVertical: 0,
+          paddingVertical: 2,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -80,8 +84,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
-              size={23}
-              color={color}
+              size={24}
+              color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
         }}
@@ -94,8 +98,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'restaurant' : 'restaurant-outline'}
-              size={23}
-              color={color}
+              size={24}
+              color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
         }}
@@ -108,8 +112,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'barbell' : 'barbell-outline'}
-              size={23}
-              color={color}
+              size={24}
+              color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
         }}
@@ -122,8 +126,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'trending-up' : 'trending-up-outline'}
-              size={23}
-              color={color}
+              size={24}
+              color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
         }}
@@ -136,8 +140,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'book' : 'book-outline'}
-              size={23}
-              color={color}
+              size={24}
+              color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
         }}
