@@ -12,61 +12,79 @@ export interface SupabaseConfig {
 
 /**
  * Retrieves saved Supabase credentials from local AppSettings table,
- * falling back to EXPO_PUBLIC environment variables.
+ * localStorage on web, falling back to EXPO_PUBLIC environment variables.
  */
 export function getSupabaseCredentials(): SupabaseConfig {
   const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
   const envKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
+  let savedUrl = '';
+  let savedKey = '';
+
+  // 1. Direct Web localStorage fallback (instant, immune to DB state)
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      savedUrl = window.localStorage.getItem('__sthira_supabase_url__') || '';
+      savedKey = window.localStorage.getItem('__sthira_supabase_key__') || '';
+    } catch {}
+  }
+
+  // 2. Query AppSettings table
   try {
     const db = getDatabase();
-    const rows = db.getAllSync<{ key: string; value: string }>(
-      "SELECT key, value FROM AppSettings WHERE key IN ('supabase_url', 'supabase_anon_key')"
-    );
-
-    let savedUrl = '';
-    let savedKey = '';
+    const rows = db.getAllSync<{ key: string; value: string }>('SELECT * FROM AppSettings');
     for (const r of rows || []) {
-      if (r.key === 'supabase_url') savedUrl = r.value;
-      if (r.key === 'supabase_anon_key') savedKey = r.value;
+      if (r.key === 'supabase_url' && r.value) savedUrl = r.value;
+      if (r.key === 'supabase_anon_key' && r.value) savedKey = r.value;
     }
-
-    return {
-      url: savedUrl || envUrl,
-      anonKey: savedKey || envKey,
-    };
   } catch (e) {
-    return {
-      url: envUrl,
-      anonKey: envKey,
-    };
+    console.warn('Could not read AppSettings for Supabase', e);
   }
+
+  return {
+    url: (savedUrl || envUrl).trim(),
+    anonKey: (savedKey || envKey).trim(),
+  };
 }
 
 /**
- * Persists Supabase credentials into AppSettings table and resets the client cache.
+ * Persists Supabase credentials into AppSettings table and localStorage, resetting client cache.
  */
 export function saveSupabaseCredentials(url: string, anonKey: string): void {
+  const cleanUrl = url.trim();
+  const cleanKey = anonKey.trim();
+
+  // 1. Direct Web localStorage
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem('__sthira_supabase_url__', cleanUrl);
+      window.localStorage.setItem('__sthira_supabase_key__', cleanKey);
+    } catch (e) {
+      console.warn('Failed to save to localStorage', e);
+    }
+  }
+
+  // 2. Persist to AppSettings SQLite table
   try {
     const db = getDatabase();
     const now = new Date().toISOString();
 
     db.runSync(
-      `INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES ('supabase_url', ?, ?)`,
-      [url.trim(), now]
+      `INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)`,
+      ['supabase_url', cleanUrl, now]
     );
     db.runSync(
-      `INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES ('supabase_anon_key', ?, ?)`,
-      [anonKey.trim(), now]
+      `INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)`,
+      ['supabase_anon_key', cleanKey, now]
     );
-
-    // Invalidate cached client
-    cachedClient = null;
-    cachedUrl = null;
-    cachedKey = null;
   } catch (e) {
     console.error('Failed to save Supabase credentials', e);
   }
+
+  // Invalidate cached client
+  cachedClient = null;
+  cachedUrl = null;
+  cachedKey = null;
 }
 
 /**

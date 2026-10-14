@@ -322,26 +322,29 @@ export const SupabaseSyncSection: React.FC = () => {
   }, []);
 
   const handleSaveAndTest = async () => {
-    if (!url.trim() || !anonKey.trim()) {
+    const cleanUrl = url.trim();
+    const cleanKey = anonKey.trim();
+
+    if (!cleanUrl || !cleanKey) {
       showAlert('Configuration Required', 'Please enter both your Supabase Project URL and Anon API Key.');
       return;
     }
 
-    if (!url.trim().startsWith('https://')) {
+    if (!cleanUrl.startsWith('https://')) {
       showAlert('Invalid URL', 'Supabase Project URL must start with "https://" (e.g. https://your-id.supabase.co)');
       return;
     }
 
-    saveSupabaseCredentials(url.trim(), anonKey.trim());
+    saveSupabaseCredentials(cleanUrl, cleanKey);
     setIsTesting(true);
     setBannerMessage(null);
 
-    const res = await SupabaseSyncService.testConnection();
+    const res = await SupabaseSyncService.testConnection(cleanUrl, cleanKey);
     setIsTesting(false);
 
     if (res.success) {
       setBannerMessage({ text: res.message, type: 'success' });
-      showAlert('Connected!', 'Connection to your Supabase project succeeded! Ready to sync.');
+      showAlert('Connected!', res.message);
     } else {
       setBannerMessage({ text: res.message, type: 'error' });
       showAlert('Connection Issue', res.message);
@@ -349,6 +352,12 @@ export const SupabaseSyncSection: React.FC = () => {
   };
 
   const handleSyncNow = async () => {
+    const cleanUrl = url.trim();
+    const cleanKey = anonKey.trim();
+    if (cleanUrl && cleanKey) {
+      saveSupabaseCredentials(cleanUrl, cleanKey);
+    }
+
     if (!isSupabaseConfigured()) {
       showAlert('Setup Required', 'Please configure and save your Supabase URL and Key first.');
       return;

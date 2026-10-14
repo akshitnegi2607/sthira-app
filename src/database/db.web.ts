@@ -156,13 +156,27 @@ class WebSQLiteFallback {
       return rows.map((r) => ({ ...r })) as unknown as T[];
     }
 
-    // Handle SELECT * FROM <table> WHERE <col> IN (?, ?, ...)
+    // Handle SELECT * FROM <table> WHERE <col> IN (?, ?, ...) or IN ('a', 'b')
     const inMatch = cleanSql.match(/SELECT ([\s\S]+?) FROM (\w+)\s+WHERE\s+(\w+)\s*IN\s*\(([^)]+)\)/i);
     if (inMatch) {
+      const selectColsRaw = inMatch[1].trim();
       const table = inMatch[2];
       const col = inMatch[3];
-      const valSet = new Set(params);
-      const rows = (this.tables.get(table) || []).filter((r) => valSet.has(r[col]));
+      const rawInValues = inMatch[4].split(',').map((v) => v.trim().replace(/^['"]|['"]$/g, ''));
+      const valSet = params && params.length > 0 ? new Set(params) : new Set(rawInValues);
+      let rows = (this.tables.get(table) || []).filter((r) => valSet.has(r[col]));
+
+      if (selectColsRaw !== '*') {
+        const colsToPick = selectColsRaw.split(',').map((c) => c.trim().split(/\s+as\s+/i)[0].trim());
+        return rows.map((r) => {
+          const picked: any = {};
+          colsToPick.forEach((c) => {
+            picked[c] = r[c];
+          });
+          return picked;
+        }) as unknown as T[];
+      }
+
       return rows.map((r) => ({ ...r })) as unknown as T[];
     }
 

@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { getDatabase } from '@/database/db';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { useProfileStore } from '@/stores/useProfileStore';
@@ -67,18 +68,27 @@ export const SupabaseSyncService = {
   /**
    * Test connection to Supabase instance.
    */
-  async testConnection(): Promise<{ success: boolean; message: string }> {
-    const supabase = getSupabaseClient();
+  async testConnection(customUrl?: string, customKey?: string): Promise<{ success: boolean; message: string }> {
+    let supabase = customUrl && customKey ? createClient(customUrl.trim(), customKey.trim(), {
+      auth: { persistSession: false, autoRefreshToken: false },
+    }) : getSupabaseClient();
+
     if (!supabase) {
-      return { success: false, message: 'Supabase credentials are not configured.' };
+      return { success: false, message: 'Supabase credentials are not configured. Please enter your Project URL and Anon API key.' };
     }
 
     try {
       const { error } = await supabase.from('Goals').select('id').limit(1);
       if (error) {
+        if (error.code === '42P01' || error.message.includes('does not exist')) {
+          return {
+            success: true,
+            message: 'Connected to Supabase! However, the database tables have not been created yet. Please tap "View / Copy SQL Schema", copy it, and run it in your Supabase SQL Editor.',
+          };
+        }
         return { success: false, message: `Connection error: ${error.message}` };
       }
-      return { success: true, message: 'Successfully connected to Supabase database!' };
+      return { success: true, message: 'Successfully connected to Supabase database! All tables ready.' };
     } catch (e: any) {
       return { success: false, message: `Connection failed: ${e?.message || 'Network error'}` };
     }
