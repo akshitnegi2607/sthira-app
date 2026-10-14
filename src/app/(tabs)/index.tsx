@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   ScrollView,
   View,
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import { useProfileStore } from '@/stores/useProfileStore';
@@ -33,6 +33,13 @@ export default function HomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [modalType, setModalType] = useState<QuickLogType>(null);
+
+  // Auto-refresh today's data whenever user navigates back to Home screen
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+    }, [loadDashboard])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);

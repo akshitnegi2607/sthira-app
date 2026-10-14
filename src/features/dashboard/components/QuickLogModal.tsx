@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -284,10 +285,15 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
               borderColor: colors.cardBorder,
             },
           ]}>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Ionicons name="close" size={20} color={colors.textMuted} />
-          </TouchableOpacity>
-          {renderContent()}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: Spacing.sm }}>
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+              <Ionicons name="close" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+            {renderContent()}
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -312,8 +318,10 @@ const styles = StyleSheet.create({
   sheet: {
     width: '100%',
     maxWidth: 420,
+    maxHeight: '88%',
+    overflow: 'hidden',
     borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
+    padding: Spacing.lg,
     borderWidth: 1,
     position: 'relative',
   },

@@ -155,7 +155,11 @@ export const NaturalLanguageLoggerModal: React.FC<NaturalLanguageLoggerModalProp
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}>
             {/* Meal Type Segmented Tabs */}
             <View
               style={[
@@ -446,8 +450,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: BorderRadius.xl,
     borderWidth: 1,
     borderBottomWidth: 0,
-    maxHeight: '90%',
-    paddingBottom: Spacing.xl,
+    height: '88%',
+    maxHeight: '88%',
+    overflow: 'hidden',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -469,7 +477,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 60,
   },
   mealTypeTabs: {
     flexDirection: 'row',

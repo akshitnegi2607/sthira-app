@@ -3,6 +3,8 @@ import { DailyLog, WorkoutPlan, WorkoutSession } from '@/types/database';
 import { DailyLogsRepository } from '@/database/repositories/dailyLogsRepository';
 import { ExerciseRepository } from '@/database/repositories/exerciseRepository';
 import { WorkoutRepository, PopulatedSession } from '@/database/repositories/workoutRepository';
+import { MealRepository } from '@/database/repositories/mealRepository';
+import { getTodayDateString } from '@/utils/date';
 
 interface DashboardState {
   todayLog: DailyLog;
@@ -16,7 +18,7 @@ interface DashboardState {
   quickLogWeight: (weightKg: number) => void;
 }
 
-const fallbackDate = new Date().toISOString().split('T')[0];
+const fallbackDate = getTodayDateString();
 
 const initialLog: DailyLog = {
   id: `log_${fallbackDate}`,
@@ -49,11 +51,16 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   loadDashboard: () => {
     try {
+      const todayStr = getTodayDateString();
+      try {
+        MealRepository.syncDailyLogTotals(todayStr);
+      } catch (e) {
+        // silent sync guard
+      }
       const log = DailyLogsRepository.getTodayLog();
       const plan = ExerciseRepository.getTodayPlan();
       const activeSession = WorkoutRepository.getActiveSession();
       const history = WorkoutRepository.getCompletedHistory(5);
-      const todayStr = log.date;
       const todayCompletedSession = history.find((h) => h.date === todayStr) || null;
 
       // Dynamic coach summary if not set or empty

@@ -227,7 +227,11 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}>
             {/* Meal Title & Meal Slot Row */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>MEAL NAME</Text>
@@ -345,37 +349,41 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
                 <Text style={[styles.customRowTitle, { color: colors.text }]}>
                   Add Custom Ingredient
                 </Text>
-                <View style={styles.customRowInputs}>
-                  <TextInput
-                    style={[styles.smallInput, { flex: 2, color: colors.text, borderColor: colors.cardBorder }]}
-                    placeholder="Item (e.g. Soya Chaap)"
-                    placeholderTextColor={colors.textMuted}
-                    value={customName}
-                    onChangeText={setCustomName}
-                  />
-                  <TextInput
-                    style={[styles.smallInput, { flex: 1.5, color: colors.text, borderColor: colors.cardBorder }]}
-                    placeholder="Amount (e.g. 100g)"
-                    placeholderTextColor={colors.textMuted}
-                    value={customAmount}
-                    onChangeText={setCustomAmount}
-                  />
-                  <TextInput
-                    style={[styles.smallInput, { flex: 1, color: colors.text, borderColor: colors.cardBorder }]}
-                    placeholder="kcal"
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType="numeric"
-                    value={customCal}
-                    onChangeText={setCustomCal}
-                  />
-                  <TextInput
-                    style={[styles.smallInput, { flex: 1, color: colors.text, borderColor: colors.cardBorder }]}
-                    placeholder="Pro (g)"
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType="numeric"
-                    value={customPro}
-                    onChangeText={setCustomPro}
-                  />
+                <View style={{ gap: 8, marginBottom: Spacing.sm }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TextInput
+                      style={[styles.smallInput, { flex: 2, color: colors.text, borderColor: colors.cardBorder }]}
+                      placeholder="Item (e.g. Soya Chaap)"
+                      placeholderTextColor={colors.textMuted}
+                      value={customName}
+                      onChangeText={setCustomName}
+                    />
+                    <TextInput
+                      style={[styles.smallInput, { flex: 1.2, color: colors.text, borderColor: colors.cardBorder }]}
+                      placeholder="Amount (e.g. 100g)"
+                      placeholderTextColor={colors.textMuted}
+                      value={customAmount}
+                      onChangeText={setCustomAmount}
+                    />
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TextInput
+                      style={[styles.smallInput, { flex: 1, color: colors.text, borderColor: colors.cardBorder }]}
+                      placeholder="Calories (kcal)"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="numeric"
+                      value={customCal}
+                      onChangeText={setCustomCal}
+                    />
+                    <TextInput
+                      style={[styles.smallInput, { flex: 1, color: colors.text, borderColor: colors.cardBorder }]}
+                      placeholder="Protein (g)"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="numeric"
+                      value={customPro}
+                      onChangeText={setCustomPro}
+                    />
+                  </View>
                 </View>
                 <TouchableOpacity
                   style={[styles.addManualBtn, { backgroundColor: colors.accent }]}
@@ -483,8 +491,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: BorderRadius.xl,
     borderWidth: 1,
     borderBottomWidth: 0,
-    maxHeight: '92%',
-    paddingBottom: Spacing.xl,
+    height: '90%',
+    maxHeight: '90%',
+    overflow: 'hidden',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -509,7 +521,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxxl,
+    paddingBottom: 80,
   },
   inputGroup: {
     marginTop: Spacing.sm,

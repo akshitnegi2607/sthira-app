@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -93,19 +94,23 @@ export const ClarificationModal: React.FC<ClarificationModalProps> = ({
             styles.sheet,
             { backgroundColor: colors.card, borderColor: colors.cardBorder },
           ]}>
-          <View style={styles.header}>
-            <View>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Adjust Food Measurement
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                {estimate.food_name}
-              </Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: Spacing.sm }}>
+            <View style={styles.header}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.title, { color: colors.text }]}>
+                  Adjust Food Measurement
+                </Text>
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                  {estimate.food_name}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                <Ionicons name="close" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
 
           {/* Principle Reminder */}
           <View
@@ -243,6 +248,7 @@ export const ClarificationModal: React.FC<ClarificationModalProps> = ({
             onPress={handleSave}
             style={{ marginTop: Spacing.lg }}
           />
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -263,8 +269,10 @@ const styles = StyleSheet.create({
   sheet: {
     width: '100%',
     maxWidth: 420,
+    maxHeight: '88%',
+    overflow: 'hidden',
     borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
+    padding: Spacing.lg,
     borderWidth: 1,
   },
   header: {

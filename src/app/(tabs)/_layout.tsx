@@ -11,20 +11,17 @@ export default function TabsLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Detect iOS PWA standalone mode (Add to Home Screen) vs standard Safari browser
-  const isStandalonePWA =
-    Platform.OS === 'web' &&
-    typeof window !== 'undefined' &&
-    (Boolean((window.navigator as any)?.standalone) ||
-      Boolean(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches));
+  // Detect any mobile device on web (iPhone, iPad, Android) or native
+  const isMobile =
+    Platform.OS !== 'web' ||
+    (typeof window !== 'undefined' &&
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
 
   const bottomPadding =
     insets.bottom > 0
       ? insets.bottom
-      : Platform.OS === 'ios'
+      : isMobile
       ? 28
-      : isStandalonePWA
-      ? 30
       : 8;
 
   const inactiveColor = isDark ? '#94A3B8' : '#64748B';
@@ -54,18 +51,18 @@ export default function TabsLayout() {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
-          height: 56 + bottomPadding,
+          height: 62 + bottomPadding,
           paddingBottom: bottomPadding,
-          paddingTop: 6,
+          paddingTop: 8,
           elevation: 0,
         },
         tabBarItemStyle: {
-          paddingVertical: 2,
+          paddingVertical: 0,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-          marginTop: 2,
+          marginTop: 3,
         },
         headerRight: () => (
           <TouchableOpacity
@@ -84,7 +81,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
-              size={24}
+              size={22}
               color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
@@ -98,7 +95,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'restaurant' : 'restaurant-outline'}
-              size={24}
+              size={22}
               color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
@@ -112,7 +109,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'barbell' : 'barbell-outline'}
-              size={24}
+              size={22}
               color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
@@ -126,7 +123,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'trending-up' : 'trending-up-outline'}
-              size={24}
+              size={22}
               color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
@@ -140,7 +137,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'book' : 'book-outline'}
-              size={24}
+              size={22}
               color={color || (focused ? colors.accent : inactiveColor)}
             />
           ),
