@@ -95,12 +95,13 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
 
   const renderContent = () => {
     switch (type) {
-      case 'water':
+      case 'water': {
+        const currentWater = Number(useDashboardStore.getState().todayLog?.water_liters) || 0;
         return (
           <View>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Log Water</Text>
             <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
-              Quick add hydration in liters (e.g. 0.25 L = 1 glass, 0.5 L = 1 bottle)
+              Current today: {currentWater.toFixed(1)} L (Target: 2.5 L)
             </Text>
 
             <View style={styles.quickChipsRow}>
@@ -126,16 +127,17 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
                   color: colors.text,
                 },
               ]}
-              placeholder="Or enter exact liters (e.g. 0.4)"
+              placeholder="Or enter amount to add in liters (e.g. 0.4)"
               placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
               value={inputValue}
               onChangeText={setInputValue}
             />
 
-            <Button title="Save Hydration" onPress={handleSave} style={{ marginTop: Spacing.md }} />
+            <Button title="Add Hydration" onPress={handleSave} style={{ marginTop: Spacing.md }} />
           </View>
         );
+      }
 
       case 'weight':
         return (

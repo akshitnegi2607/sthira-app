@@ -109,6 +109,19 @@ export const DailyLogsRepository = {
         dateStr,
       ]
     );
+
+    if (updates.water_liters !== undefined && Number(updates.water_liters) > Number(current.water_liters || 0)) {
+      try {
+        const addedMl = Math.round((Number(updates.water_liters) - Number(current.water_liters || 0)) * 1000);
+        const now = new Date().toISOString();
+        db.runSync(
+          'INSERT INTO WaterEntries (id, date, amount_ml, created_at) VALUES (?, ?, ?, ?)',
+          [`water_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, dateStr, addedMl, now]
+        );
+      } catch (e) {
+        // silent guard
+      }
+    }
   },
 
   getRecentLogs(limitDays: number = 7): DailyLog[] {

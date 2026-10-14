@@ -5,6 +5,8 @@ import { ExerciseRepository } from '@/database/repositories/exerciseRepository';
 import { WorkoutRepository, PopulatedSession } from '@/database/repositories/workoutRepository';
 import { MealRepository } from '@/database/repositories/mealRepository';
 import { getTodayDateString } from '@/utils/date';
+import { SupabaseSyncService } from '@/services/supabaseSyncService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
 
 interface DashboardState {
   todayLog: DailyLog;
@@ -90,7 +92,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     try {
       DailyLogsRepository.updateDailyLog(todayStr, updates);
       const updated = DailyLogsRepository.getTodayLog();
-      set({ todayLog: updated });
+      set({ todayLog: { ...updated } });
     } catch (e) {
       console.error('Failed to update log', e);
       set((state) => ({ todayLog: { ...state.todayLog, ...updates } }));
@@ -98,12 +100,22 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   },
 
   quickAddWater: (amountLiters) => {
-    const current = get().todayLog.water_liters;
-    const newAmount = Math.round((current + amountLiters) * 10) / 10;
+    const current = Number(get().todayLog.water_liters) || 0;
+    const newAmount = Math.round((current + Number(amountLiters)) * 10) / 10;
     get().updateLog({ water_liters: newAmount });
+    try {
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
+    } catch {}
   },
 
   quickLogWeight: (weightKg) => {
-    get().updateLog({ weight: weightKg });
+    get().updateLog({ weight: Number(weightKg) });
+    try {
+      if (isSupabaseConfigured()) {
+        SupabaseSyncService.syncAll().catch(() => {});
+      }
+    } catch {}
   },
 }));

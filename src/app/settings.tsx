@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
 import { DataBackupSection } from '@/features/settings/components/DataBackupSection';
+import { SupabaseSyncSection } from '@/features/settings/components/SupabaseSyncSection';
 
 export default function SettingsScreen() {
   const { colors, isDark } = useAppTheme();
@@ -313,6 +314,9 @@ export default function SettingsScreen() {
         onPress={handleSave}
         style={{ marginTop: Spacing.md }}
       />
+
+      {/* Central Cloud Database Live Sync */}
+      <SupabaseSyncSection />
 
       {/* Local-first multi-device sync and JSON backup */}
       <DataBackupSection />

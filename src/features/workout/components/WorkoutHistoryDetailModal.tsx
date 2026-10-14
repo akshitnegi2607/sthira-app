@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/useWorkoutStore';
+import { showAlert } from '@/utils/alert';
 
 export const WorkoutHistoryDetailModal: React.FC = () => {
   const { colors, isDark } = useAppTheme();
@@ -39,7 +40,7 @@ export const WorkoutHistoryDetailModal: React.FC = () => {
   const durationText = minutes > 0 ? `${minutes}m ${seconds > 0 ? `${seconds}s` : ''}` : `${seconds}s`;
 
   const handleDelete = () => {
-    Alert.alert(
+    showAlert(
       'Delete Workout?',
       'Are you sure you want to remove this completed workout from your history? This cannot be undone.',
       [

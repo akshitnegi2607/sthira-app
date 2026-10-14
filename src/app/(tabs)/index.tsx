@@ -15,6 +15,8 @@ import { TodayWorkoutCard } from '@/features/dashboard/components/TodayWorkoutCa
 import { CoachSummaryCard } from '@/features/dashboard/components/CoachSummaryCard';
 import { QuickActionsGrid } from '@/features/dashboard/components/QuickActionsGrid';
 import { QuickLogModal, QuickLogType } from '@/features/dashboard/components/QuickLogModal';
+import { SupabaseSyncService } from '@/services/supabaseSyncService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
 
 export default function HomeScreen() {
   const { colors } = useAppTheme();
@@ -44,6 +46,11 @@ export default function HomeScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     loadDashboard();
+    if (isSupabaseConfigured()) {
+      try {
+        await SupabaseSyncService.syncAll();
+      } catch {}
+    }
     setRefreshing(false);
   };
 

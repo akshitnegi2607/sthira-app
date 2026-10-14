@@ -16,6 +16,7 @@ import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { CuisineRecipe } from '@/types/database';
+import { showAlert } from '@/utils/alert';
 
 export interface IngredientItem {
   id: string;
@@ -161,11 +162,11 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
 
   const validateAndBuildRecipe = () => {
     if (!mealTitle.trim()) {
-      Alert.alert('Meal Name Required', 'Please enter a name for your custom meal (e.g. "Power Oatmeal Shake")');
+      showAlert('Meal Name Required', 'Please enter a name for your custom meal (e.g. "Power Oatmeal Shake")');
       return null;
     }
     if (ingredients.length === 0) {
-      Alert.alert('No Ingredients', 'Please add at least one ingredient to your custom meal.');
+      showAlert('No Ingredients', 'Please add at least one ingredient to your custom meal.');
       return null;
     }
 

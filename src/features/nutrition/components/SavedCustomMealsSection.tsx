@@ -12,6 +12,7 @@ import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Card } from '@/components/ui/Card';
 import { CuisineRecipe } from '@/types/database';
+import { showAlert } from '@/utils/alert';
 
 interface SavedCustomMealsSectionProps {
   customRecipes: CuisineRecipe[];
@@ -35,7 +36,7 @@ export const SavedCustomMealsSection: React.FC<SavedCustomMealsSectionProps> = (
   >('lunch');
 
   const handleDeletePrompt = (recipe: CuisineRecipe) => {
-    Alert.alert(
+    showAlert(
       'Delete Custom Meal',
       `Are you sure you want to remove "${recipe.title}" from your saved meals?`,
       [

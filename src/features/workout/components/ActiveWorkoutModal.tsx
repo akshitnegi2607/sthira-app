@@ -28,6 +28,7 @@ import { calculateProgressiveOverload } from '@/services/progressiveOverload';
 import { getAssociatedBodyArea } from '@/services/exerciseSubstitution';
 import { PopulatedWorkoutExercise } from '@/database/repositories/workoutRepository';
 import { Exercise } from '@/types/database';
+import { showAlert } from '@/utils/alert';
 
 export const ActiveWorkoutModal: React.FC = () => {
   const { colors, isDark } = useAppTheme();
@@ -73,7 +74,7 @@ export const ActiveWorkoutModal: React.FC = () => {
   const timerDisplay = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
   const handleCancel = () => {
-    Alert.alert(
+    showAlert(
       'Discard Workout?',
       'Are you sure you want to cancel and discard this active workout session?',
       [

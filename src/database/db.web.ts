@@ -76,7 +76,7 @@ class WebSQLiteFallback {
 
   getFirstSync<T>(sql: string, params: any[] = []): T | null {
     const all = this.getAllSync<T>(sql, params);
-    return all.length > 0 ? all[0] : null;
+    return all.length > 0 ? { ...(all[0] as any) } : null;
   }
 
   getAllSync<T>(sql: string, params: any[] = []): T[] {
@@ -153,7 +153,7 @@ class WebSQLiteFallback {
         }) as unknown as T[];
       }
 
-      return rows as unknown as T[];
+      return rows.map((r) => ({ ...r })) as unknown as T[];
     }
 
     // Handle SELECT * FROM <table> WHERE <col> IN (?, ?, ...)
@@ -163,7 +163,7 @@ class WebSQLiteFallback {
       const col = inMatch[3];
       const valSet = new Set(params);
       const rows = (this.tables.get(table) || []).filter((r) => valSet.has(r[col]));
-      return rows as unknown as T[];
+      return rows.map((r) => ({ ...r })) as unknown as T[];
     }
 
     // Handle SELECT <columns> FROM <table> [ORDER BY <cols>] [LIMIT ?|<num>]
@@ -205,7 +205,7 @@ class WebSQLiteFallback {
         }) as unknown as T[];
       }
 
-      return sliced as unknown as T[];
+      return sliced.map((r) => ({ ...r })) as unknown as T[];
     }
 
     return [];

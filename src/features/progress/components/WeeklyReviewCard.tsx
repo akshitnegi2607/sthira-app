@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { CalorieAdaptationResult } from '@/services/progressAnalytics';
+import { showAlert } from '@/utils/alert';
 
 interface WeeklyReviewCardProps {
   currentCalorieTarget: number;
@@ -40,13 +41,13 @@ export const WeeklyReviewCard: React.FC<WeeklyReviewCardProps> = ({
       setIsApplying(true);
       await onApplyAdjustment(recommendedCalorieDelta);
       setApplied(true);
-      Alert.alert(
+      showAlert(
         'Calorie Target Updated',
         `Your daily calorie target has been updated to ${newRecommendedCalories} kcal/day (${recommendedCalorieDelta > 0 ? '+' : ''}${recommendedCalorieDelta} kcal).`
       );
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Could not apply calorie adjustment.');
+      showAlert('Error', 'Could not apply calorie adjustment.');
     } finally {
       setIsApplying(false);
     }
