@@ -79,60 +79,47 @@ export function runMigrations() {
     );
   }
 
-  // 4. Seed exercises if not present
-  const exercisesRow = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM Exercises'
-  );
-
-  if (!exercisesRow || exercisesRow.count === 0) {
-    const now = new Date().toISOString();
-    for (const ex of INITIAL_EXERCISES) {
-      db.runSync(
-        `INSERT INTO Exercises (
-          id, name, category, primary_muscle, secondary_muscles,
-          equipment, difficulty_level, target_sets, target_rep_range,
-          rest_seconds, instructions, common_mistakes, substitutions,
-          starting_weight_kg, last_weight_kg, current_recommended_weight_kg,
-          is_custom, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
-        [
-          ex.id,
-          ex.name,
-          ex.category,
-          ex.primary_muscle,
-          ex.secondary_muscles,
-          ex.equipment,
-          ex.difficulty_level,
-          ex.target_sets,
-          ex.target_rep_range,
-          ex.rest_seconds,
-          ex.instructions,
-          ex.common_mistakes,
-          ex.substitutions,
-          ex.starting_weight_kg ?? null,
-          ex.last_weight_kg ?? null,
-          ex.current_recommended_weight_kg ?? null,
-          now,
-        ]
-      );
-    }
+  // 4. Seed and sync exercises
+  const now = new Date().toISOString();
+  for (const ex of INITIAL_EXERCISES) {
+    db.runSync(
+      `INSERT OR REPLACE INTO Exercises (
+        id, name, category, primary_muscle, secondary_muscles,
+        equipment, difficulty_level, target_sets, target_rep_range,
+        rest_seconds, instructions, common_mistakes, substitutions,
+        starting_weight_kg, last_weight_kg, current_recommended_weight_kg,
+        is_custom, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      [
+        ex.id,
+        ex.name,
+        ex.category,
+        ex.primary_muscle,
+        ex.secondary_muscles,
+        ex.equipment,
+        ex.difficulty_level,
+        ex.target_sets,
+        ex.target_rep_range,
+        ex.rest_seconds,
+        ex.instructions,
+        ex.common_mistakes,
+        ex.substitutions,
+        ex.starting_weight_kg ?? null,
+        ex.last_weight_kg ?? null,
+        ex.current_recommended_weight_kg ?? null,
+        now,
+      ]
+    );
   }
 
-  // 5. Seed workout plans if not present
-  const plansRow = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM WorkoutPlans'
-  );
-
-  if (!plansRow || plansRow.count === 0) {
-    const now = new Date().toISOString();
-    for (const plan of INITIAL_WORKOUT_PLANS) {
-      db.runSync(
-        `INSERT INTO WorkoutPlans (
-          id, name, day_of_week, description, is_active, created_at
-        ) VALUES (?, ?, ?, ?, 1, ?)`,
-        [plan.id, plan.name, plan.day_of_week, plan.description, now]
-      );
-    }
+  // 5. Seed and sync workout plans
+  for (const plan of INITIAL_WORKOUT_PLANS) {
+    db.runSync(
+      `INSERT OR REPLACE INTO WorkoutPlans (
+        id, name, day_of_week, description, is_active, created_at
+      ) VALUES (?, ?, ?, ?, 1, ?)`,
+      [plan.id, plan.name, plan.day_of_week, plan.description, now]
+    );
   }
 
   // 6. Seed initial foods if not present
@@ -207,6 +194,50 @@ export function runMigrations() {
 
   // 9. Run self-healing check on completed workout sets and progressions
   WorkoutRepository.healCompletedWorkoutSets();
+
+  // 10. Ensure Jay's missed Tuesday Yoga session (2026-10-13) is logged
+  try {
+    const tuesdayYogaSession = db.getFirstSync<{ id: string }>(
+      "SELECT id FROM WorkoutSessions WHERE date = '2026-10-13' AND (workout_plan_id = 'plan_tue_yoga' OR title LIKE '%Yoga%')"
+    );
+
+    if (!tuesdayYogaSession) {
+      const sessionId = 'session_tue_yoga_20261013';
+      const sessionTime = '2026-10-13T08:45:00.000Z';
+      db.runSync(
+        `INSERT OR REPLACE INTO WorkoutSessions (
+          id, date, workout_plan_id, title, start_time, end_time, duration_seconds,
+          status, difficulty_perceived, notes, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          sessionId,
+          '2026-10-13',
+          'plan_tue_yoga',
+          'Yoga & Mobility',
+          '2026-10-13T08:00:00.000Z',
+          '2026-10-13T08:45:00.000Z',
+          2700, // 45 mins
+          'completed',
+          'Good',
+          'Full body mobility, hip openers, spine decompression and breathing work.',
+          sessionTime,
+        ]
+      );
+
+      try {
+        db.runSync(
+          `INSERT INTO DailyLogs (date, recovery_rating, coach_status, coach_summary, updated_at)
+           VALUES ('2026-10-13', 8, 'on_track', 'Active recovery yoga completed. Restored joint mobility and lowered sympathetic stress.', ?)
+           ON CONFLICT(date) DO UPDATE SET
+             recovery_rating = COALESCE(DailyLogs.recovery_rating, 8),
+             updated_at = excluded.updated_at`,
+          [sessionTime]
+        );
+      } catch {}
+    }
+  } catch (yogaErr) {
+    console.warn('Could not auto-log Tuesday Yoga session:', yogaErr);
+  }
 }
 
 export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {

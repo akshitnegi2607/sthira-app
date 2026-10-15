@@ -84,12 +84,24 @@ export function getSubstitutesForExercise(
     }
   }
 
-  // 2. Add exercises targeting the exact same primary muscle
-  const sameMuscle = allExercises.filter(
-    (ex) =>
-      !addedIds.has(ex.id) &&
-      ex.primary_muscle.toLowerCase() === currentExercise.primary_muscle.toLowerCase()
-  );
+  // 2. Add exercises targeting the same primary muscle(s)
+  const currentMuscles = (currentExercise.primary_muscle || '')
+    .toLowerCase()
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const sameMuscle = allExercises.filter((ex) => {
+    if (addedIds.has(ex.id)) return false;
+    const exMuscles = (ex.primary_muscle || '')
+      .toLowerCase()
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return currentMuscles.some((m) =>
+      exMuscles.some((em) => em.includes(m) || m.includes(em))
+    );
+  });
 
   for (const ex of sameMuscle) {
     addedIds.add(ex.id);

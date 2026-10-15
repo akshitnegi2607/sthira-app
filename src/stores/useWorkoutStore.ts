@@ -30,6 +30,9 @@ interface WorkoutStoreState {
   isSessionActive: boolean;
   elapsedSeconds: number;
   isTimerPaused: boolean;
+  sessionStartTimestamp: number | null;
+  sessionPausedDurationMs: number;
+  lastPauseTimestamp: number | null;
 
   // Built-in Rest Timer
   restTimeRemaining: number;
@@ -68,6 +71,15 @@ interface WorkoutStoreState {
   deleteSet: (setId: string) => void;
   substituteExercise: (workoutExerciseId: string, newExerciseId: string) => void;
   addExerciseToWorkout: (exerciseId: string) => void;
+  createCustomExercise: (data: {
+    name: string;
+    category?: string;
+    primary_muscle?: string;
+    equipment?: string;
+    target_sets?: number;
+    target_rep_range?: string;
+    starting_weight_kg?: number;
+  }) => Exercise;
 
   // Finish & Cancel
   finishWorkout: (data: {
@@ -106,6 +118,9 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
   isSessionActive: false,
   elapsedSeconds: 0,
   isTimerPaused: false,
+  sessionStartTimestamp: null,
+  sessionPausedDurationMs: 0,
+  lastPauseTimestamp: null,
 
   restTimeRemaining: 0,
   restTimeTotal: 90,
@@ -133,6 +148,20 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       const recentPain = WorkoutRepository.getRecentPainEntries(14);
       const activeSession = WorkoutRepository.getActiveSession();
 
+      let elapsed = 0;
+      let startTs: number | null = null;
+      if (activeSession) {
+        elapsed = activeSession.session.duration_seconds || 0;
+        const startedIso = activeSession.session.start_time || activeSession.session.created_at;
+        if (startedIso) {
+          const startedAtMs = new Date(startedIso).getTime();
+          if (!isNaN(startedAtMs)) {
+            startTs = startedAtMs;
+            elapsed = Math.max(elapsed, Math.floor((Date.now() - startedAtMs) / 1000));
+          }
+        }
+      }
+
       set({
         plans,
         exercises,
@@ -141,7 +170,11 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
         recentPain,
         activeSession,
         isSessionActive: activeSession !== null,
-        elapsedSeconds: activeSession ? activeSession.session.duration_seconds || 0 : 0,
+        elapsedSeconds: elapsed,
+        sessionStartTimestamp: startTs || (activeSession ? Date.now() - elapsed * 1000 : null),
+        sessionPausedDurationMs: 0,
+        lastPauseTimestamp: null,
+        isTimerPaused: false,
         isLoading: false,
       });
     } catch (e) {
@@ -166,6 +199,9 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       isSessionActive: true,
       elapsedSeconds: 0,
       isTimerPaused: false,
+      sessionStartTimestamp: Date.now(),
+      sessionPausedDurationMs: 0,
+      lastPauseTimestamp: null,
       isRestTimerActive: false,
       restTimeRemaining: 0,
     });
@@ -179,13 +215,34 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     return populated;
   },
 
-  pauseTimer: () => set({ isTimerPaused: true }),
-  resumeTimer: () => set({ isTimerPaused: false }),
+  pauseTimer: () => {
+    const { isTimerPaused } = get();
+    if (isTimerPaused) return;
+    set({ isTimerPaused: true, lastPauseTimestamp: Date.now() });
+  },
+
+  resumeTimer: () => {
+    const { isTimerPaused, lastPauseTimestamp, sessionPausedDurationMs } = get();
+    if (!isTimerPaused) return;
+    const additionalPause = lastPauseTimestamp ? Date.now() - lastPauseTimestamp : 0;
+    set({
+      isTimerPaused: false,
+      lastPauseTimestamp: null,
+      sessionPausedDurationMs: sessionPausedDurationMs + additionalPause,
+    });
+  },
 
   tickSessionTimer: () => {
-    const { isSessionActive, isTimerPaused, elapsedSeconds } = get();
-    if (isSessionActive && !isTimerPaused) {
-      set({ elapsedSeconds: elapsedSeconds + 1 });
+    const { isSessionActive, isTimerPaused, sessionStartTimestamp, sessionPausedDurationMs, activeSession } = get();
+    if (!isSessionActive) return;
+    if (!isTimerPaused && sessionStartTimestamp) {
+      const elapsed = Math.max(0, Math.floor((Date.now() - sessionStartTimestamp - sessionPausedDurationMs) / 1000));
+      set({ elapsedSeconds: elapsed });
+      if (activeSession && elapsed % 10 === 0 && elapsed > 0) {
+        try {
+          WorkoutRepository.updateSessionDuration(activeSession.session.id, elapsed);
+        } catch {}
+      }
     }
   },
 
@@ -303,6 +360,16 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     set({ activeSession: refreshed });
   },
 
+  createCustomExercise: (data) => {
+    const created = WorkoutRepository.createCustomExercise(data);
+    const exercises = WorkoutRepository.getAllExercises();
+    set({ exercises });
+    if (isSupabaseConfigured()) {
+      SupabaseSyncService.syncAll().catch(() => {});
+    }
+    return created;
+  },
+
   finishWorkout: (data) => {
     const active = get().activeSession;
     if (!active) return;
@@ -318,6 +385,9 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       activeSession: null,
       isSessionActive: false,
       elapsedSeconds: 0,
+      sessionStartTimestamp: null,
+      sessionPausedDurationMs: 0,
+      lastPauseTimestamp: null,
       isRestTimerActive: false,
       isFinishModalOpen: false,
     });
@@ -343,6 +413,9 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       activeSession: null,
       isSessionActive: false,
       elapsedSeconds: 0,
+      sessionStartTimestamp: null,
+      sessionPausedDurationMs: 0,
+      lastPauseTimestamp: null,
       isRestTimerActive: false,
       isFinishModalOpen: false,
     });

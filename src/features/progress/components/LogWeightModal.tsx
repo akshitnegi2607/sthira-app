@@ -96,8 +96,35 @@ export const LogWeightModal: React.FC<LogWeightModalProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Weight Stepper & Input */}
-              <View style={styles.stepperContainer}>
+              {/* Weight Display Card */}
+              <View
+                style={[
+                  styles.weightDisplayCard,
+                  {
+                    backgroundColor: colors.cardElevated,
+                    borderColor: colors.cardBorder,
+                  },
+                ]}>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={[
+                      styles.weightInput,
+                      { color: colors.text },
+                    ]}
+                    value={weightStr}
+                    onChangeText={setWeightStr}
+                    keyboardType="decimal-pad"
+                    selectTextOnFocus
+                    maxLength={5}
+                  />
+                  <Text style={[styles.inputUnit, { color: colors.textMuted }]}>
+                    kg
+                  </Text>
+                </View>
+              </View>
+
+              {/* Stepper Buttons Row (Equal 4-button bar, zero cut-off) */}
+              <View style={styles.stepperBar}>
                 <TouchableOpacity
                   style={[
                     styles.stepBtn,
@@ -127,23 +154,6 @@ export const LogWeightModal: React.FC<LogWeightModalProps> = ({
                     -0.1
                   </Text>
                 </TouchableOpacity>
-
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={[
-                      styles.weightInput,
-                      { color: colors.text, borderColor: colors.cardBorder },
-                    ]}
-                    value={weightStr}
-                    onChangeText={setWeightStr}
-                    keyboardType="decimal-pad"
-                    selectTextOnFocus
-                    maxLength={5}
-                  />
-                  <Text style={[styles.inputUnit, { color: colors.textMuted }]}>
-                    kg
-                  </Text>
-                </View>
 
                 <TouchableOpacity
                   style={[
@@ -296,14 +306,25 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 2,
   },
-  stepperContainer: {
+  weightDisplayCard: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  stepperBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: Spacing.md,
+    gap: Spacing.xs,
+    marginBottom: Spacing.md,
   },
   stepBtn: {
-    paddingHorizontal: 8,
+    flex: 1,
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
@@ -311,24 +332,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   inputWrapper: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
   },
   weightInput: {
-    fontSize: 34,
+    fontSize: 38,
     fontWeight: '800',
     textAlign: 'center',
-    minWidth: 110,
-    borderBottomWidth: 2,
-    paddingBottom: 2,
+    minWidth: 100,
+    padding: 0,
   },
   inputUnit: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
-    marginTop: 2,
+    marginLeft: 6,
   },
   fields: {
     marginTop: Spacing.md,

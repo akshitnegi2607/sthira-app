@@ -52,6 +52,7 @@ export const ActiveWorkoutModal: React.FC = () => {
   const closeExerciseInfo = useWorkoutStore((s) => s.closeExerciseInfo);
   const selectedExerciseForInfo = useWorkoutStore((s) => s.selectedExerciseForInfo);
   const addExerciseToWorkout = useWorkoutStore((s) => s.addExerciseToWorkout);
+  const createCustomExercise = useWorkoutStore((s) => s.createCustomExercise);
   const allExercises = useWorkoutStore((s) => s.exercises);
   const recentPain = useWorkoutStore((s) => s.recentPain);
 
@@ -225,7 +226,43 @@ export const ActiveWorkoutModal: React.FC = () => {
                 onChangeText={setExerciseSearch}
               />
 
-              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+              <ScrollView style={{ maxHeight: 220 }} nestedScrollEnabled>
+                {exerciseSearch.trim().length > 1 &&
+                  !allExercises.some(
+                    (e) => e.name.toLowerCase() === exerciseSearch.trim().toLowerCase()
+                  ) && (
+                    <TouchableOpacity
+                      style={[
+                        styles.pickerItem,
+                        {
+                          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                          borderBottomWidth: 1,
+                          borderBottomColor: colors.cardBorder,
+                        },
+                      ]}
+                      onPress={() => {
+                        const newEx = createCustomExercise({
+                          name: exerciseSearch.trim(),
+                          category: 'Custom',
+                          primary_muscle: 'Target Muscle',
+                          equipment: 'Gym Equipment',
+                        });
+                        addExerciseToWorkout(newEx.id);
+                        setIsAddingExercise(false);
+                        setExerciseSearch('');
+                      }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.pickerItemName, { color: colors.accent, fontWeight: '700' }]}>
+                          + Add "{exerciseSearch.trim()}"
+                        </Text>
+                        <Text style={[styles.pickerItemSub, { color: colors.textMuted }]}>
+                          Save as new exercise & add to this workout
+                        </Text>
+                      </View>
+                      <Ionicons name="sparkles" size={16} color={colors.accent} />
+                    </TouchableOpacity>
+                  )}
+
                 {filteredExercisesToAdd.slice(0, 10).map((ex) => (
                   <TouchableOpacity
                     key={ex.id}

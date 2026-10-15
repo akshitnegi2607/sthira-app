@@ -51,6 +51,54 @@ export const WorkoutRepository = {
   },
 
   /**
+   * Creates a custom exercise in SQLite.
+   */
+  createCustomExercise(data: {
+    name: string;
+    category?: string;
+    primary_muscle?: string;
+    equipment?: string;
+    target_sets?: number;
+    target_rep_range?: string;
+    starting_weight_kg?: number;
+  }): Exercise {
+    const db = getDatabase();
+    const id = `ex_custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const now = new Date().toISOString();
+    const sets = data.target_sets || 3;
+    const reps = data.target_rep_range || '8–12';
+    const weight = data.starting_weight_kg ?? 20;
+
+    db.runSync(
+      `INSERT INTO Exercises (
+        id, name, category, primary_muscle, secondary_muscles,
+        equipment, difficulty_level, target_sets, target_rep_range,
+        rest_seconds, instructions, common_mistakes, substitutions,
+        starting_weight_kg, last_weight_kg, current_recommended_weight_kg,
+        is_custom, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 'intermediate', ?, ?, 90, 'Custom exercise added by user.', 'Maintain proper form and control.', '', ?, ?, ?, 1, ?)`,
+      [
+        id,
+        data.name.trim(),
+        data.category?.trim() || 'Strength',
+        data.primary_muscle?.trim() || 'General',
+        'Various',
+        data.equipment?.trim() || 'Machine / Free Weight',
+        sets,
+        reps,
+        weight,
+        weight,
+        weight,
+        now,
+      ]
+    );
+
+    const created = db.getFirstSync<Exercise>('SELECT * FROM Exercises WHERE id = ?', [id]);
+    if (!created) throw new Error('Failed to create custom exercise');
+    return created;
+  },
+
+  /**
    * Retrieves all workout plans.
    */
   getAllPlans(): WorkoutPlan[] {
@@ -317,6 +365,19 @@ export const WorkoutRepository = {
       'UPDATE WorkoutSets SET weight_kg = ? WHERE workout_exercise_id = ? AND is_completed = 0',
       [defaultWeight, workoutExerciseId]
     );
+  },
+
+  /**
+   * Updates duration_seconds of an ongoing workout session.
+   */
+  updateSessionDuration(sessionId: string, durationSeconds: number): void {
+    const db = getDatabase();
+    try {
+      db.runSync('UPDATE WorkoutSessions SET duration_seconds = ? WHERE id = ?', [
+        durationSeconds,
+        sessionId,
+      ]);
+    } catch {}
   },
 
   /**

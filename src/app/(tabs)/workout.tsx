@@ -26,6 +26,7 @@ import { ActiveWorkoutModal } from '@/features/workout/components/ActiveWorkoutM
 import { ExerciseDetailModal } from '@/features/workout/components/ExerciseDetailModal';
 import { PainLoggingModal } from '@/features/workout/components/PainLoggingModal';
 import { WorkoutHistoryDetailModal } from '@/features/workout/components/WorkoutHistoryDetailModal';
+import { RoutinePreviewModal } from '@/features/workout/components/RoutinePreviewModal';
 import { WorkoutPlan, Exercise } from '@/types/database';
 import { getTodayDateString } from '@/utils/date';
 
@@ -51,6 +52,8 @@ export default function WorkoutScreen() {
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [exerciseQuery, setExerciseQuery] = useState<string>('');
+  const [previewPlan, setPreviewPlan] = useState<WorkoutPlan | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     init();
@@ -249,12 +252,32 @@ export default function WorkoutScreen() {
 
           <View style={styles.heroActionsRow}>
             {!todayPlan.name.toLowerCase().includes('rest') ? (
-              <TouchableOpacity
-                style={[styles.startWorkoutBtn, { backgroundColor: colors.accent }]}
-                onPress={() => startWorkout(todayPlan.id)}>
-                <Ionicons name="play" size={16} color="#FFFFFF" />
-                <Text style={styles.startWorkoutText}>Start {todayPlan.name}</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.previewRoutineBtn,
+                    {
+                      borderColor: colors.cardBorder,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+                    },
+                  ]}
+                  onPress={() => {
+                    setPreviewPlan(todayPlan);
+                    setIsPreviewOpen(true);
+                  }}>
+                  <Ionicons name="list-outline" size={16} color={colors.text} />
+                  <Text style={[styles.previewRoutineText, { color: colors.text }]}>
+                    View Exercises
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.startWorkoutBtn, { backgroundColor: colors.accent, flex: 1 }]}
+                  onPress={() => startWorkout(todayPlan.id)}>
+                  <Ionicons name="play" size={16} color="#FFFFFF" />
+                  <Text style={styles.startWorkoutText}>Start {todayPlan.name}</Text>
+                </TouchableOpacity>
+              </>
             ) : (
               <TouchableOpacity
                 style={[styles.startWorkoutBtn, { backgroundColor: colors.cardBorder }]}
@@ -406,27 +429,35 @@ export default function WorkoutScreen() {
                   </TouchableOpacity>
                 )
               ) : isPastDay ? (
-                <View
+                <TouchableOpacity
                   style={[
                     styles.schedLockedBtn,
                     { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' },
-                  ]}>
-                  <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                  ]}
+                  onPress={() => {
+                    setPreviewPlan(plan);
+                    setIsPreviewOpen(true);
+                  }}>
+                  <Ionicons name="list-outline" size={12} color={colors.textMuted} />
                   <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
-                    Past Day
+                    Past Day • View
                   </Text>
-                </View>
+                </TouchableOpacity>
               ) : (
-                <View
+                <TouchableOpacity
                   style={[
                     styles.schedLockedBtn,
                     { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' },
-                  ]}>
-                  <Ionicons name="lock-closed-outline" size={12} color={colors.textMuted} />
-                  <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
-                    Scheduled • {dayLabel}
+                  ]}
+                  onPress={() => {
+                    setPreviewPlan(plan);
+                    setIsPreviewOpen(true);
+                  }}>
+                  <Ionicons name="list-outline" size={12} color={colors.accent} />
+                  <Text style={[styles.schedLockedText, { color: colors.accent, fontWeight: '600' }]}>
+                    View Routine
                   </Text>
-                </View>
+                </TouchableOpacity>
               )}
             </Card>
           );
@@ -675,6 +706,20 @@ export default function WorkoutScreen() {
       />
       <PainLoggingModal />
       <WorkoutHistoryDetailModal />
+      <RoutinePreviewModal
+        plan={previewPlan}
+        isOpen={isPreviewOpen}
+        onClose={() => {
+          setIsPreviewOpen(false);
+          setPreviewPlan(null);
+        }}
+        onStartWorkout={(planId) => {
+          setIsPreviewOpen(false);
+          setPreviewPlan(null);
+          startWorkout(planId);
+        }}
+        onOpenExerciseInfo={(ex) => openExerciseInfo(ex)}
+      />
     </ScrollView>
   );
 }
@@ -750,6 +795,20 @@ const styles = StyleSheet.create({
   heroActionsRow: {
     flexDirection: 'row',
     marginTop: Spacing.md,
+  },
+  previewRoutineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    marginRight: Spacing.sm,
+  },
+  previewRoutineText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   startWorkoutBtn: {
     flexDirection: 'row',

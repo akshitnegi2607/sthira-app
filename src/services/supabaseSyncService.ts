@@ -120,7 +120,30 @@ export const SupabaseSyncService = {
     let totalPulled = 0;
 
     try {
-      // 1. PULL: Fetch all rows from Supabase and upsert locally first
+      // 1. PUSH: Get local rows and upsert to Supabase first so new local data is never overwritten
+      for (const table of SYNC_TABLES) {
+        try {
+          const localRows = db.getAllSync(`SELECT * FROM ${table.name}`) || [];
+          if (localRows.length > 0) {
+            const batchSize = 50;
+            for (let i = 0; i < localRows.length; i += batchSize) {
+              const chunk = localRows.slice(i, i + batchSize);
+              const { error: pushErr } = await supabase
+                .from(table.name)
+                .upsert(chunk, { onConflict: table.keyCol });
+              if (pushErr) {
+                console.warn(`[SupabaseSync] Push error for ${table.name}:`, pushErr.message);
+              } else {
+                totalPushed += chunk.length;
+              }
+            }
+          }
+        } catch (localErr) {
+          console.warn(`[SupabaseSync] Error reading local table ${table.name}:`, localErr);
+        }
+      }
+
+      // 2. PULL: Fetch remote rows and smartly merge locally
       for (const table of SYNC_TABLES) {
         try {
           const { data: remoteRows, error: pullErr } = await supabase
@@ -131,6 +154,40 @@ export const SupabaseSyncService = {
             console.warn(`[SupabaseSync] Pull error for ${table.name}:`, pullErr.message);
           } else if (remoteRows && remoteRows.length > 0) {
             for (const r of remoteRows) {
+              // Smart merge for DailyLogs to prevent water loss or newer local updates overwrite
+              if (table.name === 'DailyLogs' && r.date) {
+                try {
+                  const localRow = db.getFirstSync<any>('SELECT * FROM DailyLogs WHERE date = ?', [r.date]);
+                  if (localRow) {
+                    const maxWater = Math.max(Number(localRow.water_liters) || 0, Number(r.water_liters) || 0);
+                    r.water_liters = maxWater;
+
+                    const localUpdated = new Date(localRow.updated_at || 0).getTime();
+                    const remoteUpdated = new Date(r.updated_at || 0).getTime();
+                    if (localUpdated > remoteUpdated) {
+                      r.weight = localRow.weight ?? r.weight;
+                      r.energy_rating = localRow.energy_rating ?? r.energy_rating;
+                      r.mood_rating = localRow.mood_rating ?? r.mood_rating;
+                      r.recovery_rating = localRow.recovery_rating ?? r.recovery_rating;
+                      r.soreness_rating = localRow.soreness_rating ?? r.soreness_rating;
+                      r.stress_rating = localRow.stress_rating ?? r.stress_rating;
+                      r.sleep_hours = localRow.sleep_hours ?? r.sleep_hours;
+                    }
+                  }
+                } catch {}
+              } else if (table.name === 'UserProfile' && r.id) {
+                try {
+                  const localUser = db.getFirstSync<any>('SELECT * FROM UserProfile WHERE id = ?', [r.id]);
+                  if (localUser) {
+                    const localUpdated = new Date(localUser.updated_at || 0).getTime();
+                    const remoteUpdated = new Date(r.updated_at || 0).getTime();
+                    if (localUpdated > remoteUpdated) {
+                      r.current_weight = localUser.current_weight ?? r.current_weight;
+                    }
+                  }
+                } catch {}
+              }
+
               const keys = Object.keys(r);
               if (keys.length === 0) continue;
               const placeholders = keys.map(() => '?').join(', ');
@@ -173,7 +230,7 @@ export const SupabaseSyncService = {
         }
       }
 
-      // 2. Recalculate DailyLogs totals for all unique dates from pulled meals
+      // 3. Recalculate DailyLogs totals for all unique dates from pulled meals
       try {
         const allMealRows = db.getAllSync<{ date: string }>('SELECT date FROM MealEntries') || [];
         const uniqueMealDates = Array.from(new Set(allMealRows.map((m: any) => m.date).filter(Boolean)));
@@ -186,29 +243,6 @@ export const SupabaseSyncService = {
         }
       } catch (calcErr) {
         console.warn('[SupabaseSync] Error recalculating meal totals:', calcErr);
-      }
-
-      // 3. PUSH: Get local rows and upsert to Supabase
-      for (const table of SYNC_TABLES) {
-        try {
-          const localRows = db.getAllSync(`SELECT * FROM ${table.name}`) || [];
-          if (localRows.length > 0) {
-            const batchSize = 50;
-            for (let i = 0; i < localRows.length; i += batchSize) {
-              const chunk = localRows.slice(i, i + batchSize);
-              const { error: pushErr } = await supabase
-                .from(table.name)
-                .upsert(chunk, { onConflict: table.keyCol });
-              if (pushErr) {
-                console.warn(`[SupabaseSync] Push error for ${table.name}:`, pushErr.message);
-              } else {
-                totalPushed += chunk.length;
-              }
-            }
-          }
-        } catch (localErr) {
-          console.warn(`[SupabaseSync] Error reading local table ${table.name}:`, localErr);
-        }
       }
 
       // 3. Refresh Zustand stores so active UI updates immediately
