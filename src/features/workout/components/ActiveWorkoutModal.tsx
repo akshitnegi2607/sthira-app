@@ -59,6 +59,7 @@ export const ActiveWorkoutModal: React.FC = () => {
 
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   // Clock tick interval
   useEffect(() => {
@@ -71,19 +72,25 @@ export const ActiveWorkoutModal: React.FC = () => {
 
   if (!isSessionActive || !activeSession) return null;
 
-  const minutes = Math.floor(elapsedSeconds / 60);
+  const hours = Math.floor(elapsedSeconds / 3600);
+  const minutes = Math.floor((elapsedSeconds % 3600) / 60);
   const seconds = elapsedSeconds % 60;
-  const timerDisplay = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  const timerDisplay =
+    hours > 0
+      ? `${hours}:${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`
+      : `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
   const handleCancel = () => {
-    showAlert(
-      'Discard Workout?',
-      'Are you sure you want to cancel and discard this active workout session?',
-      [
-        { text: 'Keep Going', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: cancelWorkout },
-      ]
+    // If no sets completed, discard immediately with zero friction/dialog
+    const hasAnyCompletedSets = activeSession.exercises.some((e) =>
+      e.sets.some((s) => s.is_completed === 1)
     );
+    if (!hasAnyCompletedSets && activeSession.completedSetsCount === 0) {
+      cancelWorkout();
+      return;
+    }
+    // If user has actually recorded completed sets, show in-app confirmation modal
+    setShowDiscardConfirm(true);
   };
 
   const filteredExercisesToAdd = allExercises.filter(
@@ -297,6 +304,47 @@ export const ActiveWorkoutModal: React.FC = () => {
             <Text style={styles.bottomFinishBtnText}>Complete & Save Session</Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Discard Confirmation Modal (native in-app overlay, avoids window.confirm blockage on iOS Safari) */}
+        <Modal
+          visible={showDiscardConfirm}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDiscardConfirm(false)}>
+          <View style={styles.confirmOverlay}>
+            <View
+              style={[
+                styles.confirmCard,
+                {
+                  backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                  borderColor: colors.cardBorder,
+                },
+              ]}>
+              <View style={styles.confirmHeader}>
+                <Ionicons name="warning-outline" size={26} color={colors.statusAlert} />
+                <Text style={[styles.confirmTitle, { color: colors.text }]}>Discard Workout?</Text>
+              </View>
+              <Text style={[styles.confirmBody, { color: colors.textSecondary }]}>
+                Are you sure you want to discard this workout? All {activeSession.completedSetsCount} completed set(s) in this session will be discarded.
+              </Text>
+              <View style={styles.confirmActions}>
+                <TouchableOpacity
+                  style={[styles.confirmCancelBtn, { borderColor: colors.cardBorder }]}
+                  onPress={() => setShowDiscardConfirm(false)}>
+                  <Text style={[styles.confirmCancelBtnText, { color: colors.text }]}>Keep Going</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.confirmDiscardBtn, { backgroundColor: colors.statusAlert }]}
+                  onPress={() => {
+                    setShowDiscardConfirm(false);
+                    cancelWorkout();
+                  }}>
+                  <Text style={styles.confirmDiscardBtnText}>Discard</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Overlays mounted directly inside active workout hierarchy */}
         <ExerciseSubstitutionModal />
@@ -1059,6 +1107,68 @@ const styles = StyleSheet.create({
   bottomFinishBtnText: {
     color: '#FFFFFF',
     fontSize: 15,
+    fontWeight: '700',
+  },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    padding: Spacing.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  confirmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  confirmBody: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: Spacing.xl,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  confirmDiscardBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmDiscardBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '700',
   },
 });

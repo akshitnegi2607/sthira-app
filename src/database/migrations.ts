@@ -267,6 +267,29 @@ export function runMigrations() {
     db.runSync("DELETE FROM WorkoutExercises WHERE session_id NOT IN (SELECT id FROM WorkoutSessions)");
     db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
 
+    // Purge stale or zombie in_progress workout sessions (> 4 hours old or empty > 20 mins old)
+    const inProgressSessions = db.getAllSync<{ id: string; created_at: string; start_time: string }>(
+      "SELECT id, created_at, start_time FROM WorkoutSessions WHERE status = 'in_progress'"
+    );
+    for (const sess of inProgressSessions) {
+      const startMs = new Date(sess.start_time || sess.created_at).getTime();
+      if (!isNaN(startMs)) {
+        const ageHours = (Date.now() - startMs) / (1000 * 3600);
+        const exerciseCount = db.getFirstSync<{ c: number }>(
+          'SELECT COUNT(*) as c FROM WorkoutExercises WHERE session_id = ?',
+          [sess.id]
+        )?.c || 0;
+        const completedSets = db.getFirstSync<{ c: number }>(
+          'SELECT COUNT(*) as c FROM WorkoutSets WHERE workout_exercise_id IN (SELECT id FROM WorkoutExercises WHERE session_id = ?) AND is_completed = 1',
+          [sess.id]
+        )?.c || 0;
+
+        if (ageHours > 4 || (exerciseCount === 0 && completedSets === 0 && (Date.now() - startMs) > 20 * 60 * 1000)) {
+          WorkoutRepository.cancelSession(sess.id);
+        }
+      }
+    }
+
     // Issue 8: Backfill WaterEntries for dates where DailyLogs has water recorded but WaterEntries has 0 rows
     db.runSync(`
       INSERT INTO WaterEntries (id, date, amount_ml, created_at)

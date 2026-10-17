@@ -253,6 +253,7 @@ export const WorkoutRepository = {
 
   /**
    * Gets currently active/in-progress workout session, if any.
+   * Automatically cleans up zombie sessions older than 4 hours or empty sessions older than 20 minutes.
    */
   getActiveSession(): PopulatedSession | null {
     const db = getDatabase();
@@ -260,6 +261,28 @@ export const WorkoutRepository = {
       `SELECT * FROM WorkoutSessions WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 1`
     );
     if (!session) return null;
+
+    // Check if session is stale or zombie
+    const startMs = new Date(session.start_time || session.created_at).getTime();
+    if (!isNaN(startMs)) {
+      const ageMs = Date.now() - startMs;
+      // Stale if running for > 4 hours
+      if (ageMs > 4 * 3600 * 1000) {
+        this.cancelSession(session.id);
+        return null;
+      }
+      // Check if empty (0 completed sets or 0 exercises) and running > 20 mins
+      const populated = this.getPopulatedSession(session.id);
+      if (populated) {
+        const isEmpty = populated.exercises.length === 0 || populated.completedSetsCount === 0;
+        if (isEmpty && ageMs > 20 * 60 * 1000) {
+          this.cancelSession(session.id);
+          return null;
+        }
+        return populated;
+      }
+    }
+
     return this.getPopulatedSession(session.id);
   },
 

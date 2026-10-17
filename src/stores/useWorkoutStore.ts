@@ -147,18 +147,26 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       const todayPlan = WorkoutRepository.getTodayPlan();
       const history = WorkoutRepository.getCompletedHistoryWithDetails(20);
       const recentPain = WorkoutRepository.getRecentPainEntries(14);
-      const activeSession = WorkoutRepository.getActiveSession();
+      let activeSession = WorkoutRepository.getActiveSession();
 
       let elapsed = 0;
       let startTs: number | null = null;
       if (activeSession) {
-        elapsed = activeSession.session.duration_seconds || 0;
         const startedIso = activeSession.session.start_time || activeSession.session.created_at;
         if (startedIso) {
           const startedAtMs = new Date(startedIso).getTime();
           if (!isNaN(startedAtMs)) {
-            startTs = startedAtMs;
-            elapsed = Math.max(elapsed, Math.floor((Date.now() - startedAtMs) / 1000));
+            const ageSec = Math.floor((Date.now() - startedAtMs) / 1000);
+            const isEmpty = activeSession.exercises.length === 0 || activeSession.completedSetsCount === 0;
+
+            // Auto-cancel zombie sessions (> 4 hours or empty > 20 mins)
+            if (ageSec > 14400 || (isEmpty && ageSec > 1200)) {
+              WorkoutRepository.cancelSession(activeSession.session.id);
+              activeSession = null;
+            } else {
+              startTs = startedAtMs;
+              elapsed = Math.min(10800, Math.max(activeSession.session.duration_seconds || 0, ageSec));
+            }
           }
         }
       }
@@ -238,6 +246,11 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     if (!isSessionActive) return;
     if (!isTimerPaused && sessionStartTimestamp) {
       const elapsed = Math.max(0, Math.floor((Date.now() - sessionStartTimestamp - sessionPausedDurationMs) / 1000));
+      // Auto-pause if session reaches 3 hours (10,800 seconds)
+      if (elapsed >= 10800) {
+        set({ elapsedSeconds: 10800, isTimerPaused: true, lastPauseTimestamp: Date.now() });
+        return;
+      }
       set({ elapsedSeconds: elapsed });
       if (activeSession && elapsed % 10 === 0 && elapsed > 0) {
         try {
