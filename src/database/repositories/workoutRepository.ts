@@ -724,6 +724,15 @@ export const WorkoutRepository = {
   },
 
   /**
+   * Removes an individual exercise and all its sets from an active session.
+   */
+  removeExerciseFromSession(workoutExerciseId: string): void {
+    const db = getDatabase();
+    db.runSync('DELETE FROM WorkoutSets WHERE workout_exercise_id = ?', [workoutExerciseId]);
+    db.runSync('DELETE FROM WorkoutExercises WHERE id = ?', [workoutExerciseId]);
+  },
+
+  /**
    * Cancels and removes an active workout session.
    */
   cancelSession(sessionId: string): void {
@@ -731,6 +740,21 @@ export const WorkoutRepository = {
     db.runSync('DELETE FROM WorkoutSets WHERE workout_exercise_id IN (SELECT id FROM WorkoutExercises WHERE session_id = ?)', [sessionId]);
     db.runSync('DELETE FROM WorkoutExercises WHERE session_id = ?', [sessionId]);
     db.runSync('DELETE FROM WorkoutSessions WHERE id = ?', [sessionId]);
+  },
+
+  /**
+   * Cancels and purges all active/in_progress sessions and their orphaned exercises and sets.
+   */
+  cancelAllActiveSessions(): void {
+    const db = getDatabase();
+    const activeSessions = db.getAllSync<{ id: string }>(
+      "SELECT id FROM WorkoutSessions WHERE status = 'in_progress'"
+    );
+    for (const sess of activeSessions) {
+      this.cancelSession(sess.id);
+    }
+    db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
+    db.runSync("DELETE FROM WorkoutExercises WHERE session_id NOT IN (SELECT id FROM WorkoutSessions)");
   },
 
   /**

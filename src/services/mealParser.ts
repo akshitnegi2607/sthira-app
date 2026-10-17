@@ -631,6 +631,222 @@ const FOOD_RULES: FoodAliasMap[] = [
     baseFat: 12.0,
     baseServingGrams: 200,
   },
+  {
+    foodId: 'food_apple',
+    canonicalName: 'Apple (Fresh Medium)',
+    aliases: ['apple', 'apples', 'seb'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 95,
+    baseProtein: 0.5,
+    baseCarbs: 25.0,
+    baseFat: 0.3,
+    baseServingGrams: 182,
+  },
+  {
+    foodId: 'food_whole_milk',
+    canonicalName: 'Whole Milk (Full Cream)',
+    aliases: ['milk', 'whole milk', 'full cream milk', 'doodh', 'glass of milk'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 150,
+    baseProtein: 8.0,
+    baseCarbs: 12.0,
+    baseFat: 8.0,
+    baseServingGrams: 244,
+  },
+  {
+    foodId: 'food_skim_milk',
+    canonicalName: 'Skim / Low-Fat Milk',
+    aliases: ['skim milk', 'low fat milk', 'toned milk', 'double toned milk'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 90,
+    baseProtein: 8.5,
+    baseCarbs: 12.0,
+    baseFat: 1.0,
+    baseServingGrams: 245,
+  },
+  {
+    foodId: 'food_whey_protein',
+    canonicalName: 'Whey Protein Powder',
+    aliases: ['whey', 'whey protein', 'protein powder', 'protein shake', 'whey isolate'],
+    defaultUnit: 'scoop',
+    defaultQty: 1,
+    baseCalories: 120,
+    baseProtein: 24.0,
+    baseCarbs: 2.5,
+    baseFat: 1.5,
+    baseServingGrams: 30,
+  },
+  {
+    foodId: 'food_oats',
+    canonicalName: 'Rolled Oats / Oatmeal',
+    aliases: ['oats', 'oatmeal', 'rolled oats', 'porridge'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 150,
+    baseProtein: 5.5,
+    baseCarbs: 27.0,
+    baseFat: 2.5,
+    baseServingGrams: 150,
+  },
+  {
+    foodId: 'food_wheat_bread',
+    canonicalName: 'Whole Wheat Bread / Toast',
+    aliases: ['bread', 'wheat bread', 'brown bread', 'toast', 'slice of bread'],
+    defaultUnit: 'slice',
+    defaultQty: 1,
+    baseCalories: 75,
+    baseProtein: 3.5,
+    baseCarbs: 13.5,
+    baseFat: 1.0,
+    baseServingGrams: 30,
+  },
+  {
+    foodId: 'food_peanut_butter',
+    canonicalName: 'Peanut Butter (Natural)',
+    aliases: ['peanut butter', 'pb'],
+    defaultUnit: 'tbsp',
+    defaultQty: 1,
+    baseCalories: 95,
+    baseProtein: 4.0,
+    baseCarbs: 3.5,
+    baseFat: 8.0,
+    baseServingGrams: 16,
+  },
+  {
+    foodId: 'food_almonds',
+    canonicalName: 'Almonds (Raw / Roasted)',
+    aliases: ['almonds', 'almond', 'badam'],
+    defaultUnit: 'g',
+    defaultQty: 25,
+    baseCalories: 145,
+    baseProtein: 5.3,
+    baseCarbs: 5.4,
+    baseFat: 12.5,
+    baseServingGrams: 25,
+  },
+  {
+    foodId: 'food_idli',
+    canonicalName: 'Idli (Steamed Rice & Lentil Cake)',
+    aliases: ['idli', 'idlis', 'steamed idli'],
+    defaultUnit: 'piece',
+    defaultQty: 2,
+    baseCalories: 120,
+    baseProtein: 4.0,
+    baseCarbs: 24.0,
+    baseFat: 0.8,
+    baseServingGrams: 100,
+  },
+  {
+    foodId: 'food_plain_dosa',
+    canonicalName: 'Plain Dosa',
+    aliases: ['dosa', 'plain dosa', 'sada dosa'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 135,
+    baseProtein: 3.5,
+    baseCarbs: 24.0,
+    baseFat: 3.0,
+    baseServingGrams: 90,
+  },
+  {
+    foodId: 'food_masala_dosa',
+    canonicalName: 'Masala Dosa',
+    aliases: ['masala dosa'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 250,
+    baseProtein: 5.5,
+    baseCarbs: 40.0,
+    baseFat: 8.0,
+    baseServingGrams: 160,
+  },
+  {
+    foodId: 'food_sambar',
+    canonicalName: 'Sambar (Lentil & Vegetable Stew)',
+    aliases: ['sambar', 'sambhar'],
+    defaultUnit: 'katori',
+    defaultQty: 1,
+    baseCalories: 120,
+    baseProtein: 5.0,
+    baseCarbs: 18.0,
+    baseFat: 3.0,
+    baseServingGrams: 180,
+  },
+  {
+    foodId: 'food_palak_paneer',
+    canonicalName: 'Palak Paneer (Spinach & Cottage Cheese)',
+    aliases: ['palak paneer', 'spinach paneer', 'saag paneer'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 240,
+    baseProtein: 14.0,
+    baseCarbs: 8.0,
+    baseFat: 17.0,
+    baseServingGrams: 200,
+  },
+  {
+    foodId: 'food_dal_makhani',
+    canonicalName: 'Dal Makhani (Black Lentils)',
+    aliases: ['dal makhani', 'daal makhani', 'makhani dal', 'maa ki dal'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 260,
+    baseProtein: 9.0,
+    baseCarbs: 28.0,
+    baseFat: 12.0,
+    baseServingGrams: 200,
+  },
+  {
+    foodId: 'food_veg_pulao',
+    canonicalName: 'Vegetable Pulao / Biryani',
+    aliases: ['pulao', 'veg pulao', 'vegetable pulao', 'veg biryani', 'vegetable biryani'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 220,
+    baseProtein: 4.5,
+    baseCarbs: 42.0,
+    baseFat: 4.0,
+    baseServingGrams: 180,
+  },
+  {
+    foodId: 'food_paratha_plain',
+    canonicalName: 'Paratha (Whole Wheat Plain / Stuffed)',
+    aliases: ['paratha', 'paranthas', 'aloo paratha', 'gobi paratha', 'paneer paratha'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 210,
+    baseProtein: 4.5,
+    baseCarbs: 32.0,
+    baseFat: 7.5,
+    baseServingGrams: 90,
+  },
+  {
+    foodId: 'food_veg_sandwich',
+    canonicalName: 'Vegetable Sandwich',
+    aliases: ['sandwich', 'veg sandwich', 'vegetable sandwich', 'cheese sandwich', 'paneer sandwich'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 240,
+    baseProtein: 7.0,
+    baseCarbs: 36.0,
+    baseFat: 7.0,
+    baseServingGrams: 160,
+  },
+  {
+    foodId: 'food_khichdi',
+    canonicalName: 'Moong Dal Khichdi',
+    aliases: ['khichdi', 'khichri', 'dal khichdi'],
+    defaultUnit: 'bowl',
+    defaultQty: 1,
+    baseCalories: 200,
+    baseProtein: 7.0,
+    baseCarbs: 36.0,
+    baseFat: 3.5,
+    baseServingGrams: 200,
+  },
 ];
 
 /**
@@ -767,21 +983,89 @@ function parsePhrase(phrase: string, index: number): ParsedItemResult {
     }
   }
 
-  // If no matched rule, create a low-confidence parsed item WITHOUT fake 200 kcal multipliers
+  // If no matched rule in FOOD_RULES, classify by category keywords or realistic density
   if (!matchedRule) {
     const fallbackQty = quantity || 1;
     const isWeightOrVolume = unit === 'g' || unit === 'ml';
-    let fallbackCal = 0;
-    let fallbackPro = 0;
-    let fallbackCarbs = 0;
-    let fallbackFat = 0;
+
+    let fallbackCal = 120;
+    let fallbackPro = 4.0;
+    let fallbackCarbs = 18.0;
+    let fallbackFat = 3.5;
+    let categoryReason = 'Estimated standard portion. Tap to enter exact grams or edit macros.';
 
     if (isWeightOrVolume && quantity) {
-      // Realistic default density for unspecified food: ~1.2 kcal/g
-      fallbackCal = Math.round(quantity * 1.2);
-      fallbackPro = Math.round(quantity * 0.05 * 10) / 10;
-      fallbackCarbs = Math.round(quantity * 0.15 * 10) / 10;
+      // Grams or ml specified (e.g. 50g)
+      fallbackCal = Math.round(quantity * 1.25);
+      fallbackPro = Math.round(quantity * 0.06 * 10) / 10;
+      fallbackCarbs = Math.round(quantity * 0.16 * 10) / 10;
       fallbackFat = Math.round(quantity * 0.04 * 10) / 10;
+      categoryReason = `${quantity}${unit} portion estimated at ~1.25 kcal/g density.`;
+    } else {
+      // Household unit or piece: classify by category keywords
+      if (lower.includes('shake') || lower.includes('protein') || lower.includes('smoothie')) {
+        fallbackCal = 160;
+        fallbackPro = 22.0;
+        fallbackCarbs = 8.0;
+        fallbackFat = 3.0;
+        categoryReason = 'Protein beverage / shake estimated.';
+      } else if (lower.includes('milk') || lower.includes('doodh') || lower.includes('dahi') || lower.includes('curd') || lower.includes('yogurt') || lower.includes('lassi') || lower.includes('chaas')) {
+        fallbackCal = 130;
+        fallbackPro = 7.0;
+        fallbackCarbs = 11.0;
+        fallbackFat = 6.0;
+        categoryReason = 'Dairy portion estimated.';
+      } else if (lower.includes('wrap') || lower.includes('sandwich') || lower.includes('burger') || lower.includes('roll')) {
+        fallbackCal = 240;
+        fallbackPro = 7.0;
+        fallbackCarbs = 36.0;
+        fallbackFat = 7.0;
+        categoryReason = 'Wrap / sandwich meal estimated.';
+      } else if (lower.includes('dal') || lower.includes('daal') || lower.includes('curry') || lower.includes('sambar') || lower.includes('chole') || lower.includes('rajma') || lower.includes('soup')) {
+        fallbackCal = 170;
+        fallbackPro = 9.0;
+        fallbackCarbs = 26.0;
+        fallbackFat = 3.5;
+        categoryReason = 'Lentil / curry portion estimated.';
+      } else if (lower.includes('sabzi') || lower.includes('subzi') || lower.includes('veg') || lower.includes('salad') || lower.includes('spinach') || lower.includes('palak')) {
+        fallbackCal = 110;
+        fallbackPro = 3.5;
+        fallbackCarbs = 14.0;
+        fallbackFat = 4.5;
+        categoryReason = 'Vegetable / sabzi portion estimated.';
+      } else if (lower.includes('fruit') || lower.includes('berry') || lower.includes('berries') || lower.includes('mango') || lower.includes('papaya') || lower.includes('guava') || lower.includes('melon')) {
+        fallbackCal = 75;
+        fallbackPro = 1.0;
+        fallbackCarbs = 18.0;
+        fallbackFat = 0.3;
+        categoryReason = 'Fresh fruit portion estimated.';
+      } else if (lower.includes('bread') || lower.includes('toast') || lower.includes('rice') || lower.includes('roti') || lower.includes('noodle') || lower.includes('pasta')) {
+        fallbackCal = 190;
+        fallbackPro = 5.0;
+        fallbackCarbs = 36.0;
+        fallbackFat = 3.0;
+        categoryReason = 'Grain / carb staple estimated.';
+      } else if (lower.includes('nut') || lower.includes('seed') || lower.includes('badam') || lower.includes('kaju') || lower.includes('almond') || lower.includes('cashew') || lower.includes('walnut')) {
+        fallbackCal = 150;
+        fallbackPro = 4.5;
+        fallbackCarbs = 5.0;
+        fallbackFat = 13.0;
+        categoryReason = 'Nuts / healthy fats estimated.';
+      } else if (lower.includes('kheer') || lower.includes('halwa') || lower.includes('sweet') || lower.includes('dessert') || lower.includes('cake') || lower.includes('ice cream')) {
+        fallbackCal = 220;
+        fallbackPro = 4.0;
+        fallbackCarbs = 35.0;
+        fallbackFat = 7.0;
+        categoryReason = 'Sweet / dessert portion estimated.';
+      }
+
+      // Scale by fallbackQty if user specified e.g. "2 apples" or "2 glasses of milk"
+      if (fallbackQty > 1) {
+        fallbackCal = Math.round(fallbackCal * fallbackQty);
+        fallbackPro = Math.round(fallbackPro * fallbackQty * 10) / 10;
+        fallbackCarbs = Math.round(fallbackCarbs * fallbackQty * 10) / 10;
+        fallbackFat = Math.round(fallbackFat * fallbackQty * 10) / 10;
+      }
     }
 
     return {
@@ -795,7 +1079,7 @@ function parsePhrase(phrase: string, index: number): ParsedItemResult {
       fat: fallbackFat,
       confidence_score: 'low',
       clarification_needed: 1,
-      clarification_reason: 'Food item not recognized. Tap to enter grams and verify nutrition.',
+      clarification_reason: categoryReason,
     };
   }
 

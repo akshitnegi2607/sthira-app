@@ -8,7 +8,13 @@
 import { getDatabase } from '../database/db';
 import { MealAnalysisResult, ParsedItemResult } from './mealParser';
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+declare const process: any;
+
+const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+
+function getGeminiEndpoint(model: string, apiKey: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+}
 
 /**
  * Retrieves the stored Gemini API key from AppSettings or environment variables.
@@ -35,8 +41,8 @@ export function getGeminiApiKey(): string | null {
   }
 
   // Check Expo public env
-  if (process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
-    return process.env.EXPO_PUBLIC_GEMINI_API_KEY.trim();
+  if (typeof process !== 'undefined' && (process as any).env?.EXPO_PUBLIC_GEMINI_API_KEY) {
+    return (process as any).env.EXPO_PUBLIC_GEMINI_API_KEY.trim();
   }
 
   return null;
@@ -74,7 +80,7 @@ export function isGeminiConfigured(): boolean {
 }
 
 /**
- * Tests connection with the Gemini API.
+ * Tests connection with the Gemini API across supported models.
  */
 export async function testGeminiConnection(keyToTest?: string): Promise<{ success: boolean; message: string }> {
   const apiKey = keyToTest?.trim() || getGeminiApiKey();
@@ -82,27 +88,28 @@ export async function testGeminiConnection(keyToTest?: string): Promise<{ succes
     return { success: false, message: 'Gemini API key is not configured.' };
   }
 
-  try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Respond with OK.' }] }],
-      }),
-    });
+  let lastError = '';
+  for (const model of GEMINI_MODELS) {
+    try {
+      const response = await fetch(getGeminiEndpoint(model, apiKey), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Respond with OK.' }] }],
+        }),
+      });
 
-    if (!response.ok) {
+      if (response.ok) {
+        return { success: true, message: `Successfully connected to Google Gemini AI (${model})!` };
+      }
       const errJson = await response.json().catch(() => ({}));
-      return {
-        success: false,
-        message: errJson?.error?.message || `Gemini API returned status ${response.status}`,
-      };
+      lastError = errJson?.error?.message || `Status ${response.status}`;
+    } catch (e: any) {
+      lastError = e?.message || 'Network error';
     }
-
-    return { success: true, message: 'Successfully connected to Google Gemini AI!' };
-  } catch (e: any) {
-    return { success: false, message: `Connection failed: ${e?.message || 'Network error'}` };
   }
+
+  return { success: false, message: `Connection failed: ${lastError}` };
 }
 
 /**
@@ -155,28 +162,39 @@ Respond ONLY with a valid JSON object matching this schema:
   "warnings": ["string"]
 }`;
 
-  try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: 'application/json',
-        },
-      }),
-    });
+  let rawContent: string | null = null;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const response = await fetch(getGeminiEndpoint(model, apiKey), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+          },
+        }),
+      });
 
-    if (!response.ok) {
-      console.warn(`[GeminiMealParser] API returned error status ${response.status}`);
-      return null;
+      if (response.ok) {
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          rawContent = text;
+          break;
+        }
+      } else {
+        console.warn(`[GeminiMealParser] ${model} returned error status ${response.status}`);
+      }
+    } catch (e) {
+      console.warn(`[GeminiMealParser] Error connecting to ${model}:`, e);
     }
+  }
 
-    const data = await response.json();
-    const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawContent) return null;
+  if (!rawContent) return null;
 
+  try {
     const parsed = JSON.parse(rawContent);
     if (!parsed.items || !Array.isArray(parsed.items) || parsed.items.length === 0) {
       return null;

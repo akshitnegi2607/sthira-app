@@ -82,6 +82,7 @@ interface WorkoutStoreState {
   }) => Exercise;
 
   // Finish & Cancel
+  removeExerciseFromWorkout: (workoutExerciseId: string) => void;
   finishWorkout: (data: {
     difficulty?: 'Easy' | 'Good' | 'Hard' | 'Very hard';
     notes?: string;
@@ -404,11 +405,20 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     }
   },
 
+  removeExerciseFromWorkout: (workoutExerciseId) => {
+    const active = get().activeSession;
+    if (!active) return;
+    WorkoutRepository.removeExerciseFromSession(workoutExerciseId);
+    const refreshed = WorkoutRepository.getPopulatedSession(active.session.id);
+    set({ activeSession: refreshed });
+  },
+
   cancelWorkout: () => {
     const active = get().activeSession;
     if (active) {
       WorkoutRepository.cancelSession(active.session.id);
     }
+    WorkoutRepository.cancelAllActiveSessions();
     set({
       activeSession: null,
       isSessionActive: false,

@@ -38,7 +38,6 @@ console.log('\n--- 1. Testing Dynamic AI Daily Coaching Engine ---');
 
 const mockGoals: Goals = {
   id: 'goals_primary',
-  user_id: 'user_primary',
   calories_target: 2450,
   protein_target_min: 110,
   protein_target_max: 120,
@@ -47,8 +46,6 @@ const mockGoals: Goals = {
   carbs_target: 335,
   water_target_liters: 2.5,
   sleep_hours_target: 7.5,
-  weight_target_kg: 67.0,
-  weekly_weight_change_target: 0.15,
   workout_days_target: 4,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -288,12 +285,12 @@ const logged = MealRepository.createMeal(
   ]
 );
 
-assert(logged.meal.id !== undefined, 'Suggested meal logged successfully');
+assert(logged.id !== undefined, 'Suggested meal logged successfully');
 const updatedLog = DailyLogsRepository.getTodayLog();
 assert(updatedLog.calories_consumed >= testSuggestedMeal.calories, 'DailyLogs calories immediately updated');
 assert(updatedLog.protein_consumed >= testSuggestedMeal.protein, 'DailyLogs protein immediately updated');
 
 // Clean up test meal
-MealRepository.deleteMeal(logged.meal.id);
+MealRepository.deleteMeal(logged.id);
 
 console.log('\n🎉 ALL TESTS PASSED! Dynamic coaching and exercise last-set tracking verified completely.\n');

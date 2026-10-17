@@ -52,6 +52,7 @@ export const ActiveWorkoutModal: React.FC = () => {
   const closeExerciseInfo = useWorkoutStore((s) => s.closeExerciseInfo);
   const selectedExerciseForInfo = useWorkoutStore((s) => s.selectedExerciseForInfo);
   const addExerciseToWorkout = useWorkoutStore((s) => s.addExerciseToWorkout);
+  const removeExerciseFromWorkout = useWorkoutStore((s) => s.removeExerciseFromWorkout);
   const createCustomExercise = useWorkoutStore((s) => s.createCustomExercise);
   const allExercises = useWorkoutStore((s) => s.exercises);
   const recentPain = useWorkoutStore((s) => s.recentPain);
@@ -174,6 +175,7 @@ export const ActiveWorkoutModal: React.FC = () => {
               onDeleteSet={(setId) => deleteSet(setId)}
               onSwap={() => openSubstitutionModal(item.workoutExercise.id)}
               onInfo={() => openExerciseInfo(item.exercise)}
+              onRemove={() => removeExerciseFromWorkout(item.workoutExercise.id)}
             />
           ))}
 
@@ -319,6 +321,7 @@ interface ExerciseCardProps {
   onDeleteSet: (setId: string) => void;
   onSwap: () => void;
   onInfo: () => void;
+  onRemove: () => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({
@@ -331,6 +334,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onDeleteSet,
   onSwap,
   onInfo,
+  onRemove,
 }) => {
   const { colors, isDark } = useAppTheme();
   const ex = item.exercise;
@@ -407,6 +411,24 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             onPress={onSwap}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="swap-horizontal" size={15} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.actionIconBtn,
+              { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)' },
+            ]}
+            onPress={() => {
+              showAlert(
+                'Discard Exercise?',
+                `Remove "${ex.name}" from this workout session?`,
+                [
+                  { text: 'Keep', style: 'cancel' },
+                  { text: 'Discard', style: 'destructive', onPress: onRemove },
+                ]
+              );
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="trash-outline" size={15} color={colors.statusAlert} />
           </TouchableOpacity>
         </View>
       </View>
