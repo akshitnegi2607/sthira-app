@@ -74,81 +74,105 @@ export const WorkoutRepository = {
   getLastPerformanceForExercise(exerciseId: string): ExerciseLastPerformance {
     const db = getDatabase();
     try {
-      // Find the most recent completed session containing this exercise
-      const latestSession = db.getFirstSync<{
-        sessionId: string;
-        sessionDate: string;
-        sessionTitle: string;
-      }>(
-        `SELECT ws.id as sessionId, ws.date as sessionDate, ws.title as sessionTitle
-         FROM WorkoutSets s
-         JOIN WorkoutExercises we ON s.workout_exercise_id = we.id
-         JOIN WorkoutSessions ws ON we.session_id = ws.id
-         WHERE we.exercise_id = ?
-           AND ws.status = 'completed'
-           AND (s.is_completed = 1 OR s.reps > 0)
-         ORDER BY ws.date DESC, ws.created_at DESC
-         LIMIT 1`,
+      // 1. Find all workout exercises matching this exerciseId (single-table query for web & native)
+      const matchedExercises = db.getAllSync<{ id: string; session_id: string }>(
+        'SELECT id, session_id FROM WorkoutExercises WHERE exercise_id = ?',
         [exerciseId]
       );
 
-      if (!latestSession) {
-        return {
-          hasHistory: false,
-          lastSets: [],
-          summaryText: 'No previous sets recorded',
-        };
+      if (matchedExercises && matchedExercises.length > 0) {
+        // 2. Fetch completed workout sessions
+        const completedSessions = db.getAllSync<{ id: string; date: string; title: string; created_at: string }>(
+          "SELECT id, date, title, created_at FROM WorkoutSessions WHERE status = 'completed' ORDER BY date DESC, created_at DESC"
+        );
+
+        const sessionMap = new Map(completedSessions.map((s) => [s.id, s]));
+
+        // Sort matched workout exercises by session date descending
+        const sortedMatches = matchedExercises
+          .filter((me) => sessionMap.has(me.session_id))
+          .sort((a, b) => {
+            const sessA = sessionMap.get(a.session_id)!;
+            const sessB = sessionMap.get(b.session_id)!;
+            if (sessA.date !== sessB.date) return sessB.date.localeCompare(sessA.date);
+            return (sessB.created_at || '').localeCompare(sessA.created_at || '');
+          });
+
+        for (const match of sortedMatches) {
+          const sess = sessionMap.get(match.session_id)!;
+          const rawSets = db.getAllSync<{
+            set_number: number;
+            weight_kg: number;
+            reps: number;
+            rir: number | null;
+            is_completed: number;
+          }>(
+            'SELECT set_number, weight_kg, reps, rir, is_completed FROM WorkoutSets WHERE workout_exercise_id = ? ORDER BY set_number ASC',
+            [match.id]
+          );
+
+          const validSets = (rawSets || []).filter((s) => s.is_completed === 1 || (s.reps && Number(s.reps) > 0));
+
+          if (validSets.length > 0) {
+            const lastSets: ExerciseSetRecord[] = validSets.map((s) => ({
+              setNumber: s.set_number,
+              weightKg: Number(s.weight_kg) || 0,
+              reps: Number(s.reps) || 0,
+              rir: s.rir !== undefined && s.rir !== null ? Number(s.rir) : null,
+            }));
+
+            const maxWeightKg = Math.max(...lastSets.map((s) => s.weightKg));
+            const bestSet = [...lastSets].sort((a, b) => {
+              if (b.weightKg !== a.weightKg) return b.weightKg - a.weightKg;
+              return b.reps - a.reps;
+            })[0];
+
+            const bestSetText = `${bestSet.weightKg} kg × ${bestSet.reps}`;
+            const summaryText = `Last: ${bestSetText} (${sess.date})`;
+
+            return {
+              hasHistory: true,
+              lastDate: sess.date,
+              lastSessionTitle: sess.title,
+              lastSets,
+              maxWeightKg,
+              bestSetText,
+              summaryText,
+            };
+          }
+        }
       }
 
-      // Fetch all completed sets from that session for this exercise
-      const sets = db.getAllSync<{
-        set_number: number;
-        weight_kg: number;
-        reps: number;
-        rir: number | null;
-      }>(
-        `SELECT s.set_number, s.weight_kg, s.reps, s.rir
-         FROM WorkoutSets s
-         JOIN WorkoutExercises we ON s.workout_exercise_id = we.id
-         WHERE we.session_id = ?
-           AND we.exercise_id = ?
-           AND (s.is_completed = 1 OR s.reps > 0)
-         ORDER BY s.set_number ASC`,
-        [latestSession.sessionId, exerciseId]
-      );
-
-      if (!sets || sets.length === 0) {
+      // 3. Fallback: If no completed session rows exist yet, but the exercise has recorded last_weight_kg
+      const ex = db.getFirstSync<Exercise>('SELECT * FROM Exercises WHERE id = ?', [exerciseId]);
+      if (ex && ex.last_weight_kg && Number(ex.last_weight_kg) > 0) {
+        const lastWeight = Number(ex.last_weight_kg);
+        const targetSets = ex.target_sets || 3;
+        const { minReps } = parseRepRange(ex.target_rep_range);
+        const fallbackSets: ExerciseSetRecord[] = [];
+        for (let i = 1; i <= targetSets; i++) {
+          fallbackSets.push({
+            setNumber: i,
+            weightKg: lastWeight,
+            reps: minReps,
+            rir: 2,
+          });
+        }
         return {
-          hasHistory: false,
-          lastSets: [],
-          summaryText: 'No previous sets recorded',
+          hasHistory: true,
+          lastDate: 'Baseline',
+          lastSessionTitle: 'Previous Session',
+          lastSets: fallbackSets,
+          maxWeightKg: lastWeight,
+          bestSetText: `${lastWeight} kg × ${minReps}`,
+          summaryText: `Last: ${lastWeight} kg (${minReps} reps)`,
         };
       }
-
-      const lastSets: ExerciseSetRecord[] = sets.map((s) => ({
-        setNumber: s.set_number,
-        weightKg: s.weight_kg,
-        reps: s.reps,
-        rir: s.rir,
-      }));
-
-      const maxWeightKg = Math.max(...lastSets.map((s) => s.weightKg));
-      const bestSet = [...lastSets].sort((a, b) => {
-        if (b.weightKg !== a.weightKg) return b.weightKg - a.weightKg;
-        return b.reps - a.reps;
-      })[0];
-
-      const bestSetText = `${bestSet.weightKg} kg × ${bestSet.reps}`;
-      const summaryText = `Last: ${bestSetText} (${latestSession.sessionDate})`;
 
       return {
-        hasHistory: true,
-        lastDate: latestSession.sessionDate,
-        lastSessionTitle: latestSession.sessionTitle,
-        lastSets,
-        maxWeightKg,
-        bestSetText,
-        summaryText,
+        hasHistory: false,
+        lastSets: [],
+        summaryText: 'No previous sets recorded',
       };
     } catch (e) {
       console.warn('getLastPerformanceForExercise error:', e);
@@ -826,16 +850,23 @@ export const WorkoutRepository = {
       db.runSync('DELETE FROM WorkoutExercises WHERE session_id NOT IN (SELECT id FROM WorkoutSessions)');
       db.runSync('DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)');
 
-      db.runSync(
-        `UPDATE WorkoutSets SET is_completed = 1
-         WHERE reps > 0
-         AND (is_completed = 0 OR is_completed IS NULL)
-         AND workout_exercise_id IN (
-           SELECT we.id FROM WorkoutExercises we
-           JOIN WorkoutSessions ws ON we.session_id = ws.id
-           WHERE ws.status = 'completed'
-         )`
+      const completedSessions = db.getAllSync<{ id: string }>(
+        "SELECT id FROM WorkoutSessions WHERE status = 'completed'"
       );
+      if (completedSessions.length > 0) {
+        for (const cs of completedSessions) {
+          const compExercises = db.getAllSync<{ id: string }>(
+            'SELECT id FROM WorkoutExercises WHERE session_id = ?',
+            [cs.id]
+          );
+          for (const ce of compExercises) {
+            db.runSync(
+              'UPDATE WorkoutSets SET is_completed = 1 WHERE workout_exercise_id = ? AND reps > 0 AND (is_completed = 0 OR is_completed IS NULL)',
+              [ce.id]
+            );
+          }
+        }
+      }
 
       const completed = this.getCompletedHistory(10);
       for (const sess of completed) {

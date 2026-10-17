@@ -429,20 +429,48 @@ export default function WorkoutScreen() {
                   </TouchableOpacity>
                 )
               ) : isPastDay ? (
-                <TouchableOpacity
-                  style={[
-                    styles.schedLockedBtn,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' },
-                  ]}
-                  onPress={() => {
-                    setPreviewPlan(plan);
-                    setIsPreviewOpen(true);
-                  }}>
-                  <Ionicons name="list-outline" size={12} color={colors.textMuted} />
-                  <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
-                    Past Day • View
-                  </Text>
-                </TouchableOpacity>
+                (() => {
+                  const pastCompleted = history.find(
+                    (h) =>
+                      (h.session.workout_plan_id === plan.id ||
+                        h.session.title.toLowerCase().includes(plan.name.toLowerCase())) &&
+                      h.session.status === 'completed'
+                  );
+                  if (pastCompleted) {
+                    return (
+                      <TouchableOpacity
+                        style={[
+                          styles.schedCompletedBtn,
+                          {
+                            backgroundColor: isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.12)',
+                            borderColor: colors.accent,
+                          },
+                        ]}
+                        onPress={() => openHistoryModal(pastCompleted)}>
+                        <Ionicons name="checkmark-circle" size={13} color={colors.accent} />
+                        <Text style={[styles.schedCompletedText, { color: colors.accent }]}>
+                          Completed ✓
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  }
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.schedLockedBtn,
+                        { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' },
+                      ]}
+                      onPress={() => {
+                        setPreviewPlan(plan);
+                        setIsPreviewOpen(true);
+                      }}>
+                      <Ionicons name="list-outline" size={12} color={colors.textMuted} />
+                      <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
+                        View Routine
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })()
               ) : (
                 <TouchableOpacity
                   style={[
