@@ -15,6 +15,7 @@ import {
   MealSuggestion,
   getTimeOfDayBracket,
 } from '@/services/dailyCoachingEngine';
+import { useNutritionStore } from './useNutritionStore';
 
 interface DashboardState {
   todayLog: DailyLog;
@@ -135,9 +136,19 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   },
 
   quickAddWater: (amountLiters) => {
-    const current = Number(get().todayLog.water_liters) || 0;
-    const newAmount = Math.round((current + Number(amountLiters)) * 10) / 10;
-    get().updateLog({ water_liters: newAmount });
+    const todayStr = getTodayDateString();
+    try {
+      const updatedLog = DailyLogsRepository.logWater(todayStr, Number(amountLiters));
+      set({ todayLog: { ...updatedLog } });
+    } catch (e) {
+      console.error('Failed to log water:', e);
+      const current = Number(get().todayLog.water_liters) || 0;
+      const newAmount = Math.round((current + Number(amountLiters)) * 10) / 10;
+      get().updateLog({ water_liters: newAmount });
+    }
+    try {
+      useNutritionStore.getState().loadNutritionData(todayStr);
+    } catch {}
     try {
       if (isSupabaseConfigured()) {
         SupabaseSyncService.syncAll().catch(() => {});

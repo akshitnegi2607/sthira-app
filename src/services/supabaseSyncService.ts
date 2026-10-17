@@ -8,6 +8,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { useJournalStore } from '@/stores/useJournalStore';
 import { useNutritionStore } from '@/stores/useNutritionStore';
 import { MealRepository } from '@/database/repositories/mealRepository';
+import { DailyLogsRepository } from '@/database/repositories/dailyLogsRepository';
 
 export type SyncState = 'idle' | 'syncing' | 'synced' | 'error' | 'not_configured';
 
@@ -254,6 +255,22 @@ export const SupabaseSyncService = {
         }
       } catch (calcErr) {
         console.warn('[SupabaseSync] Error recalculating meal totals:', calcErr);
+      }
+
+      // 3b. Recalculate DailyLogs water for all dates from pulled water entries
+      try {
+        const allWaterRows = db.getAllSync<{ date: string }>('SELECT DISTINCT date FROM WaterEntries WHERE date IS NOT NULL') || [];
+        for (const w of allWaterRows) {
+          if (!w.date) continue;
+          try {
+            const liters = DailyLogsRepository.getWaterLitersForDate(w.date);
+            db.runSync('UPDATE DailyLogs SET water_liters = ? WHERE date = ?', [liters, w.date]);
+          } catch (e) {
+            console.warn(`[SupabaseSync] Error syncing water totals for ${w.date}:`, e);
+          }
+        }
+      } catch (waterErr) {
+        console.warn('[SupabaseSync] Error recalculating water totals:', waterErr);
       }
 
       // Clean duplicate singleton rows and orphan exercises/sets if any came from remote

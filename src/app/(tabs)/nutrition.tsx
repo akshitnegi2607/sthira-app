@@ -147,6 +147,50 @@ export default function NutritionScreen() {
           fatTargetMax={goals.fat_target_max}
         />
 
+        {/* Daily Hydration Bar */}
+        <View
+          style={[
+            styles.hydrationCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+            },
+          ]}>
+          <View style={styles.hydrationHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+              <Ionicons name="water" size={17} color={colors.water} />
+              <Text style={[styles.hydrationTitle, { color: colors.text }]}>Hydration</Text>
+            </View>
+            <Text style={[styles.hydrationValue, { color: colors.water }]}>
+              {(Number(currentLog?.water_liters) || 0).toFixed(1)} / {goals.water_target_liters || 2.5} L
+            </Text>
+          </View>
+          <View style={styles.quickWaterChips}>
+            {[
+              { liters: 0.25, label: '+250 ml' },
+              { liters: 0.5, label: '+500 ml' },
+              { liters: 0.75, label: '+750 ml' },
+              { liters: 1.0, label: '+1.0 L' },
+            ].map((chip) => (
+              <TouchableOpacity
+                key={chip.liters}
+                style={[
+                  styles.waterChip,
+                  {
+                    backgroundColor: colors.cardElevated,
+                    borderColor: colors.cardBorder,
+                  },
+                ]}
+                onPress={() => {
+                  useDashboardStore.getState().quickAddWater(chip.liters);
+                  loadNutritionData(selectedDate);
+                }}>
+                <Text style={[styles.waterChipText, { color: colors.water }]}>{chip.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Quick Action Banners: NLP Logger & Custom Recipe Builder */}
         <View style={styles.bannersRow}>
           <TouchableOpacity
@@ -380,5 +424,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.8,
     marginBottom: Spacing.sm,
+  },
+  hydrationCard: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  hydrationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  hydrationTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  hydrationValue: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  quickWaterChips: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.xs,
+  },
+  waterChip: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waterChipText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

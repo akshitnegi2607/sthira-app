@@ -6,6 +6,7 @@ import { INITIAL_FOOD_DATABASE } from '../constants/initialFoods';
 import { INITIAL_CUISINE_RECIPES } from '../constants/initialRecipes';
 import { WorkoutRepository } from './repositories/workoutRepository';
 import { MealRepository } from './repositories/mealRepository';
+import { DailyLogsRepository } from './repositories/dailyLogsRepository';
 import { getTodayDateString } from '../utils/date';
 
 export function runMigrations() {
@@ -76,6 +77,26 @@ export function runMigrations() {
         INITIAL_GOALS.workout_days_target,
         INITIAL_GOALS.created_at,
         INITIAL_GOALS.updated_at,
+      ]
+    );
+  }
+
+  // 3b. Seed baseline weight if not present
+  const weightRow = db.getFirstSync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM WeightEntries'
+  );
+  if (!weightRow || weightRow.count === 0) {
+    const todayStr = getTodayDateString();
+    const baselineDate = '2026-10-12';
+    db.runSync(
+      `INSERT INTO WeightEntries (id, date, weight_kg, notes, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        `weight_${baselineDate}`,
+        baselineDate,
+        INITIAL_USER_PROFILE.current_weight,
+        'Baseline scale weight',
+        new Date().toISOString(),
       ]
     );
   }
@@ -291,39 +312,42 @@ export function runMigrations() {
     }
 
     // Issue 8: Backfill WaterEntries for dates where DailyLogs has water recorded but WaterEntries has 0 rows
-    db.runSync(`
-      INSERT INTO WaterEntries (id, date, amount_ml, created_at)
-      SELECT 'water_backfill_' || date, date, CAST(water_liters * 1000 AS INTEGER), date || 'T12:00:00.000Z'
-      FROM DailyLogs
-      WHERE water_liters > 0
-        AND date NOT IN (SELECT DISTINCT date FROM WaterEntries)
-    `);
-
-    // Remove rapid duplicate double-tap WaterEntries created within 3 seconds of each other
-    db.runSync(`
-      DELETE FROM WaterEntries
-      WHERE id IN (
-        SELECT w1.id
-        FROM WaterEntries w1
-        JOIN WaterEntries w2
-          ON w1.date = w2.date
-         AND w1.amount_ml = w2.amount_ml
-         AND w1.id != w2.id
-         AND w1.created_at > w2.created_at
-         AND (strftime('%s', w1.created_at) - strftime('%s', w2.created_at)) BETWEEN 0 AND 3
-      )
-    `);
+    try {
+      const logsWithWater = db.getAllSync<{ date: string; water_liters: number }>(
+        'SELECT date, water_liters FROM DailyLogs WHERE water_liters > 0'
+      );
+      for (const log of logsWithWater) {
+        if (!log.date) continue;
+        const existingEntries = db.getAllSync<{ id: string }>(
+          'SELECT id FROM WaterEntries WHERE date = ?',
+          [log.date]
+        );
+        if (!existingEntries || existingEntries.length === 0) {
+          const ml = Math.round(Number(log.water_liters) * 1000);
+          const nowIso = `${log.date}T12:00:00.000Z`;
+          db.runSync(
+            'INSERT INTO WaterEntries (id, date, amount_ml, created_at) VALUES (?, ?, ?, ?)',
+            [`water_backfill_${log.date}`, log.date, ml, nowIso]
+          );
+        }
+      }
+    } catch (backfillErr) {
+      console.warn('[Migrations] Water backfill warning:', backfillErr);
+    }
 
     // Resynchronize DailyLogs.water_liters from WaterEntries sum
-    db.runSync(`
-      UPDATE DailyLogs
-      SET water_liters = (
-        SELECT ROUND(COALESCE(SUM(amount_ml), 0) / 1000.0, 1)
-        FROM WaterEntries
-        WHERE WaterEntries.date = DailyLogs.date
-      )
-      WHERE date IN (SELECT DISTINCT date FROM WaterEntries)
-    `);
+    try {
+      const waterDates = db.getAllSync<{ date: string }>(
+        'SELECT DISTINCT date FROM WaterEntries WHERE date IS NOT NULL'
+      );
+      for (const d of waterDates) {
+        if (!d.date) continue;
+        const totalLiters = DailyLogsRepository.getWaterLitersForDate(d.date);
+        db.runSync('UPDATE DailyLogs SET water_liters = ? WHERE date = ?', [totalLiters, d.date]);
+      }
+    } catch (e) {
+      console.warn('[Migrations] Water resync error:', e);
+    }
 
     // Issue 9: Mark unlogged/empty days as PENDING instead of ON TRACK
     db.runSync(`

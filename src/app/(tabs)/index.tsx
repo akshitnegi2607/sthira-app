@@ -73,6 +73,7 @@ export default function HomeScreen() {
           log={todayLog}
           goals={goals}
           currentWeight={profile.current_weight}
+          onPressWater={() => setModalType('water')}
         />
 
         {/* 2. MIDDLE: Today's Planned Workout / Activity */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '@/hooks/use-theme';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { ProgressBar } from './ProgressBar';
@@ -13,6 +13,7 @@ interface StatTileProps {
   accentColor?: string;
   isEstimated?: boolean;
   subtitle?: string;
+  onPress?: () => void;
 }
 
 export const StatTile: React.FC<StatTileProps> = ({
@@ -24,19 +25,13 @@ export const StatTile: React.FC<StatTileProps> = ({
   accentColor,
   isEstimated = false,
   subtitle,
+  onPress,
 }) => {
   const { colors } = useAppTheme();
   const color = accentColor || colors.accent;
 
-  return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.cardBorder,
-        },
-      ]}>
+  const content = (
+    <>
       <View style={styles.headerRow}>
         <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
         {isEstimated && (
@@ -65,8 +60,29 @@ export const StatTile: React.FC<StatTileProps> = ({
       {subtitle && (
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>{subtitle}</Text>
       )}
-    </View>
+    </>
   );
+
+  const containerStyle = [
+    styles.container,
+    {
+      backgroundColor: colors.card,
+      borderColor: colors.cardBorder,
+    },
+  ];
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        style={containerStyle}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return <View style={containerStyle}>{content}</View>;
 };
 
 const styles = StyleSheet.create({

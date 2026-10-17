@@ -48,17 +48,22 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
 
   const handleWaterTap = (liters: number) => {
     const now = Date.now();
-    // 2-second debounce guard against accidental double-taps
-    if (now - lastWaterTap.current < 2000) return;
+    // 350ms debounce guard against accidental physical tap bounce
+    if (now - lastWaterTap.current < 350) return;
     lastWaterTap.current = now;
+    setInputValue('');
     onSubmitWater(liters);
     onClose();
   };
 
   const handleSave = async () => {
     if (type === 'water') {
-      const val = parseFloat(inputValue);
+      let val = parseFloat(inputValue);
       if (!isNaN(val) && val > 0) {
+        // If user entered milliliters (e.g. 250, 300, 500, 750, 1000), convert to liters
+        if (val > 15) {
+          val = Math.round((val / 1000) * 100) / 100;
+        }
         handleWaterTap(val);
         return;
       }
@@ -118,16 +123,21 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
           <View>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Log Water</Text>
             <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
-              Current today: {currentWater.toFixed(1)} L (Target: 2.5 L)
+              Current today: {currentWater.toFixed(1)} L ({Math.round(currentWater * 1000)} ml) • Target: 2.5 L
             </Text>
 
             <View style={styles.quickChipsRow}>
-              {[0.25, 0.5, 0.75, 1.0].map((amt) => (
+              {[
+                { liters: 0.25, label: '+250 ml' },
+                { liters: 0.5, label: '+500 ml' },
+                { liters: 0.75, label: '+750 ml' },
+                { liters: 1.0, label: '+1.0 L' },
+              ].map((item) => (
                 <TouchableOpacity
-                  key={amt}
+                  key={item.liters}
                   style={[styles.chip, { backgroundColor: colors.cardElevated, borderColor: colors.cardBorder }]}
-                  onPress={() => handleWaterTap(amt)}>
-                  <Text style={[styles.chipText, { color: colors.water }]}>+{amt} L</Text>
+                  onPress={() => handleWaterTap(item.liters)}>
+                  <Text style={[styles.chipText, { color: colors.water }]}>{item.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -141,7 +151,7 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
                   color: colors.text,
                 },
               ]}
-              placeholder="Or enter amount to add in liters (e.g. 0.4)"
+              placeholder="e.g. 500 ml or 0.5 L"
               placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
               value={inputValue}

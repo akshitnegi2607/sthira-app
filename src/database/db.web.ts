@@ -42,11 +42,14 @@ class WebSQLiteFallback {
                   dateMap.set(row.date, row);
                 } else {
                   const existing = dateMap.get(row.date)!;
+                  const maxWater = Math.max(Number(existing.water_liters) || 0, Number(row.water_liters) || 0);
+                  let mergedRow: WebDBRecord;
                   if (Number(row.calories_consumed || 0) > Number(existing.calories_consumed || 0)) {
-                    dateMap.set(row.date, { ...existing, ...row });
+                    mergedRow = { ...existing, ...row, water_liters: maxWater };
                   } else {
-                    dateMap.set(row.date, { ...row, ...existing });
+                    mergedRow = { ...row, ...existing, water_liters: maxWater };
                   }
+                  dateMap.set(row.date, mergedRow);
                 }
               }
               this.tables.set(table, Array.from(dateMap.values()));
@@ -157,6 +160,15 @@ class WebSQLiteFallback {
       }
 
       if (selectColsRaw !== '*') {
+        // Handle SUM aggregation, e.g. SELECT COALESCE(SUM(amount_ml), 0) as total
+        const sumMatch = selectColsRaw.match(/(?:COALESCE\s*\(\s*)?SUM\s*\(\s*(\w+)\s*\)(?:\s*,\s*\d+\s*\))?(?:\s+as\s+(\w+))?/i);
+        if (sumMatch) {
+          const sumCol = sumMatch[1];
+          const alias = sumMatch[2] || 'total';
+          const sumVal = rows.reduce((acc, r) => acc + (Number(r[sumCol]) || 0), 0);
+          return [{ [alias]: sumVal } as unknown as T];
+        }
+
         const colsToPick = selectColsRaw.split(',').map((c) => c.trim().split(/\s+as\s+/i)[0].trim());
         return rows.map((r) => {
           const picked: any = {};
@@ -333,10 +345,15 @@ class WebSQLiteFallback {
       const whereCol = updateMatch[3];
       const whereVal = params[params.length - 1];
 
-      const rows = this.tables.get(table) || [];
-      const target = rows.find((r) => r[whereCol] == whereVal);
-
-      if (target) {
+      if (!this.tables.has(table)) {
+        this.tables.set(table, []);
+      }
+      const rows = this.tables.get(table)!;
+      let target = rows.find((r) => r[whereCol] == whereVal);
+      if (!target) {
+        target = { [whereCol]: whereVal };
+        rows.push(target);
+      }
         let paramIdx = 0;
         for (const clause of rawSetClauses) {
           const parts = clause.split('=').map((p) => p.trim());
@@ -351,7 +368,6 @@ class WebSQLiteFallback {
         }
         this.saveToStorage();
         return { changes: 1, lastInsertRowId: 1 };
-      }
     }
 
     return { changes: 0, lastInsertRowId: 0 };

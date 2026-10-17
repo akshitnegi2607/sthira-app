@@ -6,15 +6,51 @@ export const DailyLogsRepository = {
   getWaterLitersForDate(dateStr: string): number {
     const db = getDatabase();
     try {
-      const row = db.getFirstSync<{ total: number }>(
-        'SELECT COALESCE(SUM(amount_ml), 0) as total FROM WaterEntries WHERE date = ?',
+      const rows = db.getAllSync<{ amount_ml: number }>(
+        'SELECT amount_ml FROM WaterEntries WHERE date = ?',
         [dateStr]
       );
-      if (row && row.total > 0) {
-        return Math.round((row.total / 1000) * 10) / 10;
+      if (rows && rows.length > 0) {
+        const sumMl = rows.reduce((acc, r) => acc + (Number(r.amount_ml) || 0), 0);
+        return Math.round((sumMl / 1000) * 10) / 10;
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Error reading water entries:', e);
+    }
     return 0;
+  },
+
+  /**
+   * Logs a hydration entry (in liters), creating a persistent WaterEntries record
+   * and updating the DailyLogs table.
+   */
+  logWater(dateStr: string, amountLiters: number): DailyLog {
+    const db = getDatabase();
+    const ml = Math.round(Number(amountLiters) * 1000);
+    const now = new Date().toISOString();
+
+    if (ml > 0) {
+      const id = `water_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      db.runSync(
+        'INSERT INTO WaterEntries (id, date, amount_ml, created_at) VALUES (?, ?, ?, ?)',
+        [id, dateStr, ml, now]
+      );
+    }
+
+    const currentWater = this.getWaterLitersForDate(dateStr);
+    const currentLog = this.getOrCreateLog(dateStr);
+    const finalLiters = Math.max(
+      currentWater,
+      Math.round(((Number(currentLog.water_liters) || 0) + Number(amountLiters)) * 10) / 10
+    );
+
+    db.runSync(
+      'UPDATE DailyLogs SET water_liters = ?, updated_at = ? WHERE date = ?',
+      [finalLiters, now, dateStr]
+    );
+
+    const refreshed = this.getLogByDate(dateStr);
+    return refreshed || { ...currentLog, water_liters: finalLiters, updated_at: now };
   },
 
   getLogByDate(dateStr: string): DailyLog | null {
@@ -27,6 +63,16 @@ export const DailyLogsRepository = {
     if (waterSum > 0 && Math.abs(waterSum - (row.water_liters || 0)) > 0.05) {
       db.runSync('UPDATE DailyLogs SET water_liters = ? WHERE date = ?', [waterSum, dateStr]);
       row.water_liters = waterSum;
+    } else if (waterSum === 0 && (row.water_liters || 0) > 0) {
+      // If DailyLogs has water but WaterEntries has no rows yet, backfill a WaterEntry so it is never lost!
+      const now = new Date().toISOString();
+      const ml = Math.round(Number(row.water_liters) * 1000);
+      try {
+        db.runSync(
+          'INSERT INTO WaterEntries (id, date, amount_ml, created_at) VALUES (?, ?, ?, ?)',
+          [`water_init_${dateStr}`, dateStr, ml, now]
+        );
+      } catch {}
     }
     return row;
   },

@@ -11,12 +11,14 @@ interface TodayOverviewCardProps {
   log: DailyLog;
   goals: Goals;
   currentWeight: number;
+  onPressWater?: () => void;
 }
 
 export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
   log,
   goals,
   currentWeight,
+  onPressWater,
 }) => {
   const { colors } = useAppTheme();
 
@@ -88,7 +90,8 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
             progress={waterProgress}
             accentColor={colors.water}
             isEstimated={false}
-            subtitle="Measured"
+            subtitle={onPressWater ? 'Measured • Tap to log' : 'Measured'}
+            onPress={onPressWater}
           />
           <View style={{ width: Spacing.sm }} />
           <StatTile
