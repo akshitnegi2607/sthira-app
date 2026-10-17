@@ -33,6 +33,23 @@ export interface PopulatedSession {
   completedSetsCount: number;
 }
 
+export interface ExerciseSetRecord {
+  setNumber: number;
+  weightKg: number;
+  reps: number;
+  rir: number | null;
+}
+
+export interface ExerciseLastPerformance {
+  hasHistory: boolean;
+  lastDate?: string;
+  lastSessionTitle?: string;
+  lastSets: ExerciseSetRecord[];
+  maxWeightKg?: number;
+  bestSetText?: string;
+  summaryText: string;
+}
+
 export const WorkoutRepository = {
   /**
    * Retrieves all exercises from database.
@@ -48,6 +65,99 @@ export const WorkoutRepository = {
   getExerciseById(id: string): Exercise | null {
     const db = getDatabase();
     return db.getFirstSync<Exercise>('SELECT * FROM Exercises WHERE id = ? LIMIT 1', [id]);
+  },
+
+  /**
+   * Retrieves the actual last completed set performance for an exercise from past completed sessions.
+   * Gives measured previous weights, reps, and sets instead of generic/hardcoded fallbacks.
+   */
+  getLastPerformanceForExercise(exerciseId: string): ExerciseLastPerformance {
+    const db = getDatabase();
+    try {
+      // Find the most recent completed session containing this exercise
+      const latestSession = db.getFirstSync<{
+        sessionId: string;
+        sessionDate: string;
+        sessionTitle: string;
+      }>(
+        `SELECT ws.id as sessionId, ws.date as sessionDate, ws.title as sessionTitle
+         FROM WorkoutSets s
+         JOIN WorkoutExercises we ON s.workout_exercise_id = we.id
+         JOIN WorkoutSessions ws ON we.session_id = ws.id
+         WHERE we.exercise_id = ?
+           AND ws.status = 'completed'
+           AND (s.is_completed = 1 OR s.reps > 0)
+         ORDER BY ws.date DESC, ws.created_at DESC
+         LIMIT 1`,
+        [exerciseId]
+      );
+
+      if (!latestSession) {
+        return {
+          hasHistory: false,
+          lastSets: [],
+          summaryText: 'No previous sets recorded',
+        };
+      }
+
+      // Fetch all completed sets from that session for this exercise
+      const sets = db.getAllSync<{
+        set_number: number;
+        weight_kg: number;
+        reps: number;
+        rir: number | null;
+      }>(
+        `SELECT s.set_number, s.weight_kg, s.reps, s.rir
+         FROM WorkoutSets s
+         JOIN WorkoutExercises we ON s.workout_exercise_id = we.id
+         WHERE we.session_id = ?
+           AND we.exercise_id = ?
+           AND (s.is_completed = 1 OR s.reps > 0)
+         ORDER BY s.set_number ASC`,
+        [latestSession.sessionId, exerciseId]
+      );
+
+      if (!sets || sets.length === 0) {
+        return {
+          hasHistory: false,
+          lastSets: [],
+          summaryText: 'No previous sets recorded',
+        };
+      }
+
+      const lastSets: ExerciseSetRecord[] = sets.map((s) => ({
+        setNumber: s.set_number,
+        weightKg: s.weight_kg,
+        reps: s.reps,
+        rir: s.rir,
+      }));
+
+      const maxWeightKg = Math.max(...lastSets.map((s) => s.weightKg));
+      const bestSet = [...lastSets].sort((a, b) => {
+        if (b.weightKg !== a.weightKg) return b.weightKg - a.weightKg;
+        return b.reps - a.reps;
+      })[0];
+
+      const bestSetText = `${bestSet.weightKg} kg × ${bestSet.reps}`;
+      const summaryText = `Last: ${bestSetText} (${latestSession.sessionDate})`;
+
+      return {
+        hasHistory: true,
+        lastDate: latestSession.sessionDate,
+        lastSessionTitle: latestSession.sessionTitle,
+        lastSets,
+        maxWeightKg,
+        bestSetText,
+        summaryText,
+      };
+    } catch (e) {
+      console.warn('getLastPerformanceForExercise error:', e);
+      return {
+        hasHistory: false,
+        lastSets: [],
+        summaryText: 'No previous sets recorded',
+      };
+    }
   },
 
   /**
@@ -265,15 +375,32 @@ export const WorkoutRepository = {
 
       const targetSets = ex.target_sets || 3;
       const { minReps } = parseRepRange(ex.target_rep_range);
-      const defaultWeight = ex.current_recommended_weight_kg ?? ex.starting_weight_kg ?? 20;
+      const fallbackWeight = ex.current_recommended_weight_kg ?? ex.starting_weight_kg ?? 20;
+
+      // Look up actual historical sets performed from last completed workout
+      const prevPerf = this.getLastPerformanceForExercise(ex.id);
 
       for (let s = 1; s <= targetSets; s++) {
         const setId = `set_${weId}_${s}`;
+        let initialWeight = fallbackWeight;
+        let initialReps = minReps;
+        let initialRir = 2;
+
+        if (prevPerf.hasHistory && prevPerf.lastSets.length > 0) {
+          const matchingPrevSet = prevPerf.lastSets.find((ls) => ls.setNumber === s) ||
+            prevPerf.lastSets[prevPerf.lastSets.length - 1];
+          if (matchingPrevSet) {
+            initialWeight = matchingPrevSet.weightKg;
+            initialReps = matchingPrevSet.reps;
+            if (matchingPrevSet.rir !== null) initialRir = matchingPrevSet.rir;
+          }
+        }
+
         db.runSync(
           `INSERT INTO WorkoutSets (
             id, workout_exercise_id, set_number, weight_kg, reps, rir, is_completed, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [setId, weId, s, defaultWeight, minReps, 2, 0, now]
+          [setId, weId, s, initialWeight, initialReps, initialRir, 0, now]
         );
       }
     });
@@ -402,25 +529,42 @@ export const WorkoutRepository = {
     const exercise = db.getFirstSync<Exercise>('SELECT * FROM Exercises WHERE id = ?', [
       exerciseId,
     ])!;
-    const defaultWeight = exercise.current_recommended_weight_kg ?? exercise.starting_weight_kg ?? 20;
+    const fallbackWeight = exercise.current_recommended_weight_kg ?? exercise.starting_weight_kg ?? 20;
     const { minReps } = parseRepRange(exercise.target_rep_range);
+
+    // Look up actual historical sets performed from last completed workout
+    const prevPerf = this.getLastPerformanceForExercise(exerciseId);
 
     const sets: PopulatedSet[] = [];
     for (let s = 1; s <= (exercise.target_sets || 3); s++) {
       const setId = `set_${weId}_${s}`;
+      let initialWeight = fallbackWeight;
+      let initialReps = minReps;
+      let initialRir = 2;
+
+      if (prevPerf.hasHistory && prevPerf.lastSets.length > 0) {
+        const matchingPrevSet = prevPerf.lastSets.find((ls) => ls.setNumber === s) ||
+          prevPerf.lastSets[prevPerf.lastSets.length - 1];
+        if (matchingPrevSet) {
+          initialWeight = matchingPrevSet.weightKg;
+          initialReps = matchingPrevSet.reps;
+          if (matchingPrevSet.rir !== null) initialRir = matchingPrevSet.rir;
+        }
+      }
+
       db.runSync(
         `INSERT INTO WorkoutSets (
           id, workout_exercise_id, set_number, weight_kg, reps, rir, is_completed, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [setId, weId, s, defaultWeight, minReps, 2, 0, now]
+        [setId, weId, s, initialWeight, initialReps, initialRir, 0, now]
       );
       sets.push({
         id: setId,
         workout_exercise_id: weId,
         set_number: s,
-        weight_kg: defaultWeight,
-        reps: minReps,
-        rir: 2,
+        weight_kg: initialWeight,
+        reps: initialReps,
+        rir: initialRir,
         is_completed: 0,
         created_at: now,
       });

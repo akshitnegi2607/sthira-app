@@ -4,7 +4,7 @@
  * automatic rest timer triggers, RIR ratings, and exercise substitutions.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -26,7 +26,7 @@ import { ExerciseSubstitutionModal } from './ExerciseSubstitutionModal';
 import { ExerciseDetailModal } from './ExerciseDetailModal';
 import { calculateProgressiveOverload } from '@/services/progressiveOverload';
 import { getAssociatedBodyArea } from '@/services/exerciseSubstitution';
-import { PopulatedWorkoutExercise } from '@/database/repositories/workoutRepository';
+import { PopulatedWorkoutExercise, WorkoutRepository } from '@/database/repositories/workoutRepository';
 import { Exercise } from '@/types/database';
 import { showAlert } from '@/utils/alert';
 
@@ -350,6 +350,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     isCompleted: s.is_completed === 1,
   }));
 
+  const lastPerf = useMemo(() => {
+    try {
+      return WorkoutRepository.getLastPerformanceForExercise(ex.id);
+    } catch {
+      return { hasHistory: false, lastSets: [], summaryText: 'No previous sets' };
+    }
+  }, [ex.id]);
+
   const lastWeight =
     completedSets.find((s) => s.isCompleted)?.weightKg ??
     ex.current_recommended_weight_kg ??
@@ -452,6 +460,50 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         </View>
       </View>
 
+      {/* Actual Measured Last Performance Banner */}
+      {lastPerf.hasHistory && (
+        <View
+          style={[
+            styles.lastPerfBanner,
+            {
+              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(37, 99, 235, 0.05)',
+              borderColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(37, 99, 235, 0.2)',
+            },
+          ]}>
+          <View style={styles.lastPerfLeft}>
+            <Ionicons name="time-outline" size={13} color={isDark ? '#60A5FA' : '#2563EB'} />
+            <Text style={[styles.lastPerfText, { color: isDark ? '#93C5FD' : '#1E40AF' }]}>
+              Last session: <Text style={{ fontWeight: '700' }}>{lastPerf.bestSetText}</Text>
+              {lastPerf.lastDate ? ` (${lastPerf.lastDate})` : ''}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.copyLastSetsBtn,
+              { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.12)' },
+            ]}
+            onPress={() => {
+              item.sets.forEach((s) => {
+                const match =
+                  lastPerf.lastSets.find((ls) => ls.setNumber === s.set_number) ||
+                  lastPerf.lastSets[lastPerf.lastSets.length - 1];
+                if (match) {
+                  onUpdateSet(s.id, {
+                    weight_kg: match.weightKg,
+                    reps: match.reps,
+                    rir: match.rir ?? s.rir ?? 2,
+                  });
+                }
+              });
+            }}>
+            <Ionicons name="copy-outline" size={11} color={isDark ? '#60A5FA' : '#2563EB'} />
+            <Text style={[styles.copyLastSetsText, { color: isDark ? '#60A5FA' : '#2563EB' }]}>
+              Copy All Sets
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Sets Table Header */}
       <View style={styles.tableHeader}>
         <Text style={[styles.colHeader, { width: 36, color: colors.textMuted }]}>SET</Text>
@@ -466,103 +518,133 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       {/* Set Rows */}
       {item.sets.map((set, sIdx) => {
         const isCompleted = set.is_completed === 1;
+        const lastSetForThisNum = lastPerf.lastSets.find((ls) => ls.setNumber === set.set_number);
 
         return (
-          <View
-            key={set.id}
-            style={[
-              styles.setRow,
-              {
-                backgroundColor: isCompleted
-                  ? isDark
-                    ? 'rgba(16, 185, 129, 0.08)'
-                    : 'rgba(16, 185, 129, 0.06)'
-                  : 'transparent',
-              },
-            ]}>
-            {/* Set Number */}
-            <View style={styles.setNumBox}>
-              <Text style={[styles.setNumText, { color: colors.textMuted }]}>
-                {set.set_number}
-              </Text>
-            </View>
+          <View key={set.id} style={styles.setRowWrapper}>
+            <View
+              style={[
+                styles.setRow,
+                {
+                  backgroundColor: isCompleted
+                    ? isDark
+                      ? 'rgba(16, 185, 129, 0.08)'
+                      : 'rgba(16, 185, 129, 0.06)'
+                    : 'transparent',
+                },
+              ]}>
+              {/* Set Number */}
+              <View style={styles.setNumBox}>
+                <Text style={[styles.setNumText, { color: colors.textMuted }]}>
+                  {set.set_number}
+                </Text>
+              </View>
 
-            {/* Weight Input with Stepper */}
-            <View style={[styles.stepperContainer, { flex: 1.2 }]}>
-              <TextInput
+              {/* Weight Input with Stepper */}
+              <View style={[styles.stepperContainer, { flex: 1.2 }]}>
+                <TextInput
+                  style={[
+                    styles.numInput,
+                    {
+                      color: colors.text,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+                      borderColor: colors.cardBorder,
+                    },
+                  ]}
+                  keyboardType="decimal-pad"
+                  value={String(set.weight_kg)}
+                  onChangeText={(val) => {
+                    const num = parseFloat(val);
+                    onUpdateSet(set.id, { weight_kg: isNaN(num) ? 0 : num });
+                  }}
+                />
+              </View>
+
+              {/* Reps Input with Stepper */}
+              <View style={[styles.stepperContainer, { flex: 1.1 }]}>
+                <TextInput
+                  style={[
+                    styles.numInput,
+                    {
+                      color: colors.text,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+                      borderColor: colors.cardBorder,
+                    },
+                  ]}
+                  keyboardType="number-pad"
+                  value={String(set.reps)}
+                  onChangeText={(val) => {
+                    const num = parseInt(val, 10);
+                    onUpdateSet(set.id, { reps: isNaN(num) ? 0 : num });
+                  }}
+                />
+              </View>
+
+              {/* RIR (Reps in Reserve) Selector */}
+              <TouchableOpacity
                 style={[
-                  styles.numInput,
+                  styles.rirBtn,
                   {
-                    color: colors.text,
+                    flex: 1.1,
                     backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
                     borderColor: colors.cardBorder,
                   },
                 ]}
-                keyboardType="decimal-pad"
-                value={String(set.weight_kg)}
-                onChangeText={(val) => {
-                  const num = parseFloat(val);
-                  onUpdateSet(set.id, { weight_kg: isNaN(num) ? 0 : num });
-                }}
-              />
-            </View>
+                onPress={() => {
+                  // Cycle 0 -> 1 -> 2 -> 3 -> 4 -> 0
+                  const current = set.rir ?? 2;
+                  const next = (current + 1) % 5;
+                  onUpdateSet(set.id, { rir: next });
+                }}>
+                <Text style={[styles.rirText, { color: colors.text }]}>
+                  {set.rir !== null && set.rir !== undefined ? `${set.rir} RIR` : '2 RIR'}
+                </Text>
+              </TouchableOpacity>
 
-            {/* Reps Input with Stepper */}
-            <View style={[styles.stepperContainer, { flex: 1.1 }]}>
-              <TextInput
+              {/* Checkmark Completion Button */}
+              <TouchableOpacity
                 style={[
-                  styles.numInput,
+                  styles.checkBtn,
                   {
-                    color: colors.text,
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                    borderColor: colors.cardBorder,
+                    backgroundColor: isCompleted ? colors.accent : colors.cardBorder,
                   },
                 ]}
-                keyboardType="number-pad"
-                value={String(set.reps)}
-                onChangeText={(val) => {
-                  const num = parseInt(val, 10);
-                  onUpdateSet(set.id, { reps: isNaN(num) ? 0 : num });
-                }}
-              />
+                onPress={() => onToggleSet(set.id)}>
+                <Ionicons
+                  name="checkmark"
+                  size={16}
+                  color={isCompleted ? '#FFFFFF' : colors.textMuted}
+                />
+              </TouchableOpacity>
             </View>
 
-            {/* RIR (Reps in Reserve) Selector */}
-            <TouchableOpacity
-              style={[
-                styles.rirBtn,
-                {
-                  flex: 1.1,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                  borderColor: colors.cardBorder,
-                },
-              ]}
-              onPress={() => {
-                // Cycle 0 -> 1 -> 2 -> 3 -> 4 -> 0
-                const current = set.rir ?? 2;
-                const next = (current + 1) % 5;
-                onUpdateSet(set.id, { rir: next });
-              }}>
-              <Text style={[styles.rirText, { color: colors.text }]}>
-                {set.rir !== null && set.rir !== undefined ? `${set.rir} RIR` : '2 RIR'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Checkmark Completion Button */}
-            <TouchableOpacity
-              style={[
-                styles.checkBtn,
-                {
-                  backgroundColor: isCompleted ? colors.accent : colors.cardBorder,
-                },
-              ]}
-              onPress={() => onToggleSet(set.id)}>
-              <Ionicons
-                name="checkmark"
-                size={16}
-                color={isCompleted ? '#FFFFFF' : colors.textMuted}
-              />
-            </TouchableOpacity>
+            {/* Last performance reference for this set */}
+            {lastSetForThisNum ? (
+              <View style={styles.setSubRow}>
+                <View style={styles.lastSetIndicator}>
+                  <Ionicons name="repeat-outline" size={11} color={colors.textMuted} />
+                  <Text style={[styles.lastSetIndicatorText, { color: colors.textMuted }]}>
+                    Last: <Text style={{ color: colors.textSecondary, fontWeight: '700' }}>{lastSetForThisNum.weightKg} kg × {lastSetForThisNum.reps}</Text>
+                  </Text>
+                </View>
+                {set.weight_kg !== lastSetForThisNum.weightKg ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.matchChip,
+                      { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0' },
+                    ]}
+                    onPress={() => {
+                      onUpdateSet(set.id, {
+                        weight_kg: lastSetForThisNum.weightKg,
+                        reps: lastSetForThisNum.reps,
+                        rir: lastSetForThisNum.rir ?? set.rir ?? 2,
+                      });
+                    }}>
+                    <Text style={[styles.matchChipText, { color: colors.textSecondary }]}>Match</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         );
       })}
@@ -701,7 +783,67 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 6,
+    marginBottom: 6,
+  },
+  lastPerfBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
     marginBottom: Spacing.sm,
+  },
+  lastPerfLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  lastPerfText: {
+    fontSize: 11.5,
+  },
+  copyLastSetsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.sm,
+  },
+  copyLastSetsText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  setRowWrapper: {
+    marginBottom: 4,
+  },
+  setSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 42,
+    paddingRight: 48,
+    paddingTop: 1,
+    paddingBottom: 2,
+  },
+  lastSetIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  lastSetIndicatorText: {
+    fontSize: 10.5,
+  },
+  matchChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  matchChipText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   progressionRow: {
     flexDirection: 'row',

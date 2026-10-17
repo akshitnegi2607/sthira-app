@@ -664,14 +664,16 @@ export default function WorkoutScreen() {
 
               <View style={styles.progressionFooter}>
                 <View style={styles.progressionLoadBox}>
-                  <Text style={[styles.loadDesc, { color: colors.textMuted }]}>
-                    Target load:
-                  </Text>
-                  <Text style={[styles.loadValue, { color: colors.accent }]}>
-                    {ex.current_recommended_weight_kg
-                      ? `${ex.current_recommended_weight_kg} kg`
-                      : 'Starting load'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={[styles.loadDesc, { color: colors.textMuted }]}>
+                      Target: <Text style={{ color: colors.accent, fontWeight: '700' }}>{ex.current_recommended_weight_kg ? `${ex.current_recommended_weight_kg} kg` : 'Starting'}</Text>
+                    </Text>
+                    {ex.last_weight_kg !== null && ex.last_weight_kg !== undefined && ex.last_weight_kg > 0 ? (
+                      <Text style={[styles.loadDesc, { color: colors.textMuted }]}>
+                        • Last done: <Text style={{ color: isDark ? '#93C5FD' : '#2563EB', fontWeight: '700' }}>{ex.last_weight_kg} kg</Text>
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
                 <View
                   style={[

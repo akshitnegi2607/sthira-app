@@ -3,7 +3,7 @@
  * Calm, clean reference sheet for exercise execution, form cues, and common mistakes.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Modal,
   View,
@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Exercise } from '@/types/database';
+import { WorkoutRepository } from '@/database/repositories/workoutRepository';
 import { ExerciseVisualGuide } from './ExerciseVisualGuide';
 
 interface ExerciseDetailModalProps {
@@ -29,6 +30,15 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
   onClose,
 }) => {
   const { colors, isDark } = useAppTheme();
+
+  const lastPerf = useMemo(() => {
+    if (!exercise) return null;
+    try {
+      return WorkoutRepository.getLastPerformanceForExercise(exercise.id);
+    } catch {
+      return null;
+    }
+  }, [exercise?.id]);
 
   if (!exercise) return null;
 
@@ -76,6 +86,65 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 <Text style={[styles.metricLabel, { color: colors.textMuted }]}>REST</Text>
                 <Text style={[styles.metricValue, { color: colors.text }]}>{exercise.rest_seconds}s</Text>
               </View>
+            </View>
+
+            {/* Previous Workout History */}
+            <View
+              style={[
+                styles.historySection,
+                {
+                  backgroundColor: isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(37, 99, 235, 0.05)',
+                  borderColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(37, 99, 235, 0.2)',
+                },
+              ]}>
+              <View style={styles.historyHeaderRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="time-outline" size={14} color={isDark ? '#60A5FA' : '#2563EB'} />
+                  <Text style={[styles.historyTitle, { color: isDark ? '#93C5FD' : '#1E40AF' }]}>
+                    PREVIOUS PERFORMANCE
+                  </Text>
+                </View>
+                {lastPerf?.lastDate ? (
+                  <Text style={[styles.historyDate, { color: colors.textMuted }]}>
+                    {lastPerf.lastDate}
+                  </Text>
+                ) : null}
+              </View>
+
+              {lastPerf?.hasHistory && lastPerf.lastSets.length > 0 ? (
+                <View style={styles.historySetsContainer}>
+                  <Text style={[styles.historySummaryText, { color: colors.text }]}>
+                    Best: <Text style={{ fontWeight: '700', color: colors.accent }}>{lastPerf.bestSetText}</Text> ({lastPerf.lastSets.length} sets logged)
+                  </Text>
+                  <View style={styles.historySetsGrid}>
+                    {lastPerf.lastSets.map((s) => (
+                      <View
+                        key={s.setNumber}
+                        style={[
+                          styles.historySetChip,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.cardBorder,
+                          },
+                        ]}>
+                        <Text style={[styles.historySetNum, { color: colors.textMuted }]}>
+                          Set {s.setNumber}
+                        </Text>
+                        <Text style={[styles.historySetWeight, { color: colors.text }]}>
+                          {s.weightKg} kg
+                        </Text>
+                        <Text style={[styles.historySetReps, { color: colors.textSecondary }]}>
+                          {s.reps} reps
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : (
+                <Text style={[styles.noHistoryText, { color: colors.textMuted }]}>
+                  No past completed sets recorded yet. Target starting load: {exercise.current_recommended_weight_kg ?? exercise.starting_weight_kg ?? 20} kg.
+                </Text>
+              )}
             </View>
 
             {/* Target Muscles */}
@@ -208,6 +277,64 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: 'rgba(150, 150, 150, 0.2)',
+  },
+  historySection: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  historyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xs,
+  },
+  historyTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  historyDate: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  historySetsContainer: {
+    marginTop: 4,
+  },
+  historySummaryText: {
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  historySetsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  historySetChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    minWidth: 70,
+  },
+  historySetNum: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  historySetWeight: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  historySetReps: {
+    fontSize: 11,
+  },
+  noHistoryText: {
+    fontSize: 12,
+    marginTop: 4,
   },
   section: {
     marginBottom: Spacing.lg,

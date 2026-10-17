@@ -32,6 +32,8 @@ export default function HomeScreen() {
 
   const activeSession = useDashboardStore((s) => s.activeSession);
   const todayCompletedSession = useDashboardStore((s) => s.todayCompletedSession);
+  const coachGuidance = useDashboardStore((s) => s.coachGuidance);
+  const logSuggestedMeal = useDashboardStore((s) => s.logSuggestedMeal);
 
   const [refreshing, setRefreshing] = useState(false);
   const [modalType, setModalType] = useState<QuickLogType>(null);
@@ -89,10 +91,13 @@ export default function HomeScreen() {
 
         {/* 3. BOTTOM: AI Coach Actionable Summary */}
         <CoachSummaryCard
+          guidance={coachGuidance}
           summary={
+            coachGuidance?.motivationalNarrative ||
             todayLog.coach_summary ||
             "You're on track today. Calories and protein are balanced. Continue staying hydrated and get 7.5+ hours of sleep tonight."
           }
+          onLogMeal={logSuggestedMeal}
           onViewAnalysis={() => router.push('/progress')}
         />
 

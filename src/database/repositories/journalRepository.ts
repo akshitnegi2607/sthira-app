@@ -258,6 +258,10 @@ export const JournalRepository = {
     return dailyCoach.length > 0 ? dailyCoach[dailyCoach.length - 1] : null;
   },
 
+  getLatestRecommendation(dateStr: string, _type?: string): AIRecommendation | null {
+    return this.getLatestAIRecommendation(dateStr);
+  },
+
   /**
    * Retrieves recent journal entries.
    */

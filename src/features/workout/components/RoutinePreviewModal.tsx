@@ -46,6 +46,19 @@ export const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({
     }
   }, [plan, isOpen]);
 
+  const lastPerfMap = useMemo(() => {
+    if (!isOpen || exercises.length === 0) return {};
+    const map: Record<string, ReturnType<typeof WorkoutRepository.getLastPerformanceForExercise>> = {};
+    for (const ex of exercises) {
+      try {
+        map[ex.id] = WorkoutRepository.getLastPerformanceForExercise(ex.id);
+      } catch {
+        // silent
+      }
+    }
+    return map;
+  }, [exercises, isOpen]);
+
   if (!isOpen || !plan) return null;
 
   const isRest = plan.name.toLowerCase().includes('rest');
@@ -236,6 +249,22 @@ export const RoutinePreviewModal: React.FC<RoutinePreviewModalProps> = ({
                           <Ionicons name="barbell-outline" size={12} color={colors.accent} />
                           <Text style={[styles.targetPillText, { color: colors.accent, fontWeight: '700' }]}>
                             Target: {ex.current_recommended_weight_kg ?? ex.starting_weight_kg} kg
+                          </Text>
+                        </View>
+                      )}
+
+                      {lastPerfMap[ex.id]?.hasHistory && (
+                        <View
+                          style={[
+                            styles.targetPill,
+                            {
+                              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(37, 99, 235, 0.08)',
+                              borderColor: isDark ? '#3B82F6' : '#2563EB',
+                            },
+                          ]}>
+                          <Ionicons name="time-outline" size={12} color={isDark ? '#60A5FA' : '#2563EB'} />
+                          <Text style={[styles.targetPillText, { color: isDark ? '#93C5FD' : '#1E40AF', fontWeight: '700' }]}>
+                            Last: {lastPerfMap[ex.id]?.bestSetText}
                           </Text>
                         </View>
                       )}
