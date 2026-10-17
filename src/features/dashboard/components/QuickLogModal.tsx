@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
-import { analyzeMeal } from '@/services/mealParser';
+import { analyzeMeal, analyzeMealAsync } from '@/services/mealParser';
 import { MealRepository } from '@/database/repositories/mealRepository';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useNutritionStore } from '@/stores/useNutritionStore';
@@ -41,14 +41,26 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
 }) => {
   const { colors } = useAppTheme();
   const [inputValue, setInputValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const lastWaterTap = React.useRef<number>(0);
 
   if (!visible || !type) return null;
 
-  const handleSave = () => {
+  const handleWaterTap = (liters: number) => {
+    const now = Date.now();
+    // 2-second debounce guard against accidental double-taps
+    if (now - lastWaterTap.current < 2000) return;
+    lastWaterTap.current = now;
+    onSubmitWater(liters);
+    onClose();
+  };
+
+  const handleSave = async () => {
     if (type === 'water') {
       const val = parseFloat(inputValue);
       if (!isNaN(val) && val > 0) {
-        onSubmitWater(val);
+        handleWaterTap(val);
+        return;
       }
     } else if (type === 'weight') {
       const val = parseFloat(inputValue);
@@ -57,9 +69,11 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
       }
     } else if (type === 'food') {
       if (inputValue.trim()) {
-        const todayStr = getTodayDateString();
-        const parsed = analyzeMeal(inputValue.trim(), 'snack');
-        if (parsed.items.length > 0) {
+        setIsSubmitting(true);
+        try {
+          const todayStr = getTodayDateString();
+          const parsed = await analyzeMealAsync(inputValue.trim(), 'snack');
+          if (parsed.items.length > 0) {
           MealRepository.createMeal(
             {
               date: todayStr,
@@ -85,7 +99,10 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
             }))
           );
           useDashboardStore.getState().loadDashboard();
-          useNutritionStore.getState().loadNutritionData(todayStr);
+            useNutritionStore.getState().loadNutritionData(todayStr);
+          }
+        } finally {
+          setIsSubmitting(false);
         }
       }
     }
@@ -109,10 +126,7 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
                 <TouchableOpacity
                   key={amt}
                   style={[styles.chip, { backgroundColor: colors.cardElevated, borderColor: colors.cardBorder }]}
-                  onPress={() => {
-                    onSubmitWater(amt);
-                    onClose();
-                  }}>
+                  onPress={() => handleWaterTap(amt)}>
                   <Text style={[styles.chipText, { color: colors.water }]}>+{amt} L</Text>
                 </TouchableOpacity>
               ))}

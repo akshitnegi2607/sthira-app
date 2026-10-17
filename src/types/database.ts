@@ -51,7 +51,7 @@ export interface DailyLog {
   recovery_rating?: number | null;
   soreness_rating?: number | null;
   stress_rating?: number | null;
-  coach_status: 'ON TRACK' | 'ATTENTION' | 'NEEDS ACTION';
+  coach_status: 'PENDING' | 'ON TRACK' | 'ATTENTION' | 'NEEDS ACTION';
   coach_summary?: string | null;
   created_at: string;
   updated_at: string;

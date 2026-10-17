@@ -53,7 +53,7 @@ export const DailyLogSchema = z.object({
   recovery_rating: z.number().min(1).max(10).nullable().optional(),
   soreness_rating: z.number().min(1).max(10).nullable().optional(),
   stress_rating: z.number().min(1).max(10).nullable().optional(),
-  coach_status: z.enum(['ON TRACK', 'ATTENTION', 'NEEDS ACTION']),
+  coach_status: z.enum(['PENDING', 'ON TRACK', 'ATTENTION', 'NEEDS ACTION']),
   coach_summary: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),

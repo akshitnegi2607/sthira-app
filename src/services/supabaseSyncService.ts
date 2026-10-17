@@ -175,17 +175,28 @@ export const SupabaseSyncService = {
                     }
                   }
                 } catch {}
-              } else if (table.name === 'UserProfile' && r.id) {
-                try {
-                  const localUser = db.getFirstSync<any>('SELECT * FROM UserProfile WHERE id = ?', [r.id]);
-                  if (localUser) {
-                    const localUpdated = new Date(localUser.updated_at || 0).getTime();
-                    const remoteUpdated = new Date(r.updated_at || 0).getTime();
-                    if (localUpdated > remoteUpdated) {
-                      r.current_weight = localUser.current_weight ?? r.current_weight;
+              } else if (table.name === 'UserProfile') {
+                if (r.id === 'profile_jay') continue;
+                if (typeof r.cuisine_preferences === 'string' && !r.cuisine_preferences.startsWith('[')) {
+                  r.cuisine_preferences = JSON.stringify(r.cuisine_preferences.split(',').map((s: string) => s.trim()));
+                }
+                if (r.diet_type) {
+                  r.diet_type = r.diet_type.toLowerCase();
+                }
+                if (r.id) {
+                  try {
+                    const localUser = db.getFirstSync<any>('SELECT * FROM UserProfile WHERE id = ?', [r.id]);
+                    if (localUser) {
+                      const localUpdated = new Date(localUser.updated_at || 0).getTime();
+                      const remoteUpdated = new Date(r.updated_at || 0).getTime();
+                      if (localUpdated > remoteUpdated) {
+                        r.current_weight = localUser.current_weight ?? r.current_weight;
+                      }
                     }
-                  }
-                } catch {}
+                  } catch {}
+                }
+              } else if (table.name === 'Goals') {
+                if (r.id === 'goal_jay') continue;
               }
 
               const keys = Object.keys(r);
@@ -245,7 +256,16 @@ export const SupabaseSyncService = {
         console.warn('[SupabaseSync] Error recalculating meal totals:', calcErr);
       }
 
-      // 3. Refresh Zustand stores so active UI updates immediately
+      // Clean duplicate singleton rows and orphan exercises/sets if any came from remote
+      try {
+        db.runSync("DELETE FROM UserProfile WHERE id = 'profile_jay'");
+        db.runSync("DELETE FROM Goals WHERE id = 'goal_jay'");
+        db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
+        db.runSync("DELETE FROM WorkoutExercises WHERE session_id NOT IN (SELECT id FROM WorkoutSessions)");
+        db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
+      } catch {}
+
+      // 4. Refresh Zustand stores so active UI updates immediately
       try {
         useProfileStore.getState().loadProfile();
       } catch {}

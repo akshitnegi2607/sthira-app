@@ -19,6 +19,7 @@ import { WorkoutRepository } from '../database/repositories/workoutRepository';
 import { useDashboardStore } from './useDashboardStore';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { SupabaseSyncService } from '@/services/supabaseSyncService';
+import { getTodayDateString } from '@/utils/date';
 
 interface JournalState {
   selectedDate: string;
@@ -55,7 +56,7 @@ interface JournalState {
 const defaultReadiness = calculateReadinessScore({});
 
 export const useJournalStore = create<JournalState>((set, get) => ({
-  selectedDate: new Date().toISOString().split('T')[0],
+  selectedDate: getTodayDateString(),
   dailyLog: null,
   morningEntry: null,
   eveningEntry: null,

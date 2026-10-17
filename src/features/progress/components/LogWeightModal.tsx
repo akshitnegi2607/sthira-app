@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
+import { getTodayDateString } from '@/utils/date';
 
 interface LogWeightModalProps {
   visible: boolean;
@@ -31,9 +32,7 @@ export const LogWeightModal: React.FC<LogWeightModalProps> = ({
   const { colors, isDark } = useAppTheme();
   const [weightStr, setWeightStr] = useState<string>((currentWeight ?? 65.8).toFixed(1));
   const [notes, setNotes] = useState<string>('');
-  const [dateStr, setDateStr] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [dateStr, setDateStr] = useState<string>(getTodayDateString());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const parsedWeight = parseFloat(weightStr) || (currentWeight ?? 65.8);

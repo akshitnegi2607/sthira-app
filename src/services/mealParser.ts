@@ -475,6 +475,162 @@ const FOOD_RULES: FoodAliasMap[] = [
     baseFat: 0.0,
     baseServingGrams: 200,
   },
+  {
+    foodId: 'food_peanuts',
+    canonicalName: 'Peanuts / Groundnuts',
+    aliases: ['peanuts', 'peanut', 'groundnuts', 'moongphali', 'singdana', 'roasted peanuts'],
+    defaultUnit: 'g',
+    defaultQty: 30,
+    baseCalories: 567,
+    baseProtein: 25.8,
+    baseCarbs: 16.1,
+    baseFat: 49.2,
+    baseServingGrams: 100,
+  },
+  {
+    foodId: 'food_kiwi',
+    canonicalName: 'Kiwi (Fresh)',
+    aliases: ['kiwi', 'kiwis'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 42,
+    baseProtein: 0.8,
+    baseCarbs: 10.1,
+    baseFat: 0.4,
+    baseServingGrams: 70,
+  },
+  {
+    foodId: 'food_grapes',
+    canonicalName: 'Grapes (Fresh Green / Black)',
+    aliases: ['grapes', 'grape', 'angoor'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 104,
+    baseProtein: 1.1,
+    baseCarbs: 27.3,
+    baseFat: 0.2,
+    baseServingGrams: 150,
+  },
+  {
+    foodId: 'food_orange',
+    canonicalName: 'Orange (Fresh Medium)',
+    aliases: ['orange', 'oranges', 'santra', 'tangerine', 'clementine'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 62,
+    baseProtein: 1.2,
+    baseCarbs: 15.4,
+    baseFat: 0.2,
+    baseServingGrams: 130,
+  },
+  {
+    foodId: 'food_banana',
+    canonicalName: 'Banana (Medium Fresh)',
+    aliases: ['banana', 'bananas', 'kela'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 105,
+    baseProtein: 1.3,
+    baseCarbs: 27.0,
+    baseFat: 0.3,
+    baseServingGrams: 118,
+  },
+  {
+    foodId: 'food_broccoli',
+    canonicalName: 'Broccoli (Steamed / Florets)',
+    aliases: ['broccoli', 'steamed broccoli'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 31,
+    baseProtein: 2.6,
+    baseCarbs: 6.0,
+    baseFat: 0.3,
+    baseServingGrams: 90,
+  },
+  {
+    foodId: 'food_capsicum',
+    canonicalName: 'Bell Peppers / Capsicum',
+    aliases: ['capsicum', 'bell pepper', 'bell peppers', 'green pepper', 'red pepper', 'shimla mirch'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 30,
+    baseProtein: 1.2,
+    baseCarbs: 7.0,
+    baseFat: 0.3,
+    baseServingGrams: 100,
+  },
+  {
+    foodId: 'food_mixed_veg',
+    canonicalName: 'Mixed Vegetables Curry / Sabzi',
+    aliases: ['mixed vegetables', 'mixed veg', 'mixed vegetables curry', 'sabzi', 'mixed sabzi'],
+    defaultUnit: 'katori',
+    defaultQty: 1,
+    baseCalories: 120,
+    baseProtein: 3.5,
+    baseCarbs: 16.0,
+    baseFat: 5.0,
+    baseServingGrams: 180,
+  },
+  {
+    foodId: 'food_vermicelli',
+    canonicalName: 'Vermicelli Upma / Sevai',
+    aliases: ['vermicelli', 'semiya', 'sevai', 'vermicelli upma'],
+    defaultUnit: 'bowl',
+    defaultQty: 1,
+    baseCalories: 180,
+    baseProtein: 4.5,
+    baseCarbs: 34.0,
+    baseFat: 3.5,
+    baseServingGrams: 150,
+  },
+  {
+    foodId: 'food_kheer',
+    canonicalName: 'Rice Kheer / Payasam',
+    aliases: ['kheer', 'payasam', 'rice kheer', 'seviyan kheer'],
+    defaultUnit: 'bowl',
+    defaultQty: 1,
+    baseCalories: 220,
+    baseProtein: 5.5,
+    baseCarbs: 34.0,
+    baseFat: 7.0,
+    baseServingGrams: 150,
+  },
+  {
+    foodId: 'food_macaroni',
+    canonicalName: 'Macaroni / Pasta (Cooked)',
+    aliases: ['macaroni', 'macroni', 'pasta', 'cooked pasta', 'penne'],
+    defaultUnit: 'cup',
+    defaultQty: 1,
+    baseCalories: 180,
+    baseProtein: 6.0,
+    baseCarbs: 36.0,
+    baseFat: 1.2,
+    baseServingGrams: 140,
+  },
+  {
+    foodId: 'food_moong_chilla',
+    canonicalName: 'Moong Dal Chilla',
+    aliases: ['moong dal chilla', 'moong daal chilla', 'moong chilla', 'moong cheela'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 130,
+    baseProtein: 7.5,
+    baseCarbs: 17.0,
+    baseFat: 3.5,
+    baseServingGrams: 80,
+  },
+  {
+    foodId: 'food_tofu_burger',
+    canonicalName: 'Tofu Veggie Burger',
+    aliases: ['tofu burger', 'veggie burger', 'burger'],
+    defaultUnit: 'piece',
+    defaultQty: 1,
+    baseCalories: 340,
+    baseProtein: 18.0,
+    baseCarbs: 38.0,
+    baseFat: 12.0,
+    baseServingGrams: 200,
+  },
 ];
 
 /**
@@ -542,7 +698,8 @@ export function checkDietaryViolations(text: string): string[] {
 
 /**
  * Splits a free-form meal description into individual clauses.
- * Handles separators like comma, "and", "with", plus sign "+", semicolons.
+ * Handles separators like comma, "and", "with", plus sign "+", semicolons,
+ * and strips leading prepositions and articles.
  */
 function splitMealPhrases(text: string): string[] {
   let cleaned = text
@@ -554,6 +711,7 @@ function splitMealPhrases(text: string): string[] {
   return cleaned
     .split(',')
     .map((s) => s.trim())
+    .map((s) => s.replace(/^(on|of|in|with|and|a|an)\s+/i, '').trim())
     .filter((s) => s.length > 0);
 }
 
@@ -609,21 +767,35 @@ function parsePhrase(phrase: string, index: number): ParsedItemResult {
     }
   }
 
-  // If no matched rule, create a generic low-confidence parsed item
+  // If no matched rule, create a low-confidence parsed item WITHOUT fake 200 kcal multipliers
   if (!matchedRule) {
     const fallbackQty = quantity || 1;
+    const isWeightOrVolume = unit === 'g' || unit === 'ml';
+    let fallbackCal = 0;
+    let fallbackPro = 0;
+    let fallbackCarbs = 0;
+    let fallbackFat = 0;
+
+    if (isWeightOrVolume && quantity) {
+      // Realistic default density for unspecified food: ~1.2 kcal/g
+      fallbackCal = Math.round(quantity * 1.2);
+      fallbackPro = Math.round(quantity * 0.05 * 10) / 10;
+      fallbackCarbs = Math.round(quantity * 0.15 * 10) / 10;
+      fallbackFat = Math.round(quantity * 0.04 * 10) / 10;
+    }
+
     return {
       id: `item_${Date.now()}_${index}`,
       food_name: phrase.charAt(0).toUpperCase() + phrase.slice(1),
       quantity: fallbackQty,
       unit: unit || 'serving',
-      calories: Math.round(fallbackQty * 200),
-      protein: Math.round(fallbackQty * 6 * 10) / 10,
-      carbs: Math.round(fallbackQty * 25 * 10) / 10,
-      fat: Math.round(fallbackQty * 8 * 10) / 10,
+      calories: fallbackCal,
+      protein: fallbackPro,
+      carbs: fallbackCarbs,
+      fat: fallbackFat,
       confidence_score: 'low',
       clarification_needed: 1,
-      clarification_reason: 'Food not in Jay’s verified database. Standard generic estimate applied. Please verify grams.',
+      clarification_reason: 'Food item not recognized. Tap to enter grams and verify nutrition.',
     };
   }
 
@@ -646,15 +818,23 @@ function parsePhrase(phrase: string, index: number): ParsedItemResult {
   } else if (finalUnit === 'cup' && matchedRule.defaultUnit === 'katori') {
     // 1 cup ~ 1.1 katori
     scaleFactor = (finalQty * 1.1) / matchedRule.defaultQty;
+  } else if (finalUnit === 'g' && !matchedRule.baseServingGrams) {
+    scaleFactor = finalQty / 100;
   } else {
     // Fallback multiplier
     scaleFactor = finalQty;
   }
 
-  const cal = Math.round(matchedRule.baseCalories * scaleFactor);
-  const pro = Math.round(matchedRule.baseProtein * scaleFactor * 10) / 10;
-  const carbs = Math.round(matchedRule.baseCarbs * scaleFactor * 10) / 10;
-  const fat = Math.round(matchedRule.baseFat * scaleFactor * 10) / 10;
+  let cal = Math.round(matchedRule.baseCalories * scaleFactor);
+  let pro = Math.round(matchedRule.baseProtein * scaleFactor * 10) / 10;
+  let carbs = Math.round(matchedRule.baseCarbs * scaleFactor * 10) / 10;
+  let fat = Math.round(matchedRule.baseFat * scaleFactor * 10) / 10;
+
+  // Atwater validation check
+  const atwaterKcal = Math.round((pro * 4) + (carbs * 4) + (fat * 9));
+  if (cal > 0 && Math.abs(cal - atwaterKcal) > Math.max(15, cal * 0.15)) {
+    cal = atwaterKcal;
+  }
 
   let confidence: 'high' | 'medium' | 'low' = 'high';
   let clarificationReason: string | undefined = undefined;
@@ -731,4 +911,26 @@ export function analyzeMeal(
     confidence: overallConfidence,
     warnings,
   };
+}
+
+/**
+ * Async Natural Language Food Parser:
+ * Attempts Gemini LLM first for high-fidelity extraction, household unit-to-gram conversion,
+ * and Atwater consistency; seamlessly falls back to local rules if Gemini is unavailable/unconfigured.
+ */
+export async function analyzeMealAsync(
+  rawText: string,
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'lunch'
+): Promise<MealAnalysisResult> {
+  try {
+    const { parseMealWithGemini } = await import('./geminiMealParser');
+    const geminiResult = await parseMealWithGemini(rawText, mealType);
+    if (geminiResult && geminiResult.items && geminiResult.items.length > 0) {
+      return geminiResult;
+    }
+  } catch (err) {
+    console.warn('[MealParser] Fallback to local rule engine:', err);
+  }
+
+  return analyzeMeal(rawText, mealType);
 }

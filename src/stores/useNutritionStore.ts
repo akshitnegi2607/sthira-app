@@ -8,7 +8,7 @@ import {
 import { RecipeRepository } from '@/database/repositories/recipeRepository';
 import { DailyLogsRepository } from '@/database/repositories/dailyLogsRepository';
 import { CuisineRecipe, NutritionEstimate, DailyLog } from '@/types/database';
-import { analyzeMeal, MealAnalysisResult } from '@/services/mealParser';
+import { analyzeMeal, analyzeMealAsync, MealAnalysisResult } from '@/services/mealParser';
 import { useDashboardStore } from './useDashboardStore';
 import { getTodayDateString } from '@/utils/date';
 
@@ -58,6 +58,10 @@ interface NutritionState {
     text: string,
     mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
   ) => MealAnalysisResult;
+  analyzeTextAsync: (
+    text: string,
+    mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  ) => Promise<MealAnalysisResult>;
   clearAnalysis: () => void;
 }
 
@@ -175,45 +179,21 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       is_verified_by_user: 1,
     };
 
-    let itemsJson: { item: string; amount: string; calories?: number; protein?: number }[] = [];
-    try {
-      itemsJson = JSON.parse(recipe.ingredients_json);
-    } catch {
-      itemsJson = [];
-    }
-
-    const items: CreateEstimateInput[] =
-      itemsJson.length > 0
-        ? itemsJson.map((ing) => ({
-            food_name: ing.item,
-            quantity: 1,
-            unit: ing.amount,
-            calories_estimated:
-              ing.calories !== undefined
-                ? ing.calories
-                : Math.round(recipe.estimated_calories / itemsJson.length),
-            protein_estimated:
-              ing.protein !== undefined
-                ? ing.protein
-                : Math.round((recipe.estimated_protein / itemsJson.length) * 10) / 10,
-            carbs_estimated: Math.round((recipe.estimated_carbs / itemsJson.length) * 10) / 10,
-            fat_estimated: Math.round((recipe.estimated_fat / itemsJson.length) * 10) / 10,
-            confidence_score: 'high',
-            clarification_needed: 0,
-          }))
-        : [
-            {
-              food_name: recipe.title,
-              quantity: 1,
-              unit: 'serving',
-              calories_estimated: recipe.estimated_calories,
-              protein_estimated: recipe.estimated_protein,
-              carbs_estimated: recipe.estimated_carbs,
-              fat_estimated: recipe.estimated_fat,
-              confidence_score: 'high',
-              clarification_needed: 0,
-            },
-          ];
+    // Log composite recipe as a single verified entry with the recipe's exact verified macros,
+    // rather than dividing totals equally across arbitrary ingredients (preventing the 70 kcal oregano bug).
+    const items: CreateEstimateInput[] = [
+      {
+        food_name: recipe.title,
+        quantity: 1,
+        unit: 'serving',
+        calories_estimated: recipe.estimated_calories,
+        protein_estimated: recipe.estimated_protein,
+        carbs_estimated: recipe.estimated_carbs,
+        fat_estimated: recipe.estimated_fat,
+        confidence_score: 'high',
+        clarification_needed: 0,
+      },
+    ];
 
     get().logMeal(mealData, items);
   },
@@ -265,6 +245,17 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     const result = analyzeMeal(text, mealType);
     set({ lastAnalysisResult: result });
     return result;
+  },
+
+  analyzeTextAsync: async (text: string, mealType = 'lunch') => {
+    set({ isAnalyzing: true });
+    try {
+      const result = await analyzeMealAsync(text, mealType);
+      set({ lastAnalysisResult: result });
+      return result;
+    } finally {
+      set({ isAnalyzing: false });
+    }
   },
 
   clearAnalysis: () => {

@@ -238,6 +238,80 @@ export function runMigrations() {
   } catch (yogaErr) {
     console.warn('Could not auto-log Tuesday Yoga session:', yogaErr);
   }
+
+  // 11. Run data audit cleanups (Issues 5, 7, 8, 9)
+  try {
+    // Issue 7: Purge duplicate profile_jay & goal_jay singletons
+    db.runSync("DELETE FROM UserProfile WHERE id = 'profile_jay'");
+    db.runSync("DELETE FROM Goals WHERE id = 'goal_jay'");
+
+    // Standardize user_primary cuisine_preferences to JSON array and diet_type to lowercase
+    const primaryUser = db.getFirstSync<{ id: string; cuisine_preferences: string; diet_type: string }>(
+      "SELECT id, cuisine_preferences, diet_type FROM UserProfile WHERE id = 'user_primary'"
+    );
+    if (primaryUser) {
+      let pref = primaryUser.cuisine_preferences;
+      if (typeof pref === 'string' && !pref.startsWith('[')) {
+        pref = JSON.stringify(pref.split(',').map((s) => s.trim()));
+      }
+      const diet = (primaryUser.diet_type || 'vegetarian').toLowerCase();
+      db.runSync(
+        "UPDATE UserProfile SET cuisine_preferences = ?, diet_type = ? WHERE id = 'user_primary'",
+        [pref, diet]
+      );
+    }
+
+    // Issue 5: Purge orphaned WorkoutExercises and WorkoutSets
+    db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
+    db.runSync("DELETE FROM WorkoutExercises WHERE session_id NOT IN (SELECT id FROM WorkoutSessions)");
+    db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
+
+    // Issue 8: Backfill WaterEntries for dates where DailyLogs has water recorded but WaterEntries has 0 rows
+    db.runSync(`
+      INSERT INTO WaterEntries (id, date, amount_ml, created_at)
+      SELECT 'water_backfill_' || date, date, CAST(water_liters * 1000 AS INTEGER), date || 'T12:00:00.000Z'
+      FROM DailyLogs
+      WHERE water_liters > 0
+        AND date NOT IN (SELECT DISTINCT date FROM WaterEntries)
+    `);
+
+    // Remove rapid duplicate double-tap WaterEntries created within 3 seconds of each other
+    db.runSync(`
+      DELETE FROM WaterEntries
+      WHERE id IN (
+        SELECT w1.id
+        FROM WaterEntries w1
+        JOIN WaterEntries w2
+          ON w1.date = w2.date
+         AND w1.amount_ml = w2.amount_ml
+         AND w1.id != w2.id
+         AND w1.created_at > w2.created_at
+         AND (strftime('%s', w1.created_at) - strftime('%s', w2.created_at)) BETWEEN 0 AND 3
+      )
+    `);
+
+    // Resynchronize DailyLogs.water_liters from WaterEntries sum
+    db.runSync(`
+      UPDATE DailyLogs
+      SET water_liters = (
+        SELECT ROUND(COALESCE(SUM(amount_ml), 0) / 1000.0, 1)
+        FROM WaterEntries
+        WHERE WaterEntries.date = DailyLogs.date
+      )
+      WHERE date IN (SELECT DISTINCT date FROM WaterEntries)
+    `);
+
+    // Issue 9: Mark unlogged/empty days as PENDING instead of ON TRACK
+    db.runSync(`
+      UPDATE DailyLogs
+      SET coach_status = 'PENDING', coach_summary = 'Starting your day. Fuel up and stay hydrated!'
+      WHERE (calories_consumed = 0 OR calories_consumed IS NULL)
+        AND coach_status = 'ON TRACK'
+        AND date NOT IN (SELECT date FROM WorkoutSessions WHERE status = 'completed')
+    `);
+  } catch (auditErr) {
+    console.warn('[Migrations] Audit cleanups warning:', auditErr);
+  }
 }
 
 export function cleanPastDummyDataAndSetBaseline(startingWeightKg = 65.8) {

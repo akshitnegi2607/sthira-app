@@ -18,6 +18,7 @@ import { MorningCheckInModal } from '@/features/journal/components/MorningCheckI
 import { EveningWindDownModal } from '@/features/journal/components/EveningWindDownModal';
 import { DailyCoachSummaryCard } from '@/features/journal/components/DailyCoachSummaryCard';
 import { JournalTimelineCard } from '@/features/journal/components/JournalTimelineCard';
+import { getTodayDateString, shiftDateString } from '@/utils/date';
 
 export default function JournalScreen() {
   const { colors, isDark } = useAppTheme();
@@ -59,19 +60,15 @@ export default function JournalScreen() {
     setRefreshing(false);
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayDateString();
   const isToday = selectedDate === todayStr;
 
   const handlePrevDay = () => {
-    const cur = new Date(selectedDate);
-    cur.setDate(cur.getDate() - 1);
-    setSelectedDate(cur.toISOString().split('T')[0]);
+    setSelectedDate(shiftDateString(selectedDate, -1));
   };
 
   const handleNextDay = () => {
-    const cur = new Date(selectedDate);
-    cur.setDate(cur.getDate() + 1);
-    setSelectedDate(cur.toISOString().split('T')[0]);
+    setSelectedDate(shiftDateString(selectedDate, 1));
   };
 
   const isMorningDone = !!morningEntry;

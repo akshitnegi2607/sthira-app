@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useAppTheme } from '@/hooks/use-theme';
 import { BorderRadius, Spacing } from '@/constants/theme';
 
-export type StatusType = 'ON TRACK' | 'ATTENTION' | 'NEEDS ACTION';
+export type StatusType = 'PENDING' | 'ON TRACK' | 'ATTENTION' | 'NEEDS ACTION';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -20,6 +20,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   const getStatusConfig = () => {
     switch (status) {
+      case 'PENDING':
+        return {
+          textColor: colors.textMuted,
+          bgColor: isDark ? 'rgba(148, 163, 184, 0.16)' : 'rgba(100, 116, 139, 0.12)',
+          dotColor: colors.textMuted,
+          defaultLabel: 'PENDING',
+        };
       case 'ON TRACK':
         return {
           textColor: colors.statusOnTrack,

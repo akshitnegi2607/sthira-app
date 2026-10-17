@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
 import { DataBackupSection } from '@/features/settings/components/DataBackupSection';
 import { SupabaseSyncSection } from '@/features/settings/components/SupabaseSyncSection';
+import { GeminiConfigSection } from '@/features/settings/components/GeminiConfigSection';
 
 export default function SettingsScreen() {
   const { colors, isDark } = useAppTheme();
@@ -314,6 +315,9 @@ export default function SettingsScreen() {
         onPress={handleSave}
         style={{ marginTop: Spacing.md }}
       />
+
+      {/* Google Gemini AI Meal Parsing Config */}
+      <GeminiConfigSection />
 
       {/* Central Cloud Database Live Sync */}
       <SupabaseSyncSection />

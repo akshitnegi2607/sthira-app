@@ -16,7 +16,7 @@ import {
 import { INITIAL_WORKOUT_PLANS } from '../../constants/initialWorkouts';
 import { calculateProgressiveOverload, parseRepRange } from '../../services/progressiveOverload';
 import { getAssociatedBodyArea } from '../../services/exerciseSubstitution';
-import { getTodayDateString } from '../../utils/date';
+import { getTodayDateString, shiftDateString } from '../../utils/date';
 
 export interface PopulatedSet extends WorkoutSet {}
 
@@ -465,7 +465,22 @@ export const WorkoutRepository = {
       [sessionId]
     );
 
-    // 2. Update session status
+    // 2. Calculate wall-clock duration from start_time if backgrounded / screen locked
+    const sessionRow = db.getFirstSync<{ start_time: string }>(
+      'SELECT start_time FROM WorkoutSessions WHERE id = ? LIMIT 1',
+      [sessionId]
+    );
+    let finalDuration = data.durationSeconds;
+    if (sessionRow?.start_time) {
+      const startTimeMs = new Date(sessionRow.start_time).getTime();
+      const endTimeMs = new Date(now).getTime();
+      const elapsedWallClockSec = Math.round((endTimeMs - startTimeMs) / 1000);
+      if (elapsedWallClockSec > finalDuration && elapsedWallClockSec < 43200) {
+        finalDuration = elapsedWallClockSec;
+      }
+    }
+
+    // Update session status
     db.runSync(
       `UPDATE WorkoutSessions SET
         status = 'completed',
@@ -476,7 +491,7 @@ export const WorkoutRepository = {
        WHERE id = ?`,
       [
         now,
-        data.durationSeconds,
+        finalDuration,
         data.difficultyPerceived ?? null,
         data.notes ?? null,
         sessionId,
@@ -569,6 +584,8 @@ export const WorkoutRepository = {
    */
   cancelSession(sessionId: string): void {
     const db = getDatabase();
+    db.runSync('DELETE FROM WorkoutSets WHERE workout_exercise_id IN (SELECT id FROM WorkoutExercises WHERE session_id = ?)', [sessionId]);
+    db.runSync('DELETE FROM WorkoutExercises WHERE session_id = ?', [sessionId]);
     db.runSync('DELETE FROM WorkoutSessions WHERE id = ?', [sessionId]);
   },
 
@@ -605,13 +622,19 @@ export const WorkoutRepository = {
 
   /**
    * Self-healing migration utility:
-   * 1. Marks any sets with reps > 0 in completed sessions as completed.
-   * 2. Recalculates and updates Exercises (last_weight_kg & recommended weight)
+   * 1. Purges orphaned exercises and sets.
+   * 2. Marks any sets with reps > 0 in completed sessions as completed.
+   * 3. Recalculates and updates Exercises (last_weight_kg & recommended weight)
    *    so all completed exercises from previous workouts are properly reflected.
    */
   healCompletedWorkoutSets(): void {
     const db = getDatabase();
     try {
+      // Purge phantom orphaned records from unstarted or abandoned sessions
+      db.runSync('DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)');
+      db.runSync('DELETE FROM WorkoutExercises WHERE session_id NOT IN (SELECT id FROM WorkoutSessions)');
+      db.runSync('DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)');
+
       db.runSync(
         `UPDATE WorkoutSets SET is_completed = 1
          WHERE reps > 0
@@ -696,7 +719,7 @@ export const WorkoutRepository = {
    */
   getRecentPainEntries(days = 14): PainEntry[] {
     const db = getDatabase();
-    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const cutoff = shiftDateString(getTodayDateString(), -days);
     return db.getAllSync<PainEntry>(
       'SELECT * FROM PainEntries WHERE date >= ? ORDER BY date DESC, created_at DESC',
       [cutoff]

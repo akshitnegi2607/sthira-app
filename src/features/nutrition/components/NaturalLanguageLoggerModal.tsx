@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
-import { analyzeMeal, MealAnalysisResult, ParsedItemResult } from '@/services/mealParser';
+import { analyzeMeal, analyzeMealAsync, MealAnalysisResult, ParsedItemResult } from '@/services/mealParser';
 import { CreateMealInput, CreateEstimateInput } from '@/database/repositories/mealRepository';
 
 interface NaturalLanguageLoggerModalProps {
@@ -37,6 +37,7 @@ export const NaturalLanguageLoggerModal: React.FC<NaturalLanguageLoggerModalProp
     initialMealType
   );
   const [inputText, setInputText] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<MealAnalysisResult | null>(null);
 
   // Sync initial meal type when modal opens
@@ -45,6 +46,7 @@ export const NaturalLanguageLoggerModal: React.FC<NaturalLanguageLoggerModalProp
       setMealType(initialMealType);
       setInputText('');
       setAnalysisResult(null);
+      setIsAnalyzing(false);
     }
   }, [visible, initialMealType]);
 
@@ -57,10 +59,16 @@ export const NaturalLanguageLoggerModal: React.FC<NaturalLanguageLoggerModalProp
     '100g soy chunks with 1 cup curd and 2 rotis',
   ];
 
-  const handleAnalyze = () => {
-    if (!inputText.trim()) return;
-    const result = analyzeMeal(inputText.trim(), mealType);
-    setAnalysisResult(result);
+  const handleAnalyze = async (overrideText?: string) => {
+    const text = (overrideText !== undefined ? overrideText : inputText).trim();
+    if (!text) return;
+    setIsAnalyzing(true);
+    try {
+      const result = await analyzeMealAsync(text, mealType);
+      setAnalysisResult(result);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleAdjustItemQty = (index: number, delta: number) => {
@@ -227,9 +235,10 @@ export const NaturalLanguageLoggerModal: React.FC<NaturalLanguageLoggerModalProp
                 </Text>
                 <Button
                   title="Analyze"
-                  onPress={handleAnalyze}
+                  onPress={() => handleAnalyze()}
                   style={styles.analyzeBtn}
-                  disabled={!inputText.trim()}
+                  disabled={!inputText.trim() || isAnalyzing}
+                  loading={isAnalyzing}
                 />
               </View>
             </View>
@@ -253,8 +262,7 @@ export const NaturalLanguageLoggerModal: React.FC<NaturalLanguageLoggerModalProp
                       ]}
                       onPress={() => {
                         setInputText(prompt);
-                        const result = analyzeMeal(prompt, mealType);
-                        setAnalysisResult(result);
+                        handleAnalyze(prompt);
                       }}>
                       <Ionicons
                         name="restaurant-outline"

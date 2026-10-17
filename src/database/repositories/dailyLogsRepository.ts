@@ -3,9 +3,32 @@ import { DailyLog } from '../../types/database';
 import { getTodayDateString } from '../../utils/date';
 
 export const DailyLogsRepository = {
+  getWaterLitersForDate(dateStr: string): number {
+    const db = getDatabase();
+    try {
+      const row = db.getFirstSync<{ total: number }>(
+        'SELECT COALESCE(SUM(amount_ml), 0) as total FROM WaterEntries WHERE date = ?',
+        [dateStr]
+      );
+      if (row && row.total > 0) {
+        return Math.round((row.total / 1000) * 10) / 10;
+      }
+    } catch {}
+    return 0;
+  },
+
   getLogByDate(dateStr: string): DailyLog | null {
     const db = getDatabase();
-    return db.getFirstSync<DailyLog>('SELECT * FROM DailyLogs WHERE date = ?', [dateStr]);
+    const row = db.getFirstSync<DailyLog>('SELECT * FROM DailyLogs WHERE date = ?', [dateStr]);
+    if (!row) return null;
+
+    // Keep water_liters synchronized with WaterEntries single-source of truth if water entries exist
+    const waterSum = this.getWaterLitersForDate(dateStr);
+    if (waterSum > 0 && Math.abs(waterSum - (row.water_liters || 0)) > 0.05) {
+      db.runSync('UPDATE DailyLogs SET water_liters = ? WHERE date = ?', [waterSum, dateStr]);
+      row.water_liters = waterSum;
+    }
+    return row;
   },
 
   getOrCreateLog(dateStr: string): DailyLog {
@@ -16,6 +39,8 @@ export const DailyLogsRepository = {
 
     const db = getDatabase();
     const now = new Date().toISOString();
+    const initialWater = this.getWaterLitersForDate(dateStr);
+
     const newLog: DailyLog = {
       id: `log_${dateStr}`,
       date: dateStr,
@@ -23,7 +48,7 @@ export const DailyLogsRepository = {
       protein_consumed: 0,
       carbs_consumed: 0,
       fat_consumed: 0,
-      water_liters: 0,
+      water_liters: initialWater,
       weight: null,
       sleep_hours: null,
       energy_rating: null,
@@ -32,7 +57,7 @@ export const DailyLogsRepository = {
       recovery_rating: null,
       soreness_rating: null,
       stress_rating: null,
-      coach_status: 'ON TRACK',
+      coach_status: 'PENDING',
       coach_summary: 'Starting your day. Fuel up and stay hydrated!',
       created_at: now,
       updated_at: now,
@@ -81,6 +106,23 @@ export const DailyLogsRepository = {
     const current = this.getOrCreateLog(dateStr);
     const merged = { ...current, ...updates, updated_at: new Date().toISOString() };
 
+    // Water synchronization: if water_liters is updated, sync with WaterEntries
+    if (updates.water_liters !== undefined) {
+      const targetLiters = Math.round(Number(updates.water_liters) * 10) / 10;
+      const currentWaterSum = this.getWaterLitersForDate(dateStr);
+      if (targetLiters > currentWaterSum) {
+        const addedMl = Math.round((targetLiters - currentWaterSum) * 1000);
+        if (addedMl > 0) {
+          const now = new Date().toISOString();
+          db.runSync(
+            'INSERT INTO WaterEntries (id, date, amount_ml, created_at) VALUES (?, ?, ?, ?)',
+            [`water_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, dateStr, addedMl, now]
+          );
+        }
+      }
+      merged.water_liters = Math.max(targetLiters, this.getWaterLitersForDate(dateStr));
+    }
+
     db.runSync(
       `UPDATE DailyLogs SET
         calories_consumed = ?, protein_consumed = ?, carbs_consumed = ?,
@@ -109,19 +151,6 @@ export const DailyLogsRepository = {
         dateStr,
       ]
     );
-
-    if (updates.water_liters !== undefined && Number(updates.water_liters) > Number(current.water_liters || 0)) {
-      try {
-        const addedMl = Math.round((Number(updates.water_liters) - Number(current.water_liters || 0)) * 1000);
-        const now = new Date().toISOString();
-        db.runSync(
-          'INSERT INTO WaterEntries (id, date, amount_ml, created_at) VALUES (?, ?, ?, ?)',
-          [`water_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, dateStr, addedMl, now]
-        );
-      } catch (e) {
-        // silent guard
-      }
-    }
   },
 
   getRecentLogs(limitDays: number = 7): DailyLog[] {

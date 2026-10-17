@@ -241,5 +241,29 @@ export const MealRepository = {
       carbs_consumed: totalCarbs,
       fat_consumed: totalFat,
     });
+
+    // Keep AIRecommendations and coach_summary synchronized if a daily review was already generated
+    try {
+      const existingRec = db.getFirstSync<{ id: string; content: string }>(
+        "SELECT id, content FROM AIRecommendations WHERE date = ? AND recommendation_type = 'daily_coach'",
+        [dateStr]
+      );
+      if (existingRec && existingRec.content) {
+        const updatedContent = existingRec.content
+          .replace(/\b\d+(\.\d+)?g of vegetarian protein\b/i, `${totalPro}g of vegetarian protein`)
+          .replace(/\bhit \d+ kcal\b/i, `hit ${totalCal} kcal`)
+          .replace(/\bconsumed \d+ kcal\b/i, `consumed ${totalCal} kcal`);
+
+        if (updatedContent !== existingRec.content) {
+          db.runSync(
+            'UPDATE AIRecommendations SET content = ? WHERE id = ?',
+            [updatedContent, existingRec.id]
+          );
+          DailyLogsRepository.updateDailyLog(dateStr, {
+            coach_summary: updatedContent,
+          });
+        }
+      }
+    } catch {}
   },
 };
