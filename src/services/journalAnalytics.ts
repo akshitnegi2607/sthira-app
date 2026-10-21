@@ -9,6 +9,7 @@
  */
 
 import { DailyLog, Goals } from '../types/database';
+import { getEkadashiStatus } from './ekadashiService';
 
 export type ReadinessLevel = 'OPTIMAL' | 'MODERATE' | 'FATIGUED';
 
@@ -209,6 +210,26 @@ export function generateDailyCoachReview(params: {
   let status: 'ON TRACK' | 'ATTENTION' | 'NEEDS ACTION' = 'ON TRACK';
   let headline = '';
   let summary = '';
+
+  // 0. Check for Ekadashi Fasting Day
+  const ekadashi = getEkadashiStatus(dailyLog.date);
+  if (ekadashi.isToday && ekadashi.todayEvent && calConsumed < calTarget * 0.75) {
+    status = 'ON TRACK';
+    headline = `${ekadashi.todayEvent.name} • Fasting Day`;
+    summary = `You observed sacred fasting for ${ekadashi.todayEvent.name}. Calorie surplus and gym targets were intentionally paused for spiritual cleansing and digestive reset. Your metabolic discipline supports overall vitality.`;
+    actionItems.push('Hydrate generously with clean water, coconut water, or herbal tea.');
+    actionItems.push('Break fast (Parana) gently tomorrow morning with fruits and light warm food.');
+    actionItems.push('Resume regular lean bulk targets and lifting split post-Parana.');
+    return {
+      date: dailyLog.date,
+      status,
+      headline,
+      summary,
+      actionItems,
+      readinessScore,
+      isEstimated: true,
+    };
+  }
 
   // 1. Evaluate Nutrition Adherence
   const calHit = calConsumed >= calTarget * 0.9 && calConsumed <= calTarget * 1.15;

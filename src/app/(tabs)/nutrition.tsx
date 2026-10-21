@@ -21,6 +21,7 @@ import { ClarificationModal } from '@/features/nutrition/components/Clarificatio
 import { CuisineExplorationSection } from '@/features/nutrition/components/CuisineExplorationSection';
 import { SavedCustomMealsSection } from '@/features/nutrition/components/SavedCustomMealsSection';
 import { CustomMealModal } from '@/features/nutrition/components/CustomMealModal';
+import { EkadashiBanner } from '@/features/nutrition/components/EkadashiBanner';
 import { NutritionEstimate } from '@/types/database';
 import { getTodayDateString, shiftDateString, formatDateLabel } from '@/utils/date';
 
@@ -134,6 +135,9 @@ export default function NutritionScreen() {
             tintColor={colors.protein}
           />
         }>
+        {/* Ekadashi Fasting & Observance Banner */}
+        <EkadashiBanner currentDateStr={selectedDate} />
+
         {/* Visual Macro Rings Card */}
         <MacroRingsCard
           caloriesConsumed={currentLog?.calories_consumed || 0}

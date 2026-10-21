@@ -10,6 +10,7 @@ import { getTodayDateString, shiftDateString } from '../utils/date';
 import { DailyLogsRepository } from '../database/repositories/dailyLogsRepository';
 import { MealRepository } from '../database/repositories/mealRepository';
 import { WorkoutRepository } from '../database/repositories/workoutRepository';
+import { getEkadashiStatus } from './ekadashiService';
 
 export interface MealSuggestion {
   id: string;
@@ -438,6 +439,23 @@ export function generateDynamicDailyCoachGuidance(params: {
       actionChecklist.push('Rest up for tomorrow');
     }
   }
+
+  // Ekadashi Awareness Integration
+  try {
+    const ekadashi = getEkadashiStatus(todayLog.date);
+    if (ekadashi.isToday && ekadashi.todayEvent) {
+      statusBadge = 'ON TRACK';
+      statusBadgeLabel = 'EKADASHI FAST';
+      headline = `Today is ${ekadashi.todayEvent.name} • Sacred Fast`;
+      motivationalNarrative = `Today is ${ekadashi.todayEvent.name}. Your calorie surplus targets and heavy gym lifting are paused for spiritual observance and digestive rest. Prioritize clean hydration, fresh fruits (phalahar), coconut water, and gentle mobility.`;
+      actionChecklist.length = 0;
+      actionChecklist.push('Hydrate generously with tender coconut water & lemon water');
+      actionChecklist.push('Satvik phalahar: fresh fruits, roasted makhana, or boiled sweet potato');
+      actionChecklist.push('Skip heavy compound lifting; practice gentle yoga & meditation');
+    } else if (ekadashi.isTomorrow && ekadashi.tomorrowEvent) {
+      actionChecklist.unshift(`Tomorrow is ${ekadashi.tomorrowEvent.name} (Ekadashi Fast). Plan your meals & training accordingly.`);
+    }
+  } catch {}
 
   // Tailored Meal Suggestions
   const suggestedMeals = selectMealSuggestions(proteinRemaining, caloriesRemaining);
