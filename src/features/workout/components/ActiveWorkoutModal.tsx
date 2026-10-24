@@ -27,7 +27,7 @@ import { ExerciseDetailModal } from './ExerciseDetailModal';
 import { calculateProgressiveOverload } from '@/services/progressiveOverload';
 import { getAssociatedBodyArea } from '@/services/exerciseSubstitution';
 import { PopulatedWorkoutExercise, WorkoutRepository } from '@/database/repositories/workoutRepository';
-import { Exercise } from '@/types/database';
+import { Exercise, WorkoutSet } from '@/types/database';
 import { showAlert } from '@/utils/alert';
 
 export const ActiveWorkoutModal: React.FC = () => {
@@ -358,6 +358,212 @@ export const ActiveWorkoutModal: React.FC = () => {
   );
 };
 
+interface SetRowItemProps {
+  set: WorkoutSet;
+  lastSetForThisNum?: { weightKg: number; reps: number; rir?: number | null };
+  onUpdateSet: (setId: string, data: any) => void;
+  onToggleSet: (setId: string) => void;
+  colors: any;
+  isDark: boolean;
+}
+
+const SetRowItem: React.FC<SetRowItemProps> = ({
+  set,
+  lastSetForThisNum,
+  onUpdateSet,
+  onToggleSet,
+  colors,
+  isDark,
+}) => {
+  const [weightText, setWeightText] = useState(String(set.weight_kg));
+  const [repsText, setRepsText] = useState(String(set.reps));
+
+  useEffect(() => {
+    const curParsed = parseFloat(weightText.replace(',', '.'));
+    if (isNaN(curParsed) || curParsed !== set.weight_kg) {
+      setWeightText(String(set.weight_kg));
+    }
+  }, [set.weight_kg]);
+
+  useEffect(() => {
+    const curParsed = parseInt(repsText, 10);
+    if (isNaN(curParsed) || curParsed !== set.reps) {
+      setRepsText(String(set.reps));
+    }
+  }, [set.reps]);
+
+  const handleWeightChange = (raw: string) => {
+    const clean = raw.replace(',', '.');
+    if (/^\d*\.?\d*$/.test(clean)) {
+      setWeightText(clean);
+      if (clean !== '' && !clean.endsWith('.')) {
+        const num = parseFloat(clean);
+        if (!isNaN(num)) {
+          onUpdateSet(set.id, { weight_kg: num });
+        }
+      }
+    }
+  };
+
+  const handleWeightBlur = () => {
+    const clean = weightText.replace(',', '.');
+    const num = parseFloat(clean);
+    if (isNaN(num) || num < 0) {
+      setWeightText(String(set.weight_kg));
+    } else {
+      setWeightText(String(num));
+      onUpdateSet(set.id, { weight_kg: num });
+    }
+  };
+
+  const handleRepsChange = (raw: string) => {
+    if (/^\d*$/.test(raw)) {
+      setRepsText(raw);
+      if (raw !== '') {
+        const num = parseInt(raw, 10);
+        if (!isNaN(num)) {
+          onUpdateSet(set.id, { reps: num });
+        }
+      }
+    }
+  };
+
+  const handleRepsBlur = () => {
+    const num = parseInt(repsText, 10);
+    if (isNaN(num) || num < 0) {
+      setRepsText(String(set.reps));
+    } else {
+      setRepsText(String(num));
+      onUpdateSet(set.id, { reps: num });
+    }
+  };
+
+  const isCompleted = set.is_completed === 1;
+
+  return (
+    <View style={styles.setRowWrapper}>
+      <View
+        style={[
+          styles.setRow,
+          {
+            backgroundColor: isCompleted
+              ? isDark
+                ? 'rgba(16, 185, 129, 0.08)'
+                : 'rgba(16, 185, 129, 0.06)'
+              : 'transparent',
+          },
+        ]}>
+        {/* Set Number */}
+        <View style={styles.setNumBox}>
+          <Text style={[styles.setNumText, { color: colors.textMuted }]}>
+            {set.set_number}
+          </Text>
+        </View>
+
+        {/* Weight Input with Stepper */}
+        <View style={[styles.stepperContainer, { flex: 1.2 }]}>
+          <TextInput
+            style={[
+              styles.numInput,
+              {
+                color: colors.text,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+                borderColor: colors.cardBorder,
+              },
+            ]}
+            keyboardType="decimal-pad"
+            value={weightText}
+            onChangeText={handleWeightChange}
+            onBlur={handleWeightBlur}
+          />
+        </View>
+
+        {/* Reps Input with Stepper */}
+        <View style={[styles.stepperContainer, { flex: 1.1 }]}>
+          <TextInput
+            style={[
+              styles.numInput,
+              {
+                color: colors.text,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+                borderColor: colors.cardBorder,
+              },
+            ]}
+            keyboardType="number-pad"
+            value={repsText}
+            onChangeText={handleRepsChange}
+            onBlur={handleRepsBlur}
+          />
+        </View>
+
+        {/* RIR (Reps in Reserve) Selector */}
+        <TouchableOpacity
+          style={[
+            styles.rirBtn,
+            {
+              flex: 1.1,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
+              borderColor: colors.cardBorder,
+            },
+          ]}
+          onPress={() => {
+            const current = set.rir ?? 2;
+            const next = (current + 1) % 5;
+            onUpdateSet(set.id, { rir: next });
+          }}>
+          <Text style={[styles.rirText, { color: colors.text }]}>
+            {set.rir !== null && set.rir !== undefined ? `${set.rir} RIR` : '2 RIR'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Checkmark Completion Button */}
+        <TouchableOpacity
+          style={[
+            styles.checkBtn,
+            {
+              backgroundColor: isCompleted ? colors.accent : colors.cardBorder,
+            },
+          ]}
+          onPress={() => onToggleSet(set.id)}>
+          <Ionicons
+            name="checkmark"
+            size={16}
+            color={isCompleted ? '#FFFFFF' : colors.textMuted}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Last performance reference for this set */}
+      {lastSetForThisNum ? (
+        <View style={styles.setSubRow}>
+          <View style={styles.lastSetIndicator}>
+            <Ionicons name="repeat-outline" size={11} color={colors.textMuted} />
+            <Text style={[styles.lastSetIndicatorText, { color: colors.textMuted }]}>
+              Last: <Text style={{ color: colors.textSecondary, fontWeight: '700' }}>{lastSetForThisNum.weightKg} kg × {lastSetForThisNum.reps}</Text>
+            </Text>
+          </View>
+          {set.weight_kg !== lastSetForThisNum.weightKg ? (
+            <TouchableOpacity
+              style={[
+                styles.matchChip,
+                { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0' },
+              ]}
+              onPress={() => {
+                onUpdateSet(set.id, {
+                  weight_kg: lastSetForThisNum.weightKg,
+                  reps: lastSetForThisNum.reps,
+                  rir: lastSetForThisNum.rir ?? set.rir ?? 2,
+                });
+              }}>
+              <Text style={[styles.matchChipText, { color: colors.textSecondary }]}>Match</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+};
+
 interface ExerciseCardProps {
   item: PopulatedWorkoutExercise;
   index: number;
@@ -586,136 +792,18 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       </View>
 
       {/* Set Rows */}
-      {item.sets.map((set, sIdx) => {
-        const isCompleted = set.is_completed === 1;
+      {item.sets.map((set) => {
         const lastSetForThisNum = lastPerf.lastSets.find((ls) => ls.setNumber === set.set_number);
-
         return (
-          <View key={set.id} style={styles.setRowWrapper}>
-            <View
-              style={[
-                styles.setRow,
-                {
-                  backgroundColor: isCompleted
-                    ? isDark
-                      ? 'rgba(16, 185, 129, 0.08)'
-                      : 'rgba(16, 185, 129, 0.06)'
-                    : 'transparent',
-                },
-              ]}>
-              {/* Set Number */}
-              <View style={styles.setNumBox}>
-                <Text style={[styles.setNumText, { color: colors.textMuted }]}>
-                  {set.set_number}
-                </Text>
-              </View>
-
-              {/* Weight Input with Stepper */}
-              <View style={[styles.stepperContainer, { flex: 1.2 }]}>
-                <TextInput
-                  style={[
-                    styles.numInput,
-                    {
-                      color: colors.text,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                      borderColor: colors.cardBorder,
-                    },
-                  ]}
-                  keyboardType="decimal-pad"
-                  value={String(set.weight_kg)}
-                  onChangeText={(val) => {
-                    const num = parseFloat(val);
-                    onUpdateSet(set.id, { weight_kg: isNaN(num) ? 0 : num });
-                  }}
-                />
-              </View>
-
-              {/* Reps Input with Stepper */}
-              <View style={[styles.stepperContainer, { flex: 1.1 }]}>
-                <TextInput
-                  style={[
-                    styles.numInput,
-                    {
-                      color: colors.text,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                      borderColor: colors.cardBorder,
-                    },
-                  ]}
-                  keyboardType="number-pad"
-                  value={String(set.reps)}
-                  onChangeText={(val) => {
-                    const num = parseInt(val, 10);
-                    onUpdateSet(set.id, { reps: isNaN(num) ? 0 : num });
-                  }}
-                />
-              </View>
-
-              {/* RIR (Reps in Reserve) Selector */}
-              <TouchableOpacity
-                style={[
-                  styles.rirBtn,
-                  {
-                    flex: 1.1,
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-                    borderColor: colors.cardBorder,
-                  },
-                ]}
-                onPress={() => {
-                  // Cycle 0 -> 1 -> 2 -> 3 -> 4 -> 0
-                  const current = set.rir ?? 2;
-                  const next = (current + 1) % 5;
-                  onUpdateSet(set.id, { rir: next });
-                }}>
-                <Text style={[styles.rirText, { color: colors.text }]}>
-                  {set.rir !== null && set.rir !== undefined ? `${set.rir} RIR` : '2 RIR'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Checkmark Completion Button */}
-              <TouchableOpacity
-                style={[
-                  styles.checkBtn,
-                  {
-                    backgroundColor: isCompleted ? colors.accent : colors.cardBorder,
-                  },
-                ]}
-                onPress={() => onToggleSet(set.id)}>
-                <Ionicons
-                  name="checkmark"
-                  size={16}
-                  color={isCompleted ? '#FFFFFF' : colors.textMuted}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Last performance reference for this set */}
-            {lastSetForThisNum ? (
-              <View style={styles.setSubRow}>
-                <View style={styles.lastSetIndicator}>
-                  <Ionicons name="repeat-outline" size={11} color={colors.textMuted} />
-                  <Text style={[styles.lastSetIndicatorText, { color: colors.textMuted }]}>
-                    Last: <Text style={{ color: colors.textSecondary, fontWeight: '700' }}>{lastSetForThisNum.weightKg} kg × {lastSetForThisNum.reps}</Text>
-                  </Text>
-                </View>
-                {set.weight_kg !== lastSetForThisNum.weightKg ? (
-                  <TouchableOpacity
-                    style={[
-                      styles.matchChip,
-                      { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0' },
-                    ]}
-                    onPress={() => {
-                      onUpdateSet(set.id, {
-                        weight_kg: lastSetForThisNum.weightKg,
-                        reps: lastSetForThisNum.reps,
-                        rir: lastSetForThisNum.rir ?? set.rir ?? 2,
-                      });
-                    }}>
-                    <Text style={[styles.matchChipText, { color: colors.textSecondary }]}>Match</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
+          <SetRowItem
+            key={set.id}
+            set={set}
+            lastSetForThisNum={lastSetForThisNum}
+            onUpdateSet={onUpdateSet}
+            onToggleSet={onToggleSet}
+            colors={colors}
+            isDark={isDark}
+          />
         );
       })}
 

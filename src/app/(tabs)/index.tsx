@@ -15,6 +15,9 @@ import { TodayWorkoutCard } from '@/features/dashboard/components/TodayWorkoutCa
 import { CoachSummaryCard } from '@/features/dashboard/components/CoachSummaryCard';
 import { QuickActionsGrid } from '@/features/dashboard/components/QuickActionsGrid';
 import { QuickLogModal, QuickLogType } from '@/features/dashboard/components/QuickLogModal';
+import { ChangeWorkoutModal } from '@/features/workout/components/ChangeWorkoutModal';
+import { DeepAnalysisModal } from '@/features/progress/components/DeepAnalysisModal';
+import { useWorkoutStore } from '@/stores/useWorkoutStore';
 import { SupabaseSyncService } from '@/services/supabaseSyncService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 
@@ -35,8 +38,14 @@ export default function HomeScreen() {
   const coachGuidance = useDashboardStore((s) => s.coachGuidance);
   const logSuggestedMeal = useDashboardStore((s) => s.logSuggestedMeal);
 
+  const workoutPlans = useWorkoutStore((s) => s.plans);
+  const startWorkoutSession = useWorkoutStore((s) => s.startWorkout);
+  const switchTodayPlan = useWorkoutStore((s) => s.switchTodayPlan);
+
   const [refreshing, setRefreshing] = useState(false);
   const [modalType, setModalType] = useState<QuickLogType>(null);
+  const [isChangeWorkoutModalOpen, setIsChangeWorkoutModalOpen] = useState(false);
+  const [isDeepAnalysisOpen, setIsDeepAnalysisOpen] = useState(false);
 
   // Auto-refresh today's data whenever user navigates back to Home screen
   useFocusEffect(
@@ -76,7 +85,17 @@ export default function HomeScreen() {
           onPressWater={() => setModalType('water')}
         />
 
-        {/* 2. MIDDLE: Today's Planned Workout / Activity */}
+        {/* 2. LOGGING SHORTCUTS: Fast 1-tap logging right after summary */}
+        <QuickActionsGrid
+          onLogFood={() => setModalType('food')}
+          onLogWeight={() => setModalType('weight')}
+          onLogWorkout={() => setModalType('workout')}
+          onLogActivity={() => setModalType('activity')}
+          onLogWater={() => setModalType('water')}
+          onJournal={() => setModalType('journal')}
+        />
+
+        {/* 3. TODAY'S WORKOUT: Current or Planned Session */}
         <TodayWorkoutCard
           planTitle={
             activeSession?.session.title ||
@@ -88,9 +107,10 @@ export default function HomeScreen() {
           isInProgress={activeSession !== null}
           session={todayCompletedSession}
           onPressWorkout={() => router.push('/workout')}
+          onChangeWorkout={() => setIsChangeWorkoutModalOpen(true)}
         />
 
-        {/* 3. BOTTOM: AI Coach Actionable Summary */}
+        {/* 4. AI Coach Actionable Summary */}
         <CoachSummaryCard
           guidance={coachGuidance}
           summary={
@@ -99,17 +119,7 @@ export default function HomeScreen() {
             "You're on track today. Calories and protein are balanced. Continue staying hydrated and get 7.5+ hours of sleep tonight."
           }
           onLogMeal={logSuggestedMeal}
-          onViewAnalysis={() => router.push('/progress')}
-        />
-
-        {/* 4. QUICK ACTIONS: Fast 1-tap logging */}
-        <QuickActionsGrid
-          onLogFood={() => setModalType('food')}
-          onLogWeight={() => setModalType('weight')}
-          onLogWorkout={() => setModalType('workout')}
-          onLogActivity={() => setModalType('activity')}
-          onLogWater={() => setModalType('water')}
-          onJournal={() => setModalType('journal')}
+          onViewAnalysis={() => setIsDeepAnalysisOpen(true)}
         />
       </ScrollView>
 
@@ -126,6 +136,30 @@ export default function HomeScreen() {
           else if (tab === 'journal') router.push('/journal');
           else if (tab === 'progress') router.push('/progress');
         }}
+      />
+
+      {/* Change / Reschedule Workout Modal */}
+      <ChangeWorkoutModal
+        visible={isChangeWorkoutModalOpen}
+        onClose={() => setIsChangeWorkoutModalOpen(false)}
+        plans={workoutPlans}
+        todayPlan={todayPlan}
+        onStartPlan={(planId, title, targetDate) => {
+          startWorkoutSession(planId, title, targetDate);
+          loadDashboard();
+          router.push('/workout');
+        }}
+        onAssignTodayPlan={(plan) => {
+          switchTodayPlan(plan);
+          loadDashboard();
+        }}
+      />
+
+      {/* Deep Holistic Health, Training & Nutrition Analysis Modal */}
+      <DeepAnalysisModal
+        visible={isDeepAnalysisOpen}
+        onClose={() => setIsDeepAnalysisOpen(false)}
+        onTargetsUpdated={loadDashboard}
       />
     </View>
   );

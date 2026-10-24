@@ -175,40 +175,33 @@ export function runMigrations() {
     }
   }
 
-  // 7. Seed initial cuisine recipes if not present
-  const recipesRow = db.getFirstSync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM CuisineRecipes'
-  );
-
-  if (!recipesRow || recipesRow.count === 0) {
-    const now = new Date().toISOString();
-    for (const recipe of INITIAL_CUISINE_RECIPES) {
-      db.runSync(
-        `INSERT INTO CuisineRecipes (
-          id, cuisine, title, description, estimated_calories, estimated_protein,
-          estimated_carbs, estimated_fat, ingredients_json, instructions,
-          is_vegetarian, has_eggs, has_onion, has_garlic, has_mushrooms, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          recipe.id,
-          recipe.cuisine,
-          recipe.title,
-          recipe.description,
-          recipe.estimated_calories,
-          recipe.estimated_protein,
-          recipe.estimated_carbs,
-          recipe.estimated_fat,
-          JSON.stringify(recipe.ingredients),
-          recipe.instructions.join('\n'),
-          recipe.is_vegetarian,
-          recipe.has_eggs,
-          recipe.has_onion,
-          recipe.has_garlic,
-          recipe.has_mushrooms,
-          now,
-        ]
-      );
-    }
+  // 7. Seed or update initial cuisine recipes
+  for (const recipe of INITIAL_CUISINE_RECIPES) {
+    db.runSync(
+      `INSERT OR REPLACE INTO CuisineRecipes (
+        id, cuisine, title, description, estimated_calories, estimated_protein,
+        estimated_carbs, estimated_fat, ingredients_json, instructions,
+        is_vegetarian, has_eggs, has_onion, has_garlic, has_mushrooms, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        recipe.id,
+        recipe.cuisine,
+        recipe.title,
+        recipe.description,
+        recipe.estimated_calories,
+        recipe.estimated_protein,
+        recipe.estimated_carbs,
+        recipe.estimated_fat,
+        JSON.stringify(recipe.ingredients),
+        recipe.instructions.join('\n'),
+        recipe.is_vegetarian,
+        recipe.has_eggs,
+        recipe.has_onion,
+        recipe.has_garlic,
+        recipe.has_mushrooms,
+        now,
+      ]
+    );
   }
 
   // 8. Clean any past dummy data and establish today as Day 1 with Jay's baseline (65.8 kg)

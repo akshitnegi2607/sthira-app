@@ -27,6 +27,7 @@ import { ExerciseDetailModal } from '@/features/workout/components/ExerciseDetai
 import { PainLoggingModal } from '@/features/workout/components/PainLoggingModal';
 import { WorkoutHistoryDetailModal } from '@/features/workout/components/WorkoutHistoryDetailModal';
 import { RoutinePreviewModal } from '@/features/workout/components/RoutinePreviewModal';
+import { ChangeWorkoutModal } from '@/features/workout/components/ChangeWorkoutModal';
 import { WorkoutPlan, Exercise } from '@/types/database';
 import { getTodayDateString } from '@/utils/date';
 
@@ -44,6 +45,7 @@ export default function WorkoutScreen() {
 
   const init = useWorkoutStore((s) => s.init);
   const startWorkout = useWorkoutStore((s) => s.startWorkout);
+  const switchTodayPlan = useWorkoutStore((s) => s.switchTodayPlan);
   const openExerciseInfo = useWorkoutStore((s) => s.openExerciseInfo);
   const selectedExerciseForInfo = useWorkoutStore((s) => s.selectedExerciseForInfo);
   const closeExerciseInfo = useWorkoutStore((s) => s.closeExerciseInfo);
@@ -54,6 +56,7 @@ export default function WorkoutScreen() {
   const [exerciseQuery, setExerciseQuery] = useState<string>('');
   const [previewPlan, setPreviewPlan] = useState<WorkoutPlan | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isChangeModalOpen, setIsChangeModalOpen] = useState(false);
 
   useEffect(() => {
     init();
@@ -225,10 +228,26 @@ export default function WorkoutScreen() {
       ) : todayPlan ? (
         <Card style={styles.heroCard}>
           <View style={styles.heroHeader}>
-            <View style={[styles.dayPill, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
-              <Text style={[styles.dayPillText, { color: colors.accent }]}>
-                TODAY • {days[todayDayIndex].toUpperCase()}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={[styles.dayPill, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+                <Text style={[styles.dayPillText, { color: colors.accent }]}>
+                  TODAY • {days[todayDayIndex].toUpperCase()}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsChangeModalOpen(true)}
+                style={[
+                  styles.changePlanBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                    borderColor: 'rgba(16, 185, 129, 0.3)',
+                  },
+                ]}>
+                <Ionicons name="swap-horizontal" size={12} color={colors.accent} />
+                <Text style={[styles.changePlanBtnText, { color: colors.accent }]}>
+                  Swap / Change
+                </Text>
+              </TouchableOpacity>
             </View>
             <Ionicons
               name={
@@ -267,7 +286,7 @@ export default function WorkoutScreen() {
                   }}>
                   <Ionicons name="list-outline" size={16} color={colors.text} />
                   <Text style={[styles.previewRoutineText, { color: colors.text }]}>
-                    View Exercises
+                    Exercises
                   </Text>
                 </TouchableOpacity>
 
@@ -279,14 +298,29 @@ export default function WorkoutScreen() {
                 </TouchableOpacity>
               </>
             ) : (
-              <TouchableOpacity
-                style={[styles.startWorkoutBtn, { backgroundColor: colors.cardBorder }]}
-                onPress={() => startWorkout(null, 'Active Recovery Session')}>
-                <Ionicons name="walk-outline" size={16} color={colors.text} />
-                <Text style={[styles.startWorkoutText, { color: colors.text }]}>
-                  Log Light Recovery
-                </Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, width: '100%' }}>
+                <TouchableOpacity
+                  style={[styles.startWorkoutBtn, { backgroundColor: colors.accent, flex: 1 }]}
+                  onPress={() => setIsChangeModalOpen(true)}>
+                  <Ionicons name="swap-horizontal" size={15} color="#FFFFFF" />
+                  <Text style={styles.startWorkoutText}>Swap / Do Split Today</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.secondaryActionBtn,
+                    {
+                      borderColor: colors.cardBorder,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+                    },
+                  ]}
+                  onPress={() => startWorkout(null, 'Active Recovery Session')}>
+                  <Ionicons name="walk-outline" size={15} color={colors.textSecondary} />
+                  <Text style={[styles.secondaryActionText, { color: colors.textSecondary }]}>
+                    Recovery
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </Card>
@@ -455,20 +489,47 @@ export default function WorkoutScreen() {
                     );
                   }
                   return (
-                    <TouchableOpacity
-                      style={[
-                        styles.schedLockedBtn,
-                        { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' },
-                      ]}
-                      onPress={() => {
-                        setPreviewPlan(plan);
-                        setIsPreviewOpen(true);
-                      }}>
-                      <Ionicons name="list-outline" size={12} color={colors.textMuted} />
-                      <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
-                        View Routine
-                      </Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                      <TouchableOpacity
+                        style={[
+                          styles.schedLockedBtn,
+                          {
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
+                            flex: 1,
+                          },
+                        ]}
+                        onPress={() => {
+                          setPreviewPlan(plan);
+                          setIsPreviewOpen(true);
+                        }}>
+                        <Ionicons name="list-outline" size={12} color={colors.textMuted} />
+                        <Text style={[styles.schedLockedText, { color: colors.textMuted }]}>
+                          Routine
+                        </Text>
+                      </TouchableOpacity>
+
+                      {!isRest && (
+                        <TouchableOpacity
+                          style={[
+                            styles.schedStartBtn,
+                            {
+                              backgroundColor: colors.accent,
+                              paddingHorizontal: 8,
+                              paddingVertical: 5,
+                            },
+                          ]}
+                          onPress={() => startWorkout(plan.id, plan.name, todayStr)}>
+                          <Ionicons name="play" size={11} color="#FFFFFF" />
+                          <Text
+                            style={[
+                              styles.schedStartText,
+                              { color: '#FFFFFF', fontSize: 11 },
+                            ]}>
+                            Do Today
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   );
                 })()
               ) : (
@@ -750,6 +811,18 @@ export default function WorkoutScreen() {
         }}
         onOpenExerciseInfo={(ex) => openExerciseInfo(ex)}
       />
+      <ChangeWorkoutModal
+        visible={isChangeModalOpen}
+        onClose={() => setIsChangeModalOpen(false)}
+        plans={plans}
+        todayPlan={todayPlan}
+        onStartPlan={(planId, title, targetDate) => {
+          startWorkout(planId, title, targetDate);
+        }}
+        onAssignTodayPlan={(plan) => {
+          switchTodayPlan(plan);
+        }}
+      />
     </ScrollView>
   );
 }
@@ -811,6 +884,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  changePlanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  changePlanBtnText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   heroTitle: {
     fontSize: 20,

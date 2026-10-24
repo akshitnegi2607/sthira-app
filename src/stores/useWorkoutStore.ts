@@ -52,7 +52,8 @@ interface WorkoutStoreState {
   // Actions
   init: () => void;
   loadData: () => void;
-  startWorkout: (planId?: string | null, title?: string) => PopulatedSession;
+  startWorkout: (planId?: string | null, title?: string, dateStr?: string) => PopulatedSession;
+  switchTodayPlan: (plan: WorkoutPlan) => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
   tickSessionTimer: () => void;
@@ -192,7 +193,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     }
   },
 
-  startWorkout: (planId, title) => {
+  startWorkout: (planId, title, dateStr) => {
     const defaultTitle =
       title ||
       (planId ? get().plans.find((p) => p.id === planId)?.name : 'Custom Workout') ||
@@ -201,6 +202,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     const populated = WorkoutRepository.startSession({
       planId: planId ?? null,
       title: defaultTitle,
+      date: dateStr,
     });
 
     set({
@@ -222,6 +224,10 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     }
 
     return populated;
+  },
+
+  switchTodayPlan: (plan: WorkoutPlan) => {
+    set({ todayPlan: plan });
   },
 
   pauseTimer: () => {

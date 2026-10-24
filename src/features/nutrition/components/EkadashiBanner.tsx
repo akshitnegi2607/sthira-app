@@ -1,7 +1,8 @@
 /**
- * Sthira — Ekadashi Fasting & Observance Banner
- * Displays upcoming Ekadashi dates, countdown, athletic fasting tips,
- * and multi-week forward planning so Jay can pause heavy gym sessions and plan phalahar.
+ * Sthira — Minimal Ekadashi Observance Banner
+ * Ultra-compact single card by default with quick date & countdown;
+ * expands on toggle to show athletic fasting tips, spiritual significance,
+ * and upcoming 2026-2027 Panchang calendar dates.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -18,7 +19,6 @@ interface EkadashiBannerProps {
 
 export const EkadashiBanner: React.FC<EkadashiBannerProps> = ({
   currentDateStr,
-  onPressPlanFast,
 }) => {
   const { colors, isDark } = useAppTheme();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -27,123 +27,124 @@ export const EkadashiBanner: React.FC<EkadashiBannerProps> = ({
     return getEkadashiStatus(currentDateStr);
   }, [currentDateStr]);
 
-  const { isToday, todayEvent, isTomorrow, tomorrowEvent, nextEvent, daysUntilNext, upcomingEvents } = status;
+  const { isToday, todayEvent, isTomorrow, nextEvent, daysUntilNext, upcomingEvents } = status;
+
+  const currentDisplayEvent = isToday && todayEvent ? todayEvent : nextEvent;
 
   // Gold / saffron spiritual accent tones
   const saffronBg = isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)';
   const saffronBorder = isDark ? 'rgba(245, 158, 11, 0.35)' : 'rgba(217, 119, 6, 0.3)';
   const saffronText = isDark ? '#FBBF24' : '#D97706';
 
+  const countdownLabel = isToday
+    ? 'Today • Fasting Day'
+    : isTomorrow
+    ? 'Tomorrow'
+    : daysUntilNext === 0
+    ? 'Today'
+    : `In ${daysUntilNext} days`;
+
   return (
     <View style={[styles.container, { backgroundColor: saffronBg, borderColor: saffronBorder }]}>
-      {/* Top Header Row */}
-      <View style={styles.headerRow}>
-        <View style={styles.badgeRow}>
-          <View style={[styles.iconPill, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.15)' }]}>
+      {/* 1. Minimal Compact Bar (Always Visible) */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => setIsExpanded(!isExpanded)}
+        style={styles.minimalRow}>
+        <View style={styles.leftGroup}>
+          <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.16)' }]}>
             <Ionicons name="sparkles" size={13} color={saffronText} />
           </View>
-          <Text style={[styles.badgeText, { color: saffronText }]}>
-            {isToday
-              ? 'TODAY IS EKADASHI'
-              : isTomorrow
-              ? 'EKADASHI TOMORROW'
-              : daysUntilNext === 0
-              ? 'EKADASHI TODAY'
-              : `NEXT EKADASHI IN ${daysUntilNext} DAY${daysUntilNext === 1 ? '' : 'S'}`}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={() => setIsExpanded(!isExpanded)}
-          style={[styles.expandBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={[styles.expandBtnText, { color: saffronText }]}>
-            {isExpanded ? 'Hide Calendar' : 'View Calendar'}
-          </Text>
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={13}
-            color={saffronText}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Main Focus Card */}
-      <View style={styles.contentBody}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {isToday && todayEvent ? todayEvent.name : nextEvent.name}
-        </Text>
-
-        <Text style={[styles.dateSubtitle, { color: colors.textSecondary }]}>
-          {isToday && todayEvent
-            ? formatEkadashiDate(todayEvent.date)
-            : formatEkadashiDate(nextEvent.date)}
-          {' • '}
-          <Text style={{ fontStyle: 'italic' }}>
-            {isToday && todayEvent ? todayEvent.paksha : nextEvent.paksha} Paksha
-          </Text>
-        </Text>
-
-        <Text style={[styles.description, { color: colors.textMuted }]}>
-          {isToday && todayEvent ? todayEvent.significance : nextEvent.significance}
-        </Text>
-
-        {/* Actionable Athletic & Fasting Guidance */}
-        <View style={[styles.guidanceBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.6)' }]}>
-          <View style={styles.guideRow}>
-            <Ionicons name="barbell-outline" size={14} color={saffronText} style={{ marginTop: 2 }} />
-            <Text style={[styles.guideText, { color: colors.text }]}>
-              <Text style={{ fontWeight: '700' }}>Training: </Text>
-              {isToday && todayEvent ? todayEvent.recommendedActivity : nextEvent.recommendedActivity}
-            </Text>
-          </View>
-
-          <View style={styles.guideRow}>
-            <Ionicons name="leaf-outline" size={14} color={saffronText} style={{ marginTop: 2 }} />
-            <Text style={[styles.guideText, { color: colors.text }]}>
-              <Text style={{ fontWeight: '700' }}>Phalahar / Fast: </Text>
-              {isToday && todayEvent ? todayEvent.nutritionTip : nextEvent.nutritionTip}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Expanded Multi-Week Calendar */}
-      {isExpanded && (
-        <View style={[styles.expandedSection, { borderTopColor: saffronBorder }]}>
-          <Text style={[styles.calendarHeading, { color: saffronText }]}>
-            UPCOMING EKADASHI DATES (PLAN AHEAD)
-          </Text>
-
-          {upcomingEvents.slice(0, 5).map((event, idx) => (
-            <View
-              key={event.date}
-              style={[
-                styles.calendarItem,
-                idx !== upcomingEvents.length - 1 && {
-                  borderBottomWidth: 1,
-                  borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                },
-              ]}>
-              <View style={styles.calDateCol}>
-                <Text style={[styles.calDateText, { color: colors.text }]}>
-                  {formatEkadashiDate(event.date)}
-                </Text>
-                <Text style={[styles.calPakshaText, { color: colors.textMuted }]}>
-                  {event.paksha} Paksha
-                </Text>
-              </View>
-
-              <View style={{ flex: 1, paddingLeft: Spacing.sm }}>
-                <Text style={[styles.calNameText, { color: colors.text }]}>
-                  {event.name}
-                </Text>
-                <Text style={[styles.calTipText, { color: colors.textMuted }]} numberOfLines={1}>
-                  {event.recommendedActivity}
+          <View style={{ flex: 1, paddingRight: Spacing.xs }}>
+            <View style={styles.titleLine}>
+              <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>
+                {currentDisplayEvent.name}
+              </Text>
+              <View style={[styles.countdownBadge, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.15)' }]}>
+                <Text style={[styles.countdownText, { color: saffronText }]}>
+                  {countdownLabel}
                 </Text>
               </View>
             </View>
-          ))}
+            <Text style={[styles.dateSubtext, { color: colors.textMuted }]} numberOfLines={1}>
+              {formatEkadashiDate(currentDisplayEvent.date)} • {currentDisplayEvent.paksha} Paksha
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.toggleBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+          <Text style={[styles.toggleBtnText, { color: saffronText }]}>
+            {isExpanded ? 'Less' : 'Details'}
+          </Text>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={12}
+            color={saffronText}
+          />
+        </View>
+      </TouchableOpacity>
+
+      {/* 2. Detailed View (Revealed on Toggle) */}
+      {isExpanded && (
+        <View style={[styles.expandedContent, { borderTopColor: saffronBorder }]}>
+          <Text style={[styles.significance, { color: colors.textSecondary }]}>
+            {currentDisplayEvent.significance}
+          </Text>
+
+          {/* Actionable Guidance Box */}
+          <View style={[styles.guidanceBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.7)' }]}>
+            <View style={styles.guideRow}>
+              <Ionicons name="barbell-outline" size={13} color={saffronText} style={{ marginTop: 2 }} />
+              <Text style={[styles.guideText, { color: colors.text }]}>
+                <Text style={{ fontWeight: '700' }}>Training: </Text>
+                {currentDisplayEvent.recommendedActivity}
+              </Text>
+            </View>
+
+            <View style={styles.guideRow}>
+              <Ionicons name="leaf-outline" size={13} color={saffronText} style={{ marginTop: 2 }} />
+              <Text style={[styles.guideText, { color: colors.text }]}>
+                <Text style={{ fontWeight: '700' }}>Phalahar: </Text>
+                {currentDisplayEvent.nutritionTip}
+              </Text>
+            </View>
+          </View>
+
+          {/* Future Ekadashi Calendar */}
+          <View style={styles.futureDatesSection}>
+            <Text style={[styles.sectionHeading, { color: saffronText }]}>
+              UPCOMING 2026–2027 EKADASHI DATES
+            </Text>
+
+            {upcomingEvents.slice(0, 5).map((event, idx) => (
+              <View
+                key={event.date}
+                style={[
+                  styles.calendarRow,
+                  idx !== upcomingEvents.length - 1 && {
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                  },
+                ]}>
+                <View style={{ flex: 1.2 }}>
+                  <Text style={[styles.calDate, { color: colors.text }]}>
+                    {formatEkadashiDate(event.date)}
+                  </Text>
+                  <Text style={[styles.calPaksha, { color: colors.textMuted }]}>
+                    {event.paksha} Paksha
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.calName, { color: colors.text }]}>
+                    {event.name}
+                  </Text>
+                  <Text style={[styles.calSub, { color: colors.textMuted }]} numberOfLines={1}>
+                    {event.recommendedActivity}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       )}
     </View>
@@ -154,59 +155,69 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.sm + 4,
+    paddingVertical: Spacing.xs + 3,
     marginBottom: Spacing.md,
   },
-  headerRow: {
+  minimalRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.xs,
+    justifyContent: 'space-between',
   },
-  badgeRow: {
+  leftGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs + 2,
+  },
+  iconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleLine: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  iconPill: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    fontSize: 11,
+  eventName: {
+    fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 0.6,
   },
-  expandBtn: {
+  countdownBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: BorderRadius.full,
+  },
+  countdownText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  dateSubtext: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  toggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: BorderRadius.full,
   },
-  expandBtnText: {
+  toggleBtnText: {
     fontSize: 11,
     fontWeight: '700',
   },
-  contentBody: {
-    marginTop: 4,
+  expandedContent: {
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
   },
-  title: {
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  dateSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
-    marginBottom: 4,
-  },
-  description: {
+  significance: {
     fontSize: 12,
     lineHeight: 16,
     marginBottom: Spacing.sm,
@@ -215,6 +226,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     padding: Spacing.sm,
     gap: 6,
+    marginBottom: Spacing.sm,
   },
   guideRow: {
     flexDirection: 'row',
@@ -226,38 +238,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  expandedSection: {
-    marginTop: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
+  futureDatesSection: {
+    marginTop: Spacing.xs,
   },
-  calendarHeading: {
+  sectionHeading: {
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.8,
-    marginBottom: Spacing.sm,
+    letterSpacing: 0.7,
+    marginBottom: Spacing.xs,
   },
-  calendarItem: {
+  calendarRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.xs + 2,
+    paddingVertical: 5,
   },
-  calDateCol: {
-    minWidth: 120,
-  },
-  calDateText: {
-    fontSize: 12,
+  calDate: {
+    fontSize: 11,
     fontWeight: '700',
   },
-  calPakshaText: {
+  calPaksha: {
     fontSize: 10,
   },
-  calNameText: {
-    fontSize: 12,
+  calName: {
+    fontSize: 11,
     fontWeight: '700',
   },
-  calTipText: {
-    fontSize: 11,
+  calSub: {
+    fontSize: 10,
   },
 });

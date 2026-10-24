@@ -385,10 +385,11 @@ export const WorkoutRepository = {
     planId?: string | null;
     title: string;
     exerciseIds?: string[];
+    date?: string;
   }): PopulatedSession {
     const db = getDatabase();
     const now = new Date().toISOString();
-    const todayStr = getTodayDateString();
+    const sessionDate = data.date || getTodayDateString();
     const sessionId = `sess_${Date.now()}`;
 
     db.runSync(
@@ -396,7 +397,7 @@ export const WorkoutRepository = {
         id, date, workout_plan_id, title, start_time, duration_seconds,
         status, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [sessionId, todayStr, data.planId ?? null, data.title, now, 0, 'in_progress', now]
+      [sessionId, sessionDate, data.planId ?? null, data.title, now, 0, 'in_progress', now]
     );
 
     // Resolve exercises to populate

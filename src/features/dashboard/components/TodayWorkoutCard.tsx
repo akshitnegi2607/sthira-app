@@ -12,6 +12,7 @@ interface TodayWorkoutCardProps {
   isInProgress?: boolean;
   session?: WorkoutSession | null;
   onPressWorkout?: () => void;
+  onChangeWorkout?: () => void;
 }
 
 export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
@@ -20,6 +21,7 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
   isInProgress = false,
   session,
   onPressWorkout,
+  onChangeWorkout,
 }) => {
   const { colors, isDark } = useAppTheme();
   const isRest = planTitle.toLowerCase().includes('rest');
@@ -57,7 +59,23 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
           <Text style={[styles.subheading, { color: colors.textMuted }]}>
             TODAY'S TRAINING
           </Text>
-          <Text style={[styles.title, { color: colors.text }]}>{planTitle}</Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: colors.text }]}>{planTitle}</Text>
+            {onChangeWorkout && (
+              <TouchableOpacity
+                onPress={onChangeWorkout}
+                style={[
+                  styles.changePill,
+                  {
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                    borderColor: 'rgba(16, 185, 129, 0.3)',
+                  },
+                ]}>
+                <Ionicons name="swap-horizontal" size={12} color={colors.accent} />
+                <Text style={[styles.changePillText, { color: colors.accent }]}>Change</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={[styles.completedBadge, { backgroundColor: badgeBg }]}>
@@ -110,27 +128,46 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
         )}
       </View>
 
-      <TouchableOpacity
-        activeOpacity={0.7}
-        style={[
-          styles.actionButton,
-          {
-            backgroundColor: colors.cardElevated,
-            borderColor: colors.cardBorder,
-          },
-        ]}
-        onPress={onPressWorkout}>
-        <Text style={[styles.actionButtonText, { color: colors.text }]}>
-          {isInProgress
-            ? 'Resume Live Workout'
-            : isCompleted
-            ? 'View Workout Performance'
-            : isRest
-            ? 'Log Light Recovery Activity'
-            : 'Start Workout Session'}
-        </Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-      </TouchableOpacity>
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[
+            styles.actionButton,
+            {
+              backgroundColor: colors.cardElevated,
+              borderColor: colors.cardBorder,
+              flex: 1,
+            },
+          ]}
+          onPress={onPressWorkout}>
+          <Text style={[styles.actionButtonText, { color: colors.text }]}>
+            {isInProgress
+              ? 'Resume Live Workout'
+              : isCompleted
+              ? 'View Workout Performance'
+              : isRest
+              ? 'Log Light Recovery'
+              : 'Start Workout Session'}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        {onChangeWorkout && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[
+              styles.swapButton,
+              {
+                backgroundColor: colors.cardElevated,
+                borderColor: colors.cardBorder,
+              },
+            ]}
+            onPress={onChangeWorkout}>
+            <Ionicons name="swap-horizontal" size={15} color={colors.accent} />
+            <Text style={[styles.swapButtonText, { color: colors.accent }]}>Change</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </Card>
   );
 };
@@ -192,6 +229,30 @@ const styles = StyleSheet.create({
     borderRadius: 1.5,
     backgroundColor: '#94A3B8',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  changePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  changePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -204,5 +265,18 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  swapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  swapButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

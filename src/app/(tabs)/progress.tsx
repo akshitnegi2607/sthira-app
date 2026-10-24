@@ -18,10 +18,12 @@ import { WeeklyReviewCard } from '@/features/progress/components/WeeklyReviewCar
 import { SleepRecoveryCorrelationCard } from '@/features/progress/components/SleepRecoveryCorrelationCard';
 import { WeightHistoryList } from '@/features/progress/components/WeightHistoryList';
 import { LogWeightModal } from '@/features/progress/components/LogWeightModal';
+import { DeepAnalysisModal } from '@/features/progress/components/DeepAnalysisModal';
 
 export default function ProgressScreen() {
   const { colors, isDark } = useAppTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const [isDeepAnalysisVisible, setIsDeepAnalysisVisible] = useState(false);
 
   const {
     timeframe,
@@ -102,6 +104,42 @@ export default function ProgressScreen() {
           </Text>
         </View>
 
+        {/* Holistic Deep Progress & Targets Audit CTA */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => setIsDeepAnalysisVisible(true)}
+          style={[
+            styles.auditBanner,
+            {
+              backgroundColor: isDark ? 'rgba(16, 185, 129, 0.14)' : 'rgba(16, 185, 129, 0.1)',
+              borderColor: colors.accent,
+            },
+          ]}>
+          <View style={styles.auditLeft}>
+            <View
+              style={[
+                styles.auditIconWrapper,
+                { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#FFFFFF' },
+              ]}>
+              <Ionicons name="sparkles" size={18} color={colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.auditTitle, { color: colors.text }]}>
+                  Deep Health & Progress Analysis
+                </Text>
+                <View style={[styles.auditBadge, { backgroundColor: colors.accent }]}>
+                  <Text style={styles.auditBadgeText}>NEW</Text>
+                </View>
+              </View>
+              <Text style={[styles.auditSub, { color: colors.textMuted }]}>
+                Analyze workout volume, surplus intake & scale velocity
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+        </TouchableOpacity>
+
         {/* 1. Weight Trend & EMA Chart */}
         <WeightTrendChart
           timeframe={timeframe}
@@ -142,6 +180,13 @@ export default function ProgressScreen() {
         onSave={logScaleWeight}
         currentWeight={currentWeight}
       />
+
+      {/* Deep Holistic Progress Analysis Modal */}
+      <DeepAnalysisModal
+        visible={isDeepAnalysisVisible}
+        onClose={() => setIsDeepAnalysisVisible(false)}
+        onTargetsUpdated={loadProgressData}
+      />
     </View>
   );
 }
@@ -176,5 +221,46 @@ const styles = StyleSheet.create({
   principleBody: {
     fontSize: 11,
     lineHeight: 16,
+  },
+  auditBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1.5,
+    marginBottom: Spacing.lg,
+  },
+  auditLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  auditIconWrapper: {
+    width: 38,
+    height: 38,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  auditTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  auditBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: BorderRadius.full,
+  },
+  auditBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  auditSub: {
+    fontSize: 11.5,
+    marginTop: 2,
   },
 });

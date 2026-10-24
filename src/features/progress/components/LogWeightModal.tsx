@@ -44,7 +44,7 @@ export const LogWeightModal: React.FC<LogWeightModalProps> = ({
   };
 
   const handleSave = async () => {
-    const weightNum = parseFloat(weightStr);
+    const weightNum = parseFloat(weightStr.replace(',', '.'));
     if (isNaN(weightNum) || weightNum <= 0) return;
 
     try {

@@ -68,9 +68,10 @@ export const QuickLogModal: React.FC<QuickLogModalProps> = ({
         return;
       }
     } else if (type === 'weight') {
-      const val = parseFloat(inputValue);
+      const sanitized = inputValue.replace(',', '.');
+      const val = parseFloat(sanitized);
       if (!isNaN(val) && val > 0) {
-        onSubmitWeight(val);
+        onSubmitWeight(Math.round(val * 10) / 10);
       }
     } else if (type === 'food') {
       if (inputValue.trim()) {

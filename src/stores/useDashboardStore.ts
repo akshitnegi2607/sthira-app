@@ -5,6 +5,7 @@ import { ExerciseRepository } from '@/database/repositories/exerciseRepository';
 import { WorkoutRepository, PopulatedSession } from '@/database/repositories/workoutRepository';
 import { MealRepository } from '@/database/repositories/mealRepository';
 import { ProfileRepository } from '@/database/repositories/profileRepository';
+import { ProgressRepository } from '@/database/repositories/progressRepository';
 import { getTodayDateString, shiftDateString } from '@/utils/date';
 import { SupabaseSyncService } from '@/services/supabaseSyncService';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
@@ -157,7 +158,17 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   },
 
   quickLogWeight: (weightKg) => {
-    get().updateLog({ weight: Number(weightKg) });
+    const rounded = Math.round(Number(weightKg) * 10) / 10;
+    const todayStr = getTodayDateString();
+    try {
+      ProgressRepository.logWeight(rounded, todayStr);
+    } catch (e) {
+      console.warn('Failed to persist weight in ProgressRepository:', e);
+    }
+    get().updateLog({ weight: rounded });
+    try {
+      ProfileRepository.updateProfile({ current_weight: rounded });
+    } catch {}
     try {
       if (isSupabaseConfigured()) {
         SupabaseSyncService.syncAll().catch(() => {});
