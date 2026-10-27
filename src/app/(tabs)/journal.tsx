@@ -18,6 +18,7 @@ import { MorningCheckInModal } from '@/features/journal/components/MorningCheckI
 import { EveningWindDownModal } from '@/features/journal/components/EveningWindDownModal';
 import { DailyCoachSummaryCard } from '@/features/journal/components/DailyCoachSummaryCard';
 import { JournalTimelineCard } from '@/features/journal/components/JournalTimelineCard';
+import { useCalendarStore } from '@/stores/useCalendarStore';
 import { getTodayDateString, shiftDateString } from '@/utils/date';
 
 export default function JournalScreen() {
@@ -101,15 +102,21 @@ export default function JournalScreen() {
             <Ionicons name="chevron-back" size={16} color={colors.text} />
           </TouchableOpacity>
 
-          <View style={styles.dateInfo}>
-            <Text style={[styles.dateTitle, { color: colors.text }]}>
-              {isToday ? 'Today, ' : ''}
-              {selectedDate}
-            </Text>
+          <TouchableOpacity
+            style={styles.dateInfo}
+            activeOpacity={0.7}
+            onPress={() => useCalendarStore.getState().openCalendar(selectedDate)}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Text style={[styles.dateTitle, { color: colors.text }]}>
+                {isToday ? 'Today, ' : ''}
+                {selectedDate}
+              </Text>
+              <Ionicons name="calendar-outline" size={15} color={colors.accent} />
+            </View>
             <Text style={[styles.dateSub, { color: colors.textMuted }]}>
-              Daily Mindset & Recovery Log
+              Tap to view full day history
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleNextDay}

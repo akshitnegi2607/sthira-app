@@ -827,6 +827,20 @@ export const WorkoutRepository = {
   },
 
   /**
+   * Retrieves all populated workout sessions recorded for a given date.
+   */
+  getSessionsForDate(dateStr: string): PopulatedSession[] {
+    const db = getDatabase();
+    const sessions = db.getAllSync<WorkoutSession>(
+      'SELECT * FROM WorkoutSessions WHERE date = ? ORDER BY created_at DESC',
+      [dateStr]
+    );
+    return sessions
+      .map((s) => this.getPopulatedSession(s.id))
+      .filter((p): p is PopulatedSession => p !== null);
+  },
+
+  /**
    * Permanently deletes a workout session and its child exercises/sets.
    */
   deleteSession(sessionId: string): void {

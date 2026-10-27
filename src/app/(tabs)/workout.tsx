@@ -28,6 +28,7 @@ import { PainLoggingModal } from '@/features/workout/components/PainLoggingModal
 import { WorkoutHistoryDetailModal } from '@/features/workout/components/WorkoutHistoryDetailModal';
 import { RoutinePreviewModal } from '@/features/workout/components/RoutinePreviewModal';
 import { ChangeWorkoutModal } from '@/features/workout/components/ChangeWorkoutModal';
+import { useCalendarStore } from '@/stores/useCalendarStore';
 import { WorkoutPlan, Exercise } from '@/types/database';
 import { getTodayDateString } from '@/utils/date';
 
@@ -560,10 +561,26 @@ export default function WorkoutScreen() {
             <Text style={[styles.sectionHeading, { color: colors.textSecondary, marginBottom: 0 }]}>
               RECENT COMPLETED SESSIONS
             </Text>
-            <View style={[styles.histCountPillWrap, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)' }]}>
-              <Text style={[styles.histCountPill, { color: colors.accent }]}>
-                {history.length} logged
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <TouchableOpacity
+                onPress={() => useCalendarStore.getState().openCalendar()}
+                style={[
+                  styles.histCalendarBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                    borderColor: 'rgba(16, 185, 129, 0.25)',
+                  },
+                ]}
+                activeOpacity={0.7}>
+                <Ionicons name="calendar-outline" size={13} color={colors.accent} />
+                <Text style={[styles.histCalendarBtnText, { color: colors.accent }]}>Calendar</Text>
+              </TouchableOpacity>
+
+              <View style={[styles.histCountPillWrap, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)' }]}>
+                <Text style={[styles.histCountPill, { color: colors.accent }]}>
+                  {history.length} logged
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -1118,6 +1135,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sm,
     paddingHorizontal: Spacing.xs,
+  },
+  histCalendarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  histCalendarBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   histCountPillWrap: {
     paddingHorizontal: 8,
