@@ -4,7 +4,7 @@
  * and seamless post-workout joint pain & fatigue check.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/useWorkoutStore';
+import { getExerciseStretching } from '@/constants/exerciseStretching';
 
 export const WorkoutFinishModal: React.FC = () => {
   const { colors, isDark } = useAppTheme();
@@ -34,6 +35,29 @@ export const WorkoutFinishModal: React.FC = () => {
   const [painArea, setPainArea] = useState('Shoulder');
   const [painLevel, setPainLevel] = useState(3);
   const [painNotes, setPainNotes] = useState('');
+
+  const postWorkoutStretches = useMemo(() => {
+    if (!activeSession) return [];
+    const seenNames = new Set<string>();
+    const drills: Array<{ name: string; durationOrReps: string; instructions: string }> = [];
+
+    activeSession.exercises.forEach((item) => {
+      const info = getExerciseStretching(
+        item.exercise.id,
+        item.exercise.name,
+        item.exercise.category,
+        item.exercise.primary_muscle
+      );
+      info.postWorkout.drills.forEach((d) => {
+        if (!seenNames.has(d.name)) {
+          seenNames.add(d.name);
+          drills.push(d);
+        }
+      });
+    });
+
+    return drills.slice(0, 4);
+  }, [activeSession]);
 
   if (!isOpen || !activeSession) return null;
 
@@ -181,6 +205,53 @@ export const WorkoutFinishModal: React.FC = () => {
                 })}
               </View>
             </View>
+
+            {/* Recommended Post-Workout Recovery Stretches */}
+            {postWorkoutStretches.length > 0 && (
+              <View style={styles.section}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <Ionicons name="leaf-outline" size={14} color="#8B5CF6" />
+                  <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginBottom: 0 }]}>
+                    RECOMMENDED RECOVERY STRETCHES ({postWorkoutStretches.length})
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.finishExList,
+                    {
+                      backgroundColor: isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(139, 92, 246, 0.03)',
+                      borderColor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.15)',
+                    },
+                  ]}>
+                  {postWorkoutStretches.map((drill, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.finishExItem,
+                        idx > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder },
+                      ]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.finishExTitle, { color: colors.text }]}>{drill.name}</Text>
+                        <Text style={[styles.finishExSub, { color: colors.textMuted, marginTop: 2, lineHeight: 16 }]}>
+                          {drill.instructions}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.stretchDurationBadge,
+                          {
+                            backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.1)',
+                          },
+                        ]}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: '#8B5CF6' }}>
+                          {drill.durationOrReps}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {/* Notes */}
             <View style={styles.section}>
@@ -460,6 +531,13 @@ const styles = StyleSheet.create({
   finishExWeightText: {
     fontSize: 11,
     marginTop: 2,
+  },
+  stretchDurationBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    alignSelf: 'flex-start',
+    marginLeft: Spacing.sm,
   },
   painSection: {
     borderTopWidth: StyleSheet.hairlineWidth,

@@ -24,6 +24,8 @@ import { RestTimerBanner } from './RestTimerBanner';
 import { WorkoutFinishModal } from './WorkoutFinishModal';
 import { ExerciseSubstitutionModal } from './ExerciseSubstitutionModal';
 import { ExerciseDetailModal } from './ExerciseDetailModal';
+import { PlankTimerWidget } from './PlankTimerWidget';
+import { ExerciseStretchingModal } from './ExerciseStretchingModal';
 import { calculateProgressiveOverload } from '@/services/progressiveOverload';
 import { getAssociatedBodyArea } from '@/services/exerciseSubstitution';
 import { PopulatedWorkoutExercise, WorkoutRepository } from '@/database/repositories/workoutRepository';
@@ -60,6 +62,7 @@ export const ActiveWorkoutModal: React.FC = () => {
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [selectedExerciseForStretches, setSelectedExerciseForStretches] = useState<Exercise | null>(null);
 
   // Clock tick interval
   useEffect(() => {
@@ -182,6 +185,7 @@ export const ActiveWorkoutModal: React.FC = () => {
               onDeleteSet={(setId) => deleteSet(setId)}
               onSwap={() => openSubstitutionModal(item.workoutExercise.id)}
               onInfo={() => openExerciseInfo(item.exercise)}
+              onStretches={() => setSelectedExerciseForStretches(item.exercise)}
               onRemove={() => removeExerciseFromWorkout(item.workoutExercise.id)}
             />
           ))}
@@ -353,6 +357,11 @@ export const ActiveWorkoutModal: React.FC = () => {
           exercise={selectedExerciseForInfo}
           onClose={closeExerciseInfo}
         />
+        <ExerciseStretchingModal
+          visible={!!selectedExerciseForStretches}
+          exercise={selectedExerciseForStretches}
+          onClose={() => setSelectedExerciseForStretches(null)}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -361,6 +370,7 @@ export const ActiveWorkoutModal: React.FC = () => {
 interface SetRowItemProps {
   set: WorkoutSet;
   lastSetForThisNum?: { weightKg: number; reps: number; rir?: number | null };
+  isTimedHold?: boolean;
   onUpdateSet: (setId: string, data: any) => void;
   onToggleSet: (setId: string) => void;
   colors: any;
@@ -370,6 +380,7 @@ interface SetRowItemProps {
 const SetRowItem: React.FC<SetRowItemProps> = ({
   set,
   lastSetForThisNum,
+  isTimedHold,
   onUpdateSet,
   onToggleSet,
   colors,
@@ -491,6 +502,8 @@ const SetRowItem: React.FC<SetRowItemProps> = ({
             ]}
             keyboardType="number-pad"
             value={repsText}
+            placeholder={isTimedHold ? 'sec' : 'reps'}
+            placeholderTextColor={colors.textMuted}
             onChangeText={handleRepsChange}
             onBlur={handleRepsBlur}
           />
@@ -539,7 +552,11 @@ const SetRowItem: React.FC<SetRowItemProps> = ({
           <View style={styles.lastSetIndicator}>
             <Ionicons name="repeat-outline" size={11} color={colors.textMuted} />
             <Text style={[styles.lastSetIndicatorText, { color: colors.textMuted }]}>
-              Last: <Text style={{ color: colors.textSecondary, fontWeight: '700' }}>{lastSetForThisNum.weightKg} kg × {lastSetForThisNum.reps}</Text>
+              Last: <Text style={{ color: colors.textSecondary, fontWeight: '700' }}>
+                {isTimedHold
+                  ? `${lastSetForThisNum.reps}s hold`
+                  : `${lastSetForThisNum.weightKg} kg × ${lastSetForThisNum.reps}`}
+              </Text>
             </Text>
           </View>
           {set.weight_kg !== lastSetForThisNum.weightKg ? (
@@ -575,6 +592,7 @@ interface ExerciseCardProps {
   onDeleteSet: (setId: string) => void;
   onSwap: () => void;
   onInfo: () => void;
+  onStretches: () => void;
   onRemove: () => void;
 }
 
@@ -588,6 +606,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onDeleteSet,
   onSwap,
   onInfo,
+  onStretches,
   onRemove,
 }) => {
   const { colors, isDark } = useAppTheme();
@@ -635,6 +654,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     recentPainArea: matchedPain ? matchedPain.body_area : undefined,
   });
 
+  const isTimedHold =
+    ex.name.toLowerCase().includes('plank') ||
+    (ex.category.toLowerCase() === 'core' &&
+      (ex.target_rep_range.toLowerCase().includes('s') ||
+        ex.target_rep_range.toLowerCase().includes('sec'))) ||
+    ex.target_rep_range.toLowerCase().includes('s');
+
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
       {/* Exercise Card Header */}
@@ -647,6 +673,20 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         </View>
 
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[
+              styles.stretchPillBtn,
+              {
+                backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
+                borderColor: '#F59E0B',
+              },
+            ]}
+            onPress={onStretches}
+            activeOpacity={0.7}>
+            <Ionicons name="flame" size={12} color="#F59E0B" />
+            <Text style={[styles.stretchPillText, { color: '#F59E0B' }]}>Stretches</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.gifPillBtn,
@@ -780,11 +820,26 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         </View>
       )}
 
+      {/* Plank & Timed Hold Interactive Stopwatch Widget */}
+      {isTimedHold && (
+        <PlankTimerWidget
+          exerciseName={ex.name}
+          targetRepRange={ex.target_rep_range}
+          sets={item.sets}
+          onUpdateSet={onUpdateSet}
+          onToggleSet={onToggleSet}
+        />
+      )}
+
       {/* Sets Table Header */}
       <View style={styles.tableHeader}>
         <Text style={[styles.colHeader, { width: 36, color: colors.textMuted }]}>SET</Text>
-        <Text style={[styles.colHeader, { flex: 1.2, color: colors.textMuted }]}>KG</Text>
-        <Text style={[styles.colHeader, { flex: 1.1, color: colors.textMuted }]}>REPS</Text>
+        <Text style={[styles.colHeader, { flex: 1.2, color: colors.textMuted }]}>
+          {isTimedHold ? 'ADDED KG' : 'KG'}
+        </Text>
+        <Text style={[styles.colHeader, { flex: 1.1, color: colors.textMuted }]}>
+          {isTimedHold ? 'HOLD (S)' : 'REPS'}
+        </Text>
         <Text style={[styles.colHeader, { flex: 1.1, color: colors.textMuted }]}>RIR</Text>
         <Text style={[styles.colHeader, { width: 44, textAlign: 'center', color: colors.textMuted }]}>
           DONE
@@ -799,6 +854,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             key={set.id}
             set={set}
             lastSetForThisNum={lastSetForThisNum}
+            isTimedHold={isTimedHold}
             onUpdateSet={onUpdateSet}
             onToggleSet={onToggleSet}
             colors={colors}
@@ -1169,6 +1225,19 @@ const styles = StyleSheet.create({
   pickerItemSub: {
     fontSize: 11,
     marginTop: 1,
+  },
+  stretchPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  stretchPillText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   gifPillBtn: {
     flexDirection: 'row',

@@ -3,7 +3,7 @@
  * Calm, clean reference sheet for exercise execution, form cues, and common mistakes.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -19,6 +19,7 @@ import { Spacing, BorderRadius } from '@/constants/theme';
 import { Exercise } from '@/types/database';
 import { WorkoutRepository } from '@/database/repositories/workoutRepository';
 import { ExerciseVisualGuide } from './ExerciseVisualGuide';
+import { getExerciseStretching } from '@/constants/exerciseStretching';
 
 interface ExerciseDetailModalProps {
   exercise: Exercise | null;
@@ -30,6 +31,7 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
   onClose,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const [stretchTab, setStretchTab] = useState<'pre' | 'post'>('pre');
 
   const lastPerf = useMemo(() => {
     if (!exercise) return null;
@@ -39,6 +41,16 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
       return null;
     }
   }, [exercise?.id]);
+
+  const stretchInfo = useMemo(() => {
+    if (!exercise) return null;
+    return getExerciseStretching(
+      exercise.id,
+      exercise.name,
+      exercise.category,
+      exercise.primary_muscle
+    );
+  }, [exercise]);
 
   if (!exercise) return null;
 
@@ -179,6 +191,176 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
                 <Text style={[styles.bodyText, { color: colors.text, lineHeight: 22 }]}>
                   {exercise.common_mistakes}
                 </Text>
+              </View>
+            ) : null}
+
+            {/* Pre & Post Workout Stretching Section */}
+            {stretchInfo ? (
+              <View
+                style={[
+                  styles.stretchingCard,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : '#F8FAFC',
+                    borderColor: colors.cardBorder,
+                  },
+                ]}>
+                <View style={styles.stretchingHeaderRow}>
+                  <Ionicons
+                    name={stretchTab === 'pre' ? 'flame-outline' : 'leaf-outline'}
+                    size={16}
+                    color={stretchTab === 'pre' ? '#F59E0B' : '#8B5CF6'}
+                  />
+                  <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+                    PRE & POST WORKOUT STRETCHING
+                  </Text>
+                </View>
+
+                {/* Tab Switcher */}
+                <View style={styles.stretchTabBar}>
+                  <TouchableOpacity
+                    style={[
+                      styles.stretchTabBtn,
+                      stretchTab === 'pre' && [
+                        styles.stretchTabBtnActive,
+                        { borderColor: '#F59E0B', backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)' },
+                      ],
+                    ]}
+                    onPress={() => setStretchTab('pre')}>
+                    <Ionicons name="flame" size={13} color={stretchTab === 'pre' ? '#F59E0B' : colors.textMuted} />
+                    <Text
+                      style={[
+                        styles.stretchTabText,
+                        { color: stretchTab === 'pre' ? '#F59E0B' : colors.textMuted, fontWeight: stretchTab === 'pre' ? '700' : '600' },
+                      ]}>
+                      Pre-Workout Warm-Up
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.stretchTabBtn,
+                      stretchTab === 'post' && [
+                        styles.stretchTabBtnActive,
+                        { borderColor: '#8B5CF6', backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)' },
+                      ],
+                    ]}
+                    onPress={() => setStretchTab('post')}>
+                    <Ionicons name="leaf" size={13} color={stretchTab === 'post' ? '#8B5CF6' : colors.textMuted} />
+                    <Text
+                      style={[
+                        styles.stretchTabText,
+                        { color: stretchTab === 'post' ? '#8B5CF6' : colors.textMuted, fontWeight: stretchTab === 'post' ? '700' : '600' },
+                      ]}>
+                      Post-Workout Cool-Down
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Selected Protocol Content */}
+                {(() => {
+                  const protocol = stretchTab === 'pre' ? stretchInfo.preWorkout : stretchInfo.postWorkout;
+                  return (
+                    <View style={styles.protocolContainer}>
+                      <Text style={[styles.protocolFocus, { color: colors.textSecondary }]}>
+                        <Text style={{ fontWeight: '700', color: colors.text }}>Focus: </Text>
+                        {protocol.focus}
+                      </Text>
+
+                      <View
+                        style={[
+                          styles.whyItHelpsMiniBox,
+                          {
+                            backgroundColor:
+                              stretchTab === 'pre'
+                                ? isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.06)'
+                                : isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.06)',
+                            borderColor:
+                              stretchTab === 'pre'
+                                ? 'rgba(245, 158, 11, 0.25)'
+                                : 'rgba(139, 92, 246, 0.25)',
+                          },
+                        ]}>
+                        <Ionicons
+                          name="information-circle-outline"
+                          size={14}
+                          color={stretchTab === 'pre' ? '#F59E0B' : '#8B5CF6'}
+                        />
+                        <Text style={[styles.whyItHelpsMiniText, { color: colors.text }]}>
+                          {protocol.whyItHelps}
+                        </Text>
+                      </View>
+
+                      {protocol.drills.map((drill, idx) => (
+                        <View
+                          key={idx}
+                          style={[
+                            styles.drillItemCard,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.cardBorder,
+                            },
+                          ]}>
+                          <View style={styles.drillItemHeader}>
+                            <View
+                              style={[
+                                styles.drillIndexCircle,
+                                {
+                                  backgroundColor:
+                                    stretchTab === 'pre'
+                                      ? 'rgba(245, 158, 11, 0.15)'
+                                      : 'rgba(139, 92, 246, 0.15)',
+                                },
+                              ]}>
+                              <Text
+                                style={[
+                                  styles.drillIndexText,
+                                  { color: stretchTab === 'pre' ? '#F59E0B' : '#8B5CF6' },
+                                ]}>
+                                {idx + 1}
+                              </Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.drillItemName, { color: colors.text }]}>
+                                {drill.name}
+                              </Text>
+                              <View style={styles.drillMetaRow}>
+                                <View
+                                  style={[
+                                    styles.drillDurationPill,
+                                    {
+                                      backgroundColor:
+                                        stretchTab === 'pre'
+                                          ? isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)'
+                                          : isDark ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.08)',
+                                    },
+                                  ]}>
+                                  <Ionicons
+                                    name="time-outline"
+                                    size={10}
+                                    color={stretchTab === 'pre' ? '#F59E0B' : '#8B5CF6'}
+                                  />
+                                  <Text
+                                    style={[
+                                      styles.drillDurationText,
+                                      { color: stretchTab === 'pre' ? '#F59E0B' : '#8B5CF6' },
+                                    ]}>
+                                    {drill.durationOrReps}
+                                  </Text>
+                                </View>
+                                <Text style={[styles.drillTargetText, { color: colors.textMuted }]}>
+                                  • {drill.targetArea}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                          <Text style={[styles.drillItemDesc, { color: colors.textSecondary }]}>
+                            {drill.instructions}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
               </View>
             ) : null}
 
@@ -347,6 +529,118 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     fontSize: 13,
+  },
+  stretchingCard: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+  },
+  stretchingHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: Spacing.sm,
+  },
+  stretchTabBar: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: Spacing.md,
+  },
+  stretchTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  stretchTabBtnActive: {
+    borderWidth: 1,
+  },
+  stretchTabText: {
+    fontSize: 11,
+  },
+  protocolContainer: {
+    marginTop: 2,
+  },
+  protocolFocus: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  whyItHelpsMiniBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+  },
+  whyItHelpsMiniText: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  drillItemCard: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    marginBottom: Spacing.xs,
+  },
+  drillItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 4,
+  },
+  drillIndexCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  drillIndexText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  drillItemName: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  drillMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 2,
+  },
+  drillDurationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: BorderRadius.full,
+  },
+  drillDurationText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  drillTargetText: {
+    fontSize: 10,
+  },
+  drillItemDesc: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
   },
   footer: {
     padding: Spacing.md,
