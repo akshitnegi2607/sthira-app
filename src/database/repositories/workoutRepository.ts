@@ -253,26 +253,161 @@ export const WorkoutRepository = {
   },
 
   /**
+   * Retrieves active exercise IDs for a workout plan, checking custom settings first.
+   */
+  getPlanExerciseIds(planId: string): string[] {
+    const db = getDatabase();
+    try {
+      const custom = db.getFirstSync<{ value: string }>(
+        'SELECT value FROM AppSettings WHERE key = ? LIMIT 1',
+        [`plan_exercises_${planId}`]
+      );
+      if (custom && custom.value) {
+        const parsed = JSON.parse(custom.value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading custom plan exercise IDs:', e);
+    }
+
+    const seedPlan = INITIAL_WORKOUT_PLANS.find((p: { id: string }) => p.id === planId);
+    return seedPlan && seedPlan.exercise_ids ? [...seedPlan.exercise_ids] : [];
+  },
+
+  /**
    * Retrieves exercises associated with a workout plan by plan ID.
+   * Dynamically loads evolved or customized exercises if present in AppSettings.
    */
   getExercisesForPlan(planId: string): Exercise[] {
-    const seedPlan = INITIAL_WORKOUT_PLANS.find((p: { id: string }) => p.id === planId);
-    if (!seedPlan || !seedPlan.exercise_ids || seedPlan.exercise_ids.length === 0) {
+    const exerciseIds = this.getPlanExerciseIds(planId);
+    if (!exerciseIds || exerciseIds.length === 0) {
       return [];
     }
 
     const db = getDatabase();
-    const placeholders = seedPlan.exercise_ids.map(() => '?').join(',');
+    const placeholders = exerciseIds.map(() => '?').join(',');
     const found = db.getAllSync<Exercise>(
       `SELECT * FROM Exercises WHERE id IN (${placeholders})`,
-      seedPlan.exercise_ids
+      exerciseIds
     );
 
-    // Maintain seed plan ordering
+    // Maintain plan ordering
     const idMap = new Map<string, Exercise>(found.map((e: Exercise) => [e.id, e]));
-    return seedPlan.exercise_ids
+    return exerciseIds
       .map((id: string) => idMap.get(id))
       .filter((e: Exercise | undefined): e is Exercise => e !== undefined);
+  },
+
+  /**
+   * Updates exercise IDs for a workout plan and synchronizes the plan description.
+   */
+  updatePlanExercises(planId: string, exerciseIds: string[]): void {
+    const db = getDatabase();
+    const now = new Date().toISOString();
+    db.runSync(
+      'INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)',
+      [`plan_exercises_${planId}`, JSON.stringify(exerciseIds), now]
+    );
+
+    // Update WorkoutPlans description to reflect new exercise list
+    try {
+      if (exerciseIds.length > 0) {
+        const placeholders = exerciseIds.map(() => '?').join(',');
+        const exList = db.getAllSync<{ name: string }>(
+          `SELECT name FROM Exercises WHERE id IN (${placeholders})`,
+          exerciseIds
+        );
+        const desc = exList.map((e) => e.name).join(', ');
+        db.runSync('UPDATE WorkoutPlans SET description = ? WHERE id = ?', [desc, planId]);
+      }
+    } catch (e) {
+      console.warn('Error updating WorkoutPlans description:', e);
+    }
+  },
+
+  /**
+   * Applies biweekly exercise swaps across one or more plans.
+   */
+  applyBiweeklyExerciseEvolution(
+    swaps: { planId: string; oldExerciseId: string; newExerciseId: string }[]
+  ): void {
+    const db = getDatabase();
+    const now = new Date().toISOString();
+
+    const planSwaps = new Map<string, { oldId: string; newId: string }[]>();
+    for (const swap of swaps) {
+      if (!planSwaps.has(swap.planId)) {
+        planSwaps.set(swap.planId, []);
+      }
+      planSwaps.get(swap.planId)!.push({ oldId: swap.oldExerciseId, newId: swap.newExerciseId });
+    }
+
+    for (const [planId, list] of planSwaps.entries()) {
+      const currentIds = this.getPlanExerciseIds(planId);
+      const updatedIds = currentIds.map((id) => {
+        const matched = list.find((s) => s.oldId === id);
+        return matched ? matched.newId : id;
+      });
+      this.updatePlanExercises(planId, updatedIds);
+    }
+
+    this.setLastMesocycleReviewDate(now);
+
+    try {
+      const recId = `rec_mesocycle_${Date.now()}`;
+      const swapDescriptions = swaps
+        .map((s) => {
+          const oldEx = this.getExerciseById(s.oldExerciseId)?.name || s.oldExerciseId;
+          const newEx = this.getExerciseById(s.newExerciseId)?.name || s.newExerciseId;
+          return `${oldEx} → ${newEx}`;
+        })
+        .join('; ');
+
+      db.runSync(
+        `INSERT INTO AIRecommendations (id, date, recommendation_type, content, action_items, rationale, created_at)
+         VALUES (?, ?, 'workout_progression', ?, ?, ?, ?)`,
+        [
+          recId,
+          now.split('T')[0],
+          `Biweekly Routine Evolution Applied: ${swaps.length} exercise(s) updated.`,
+          swapDescriptions,
+          `Mesocycle rotation applied based on 14-day weight and rep progression pattern analysis.`,
+          now,
+        ]
+      );
+    } catch (e) {
+      console.warn('Error logging biweekly recommendation:', e);
+    }
+  },
+
+  /**
+   * Retrieves last mesocycle review date string from AppSettings.
+   */
+  getLastMesocycleReviewDate(): string | null {
+    const db = getDatabase();
+    try {
+      const row = db.getFirstSync<{ value: string }>(
+        'SELECT value FROM AppSettings WHERE key = ? LIMIT 1',
+        ['last_mesocycle_review_date']
+      );
+      return row ? row.value : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /**
+   * Sets last mesocycle review date in AppSettings.
+   */
+  setLastMesocycleReviewDate(dateStr: string): void {
+    const db = getDatabase();
+    const now = new Date().toISOString();
+    db.runSync(
+      'INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)',
+      ['last_mesocycle_review_date', dateStr, now]
+    );
   },
 
   /**

@@ -28,6 +28,8 @@ import { PainLoggingModal } from '@/features/workout/components/PainLoggingModal
 import { WorkoutHistoryDetailModal } from '@/features/workout/components/WorkoutHistoryDetailModal';
 import { RoutinePreviewModal } from '@/features/workout/components/RoutinePreviewModal';
 import { ChangeWorkoutModal } from '@/features/workout/components/ChangeWorkoutModal';
+import { BiweeklyMesocycleModal } from '@/features/workout/components/BiweeklyMesocycleModal';
+import { analyzeBiweeklyMesocycle, BiweeklyMesocycleReview } from '@/services/mesocycleAdaptation';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { WorkoutPlan, Exercise } from '@/types/database';
 import { getTodayDateString } from '@/utils/date';
@@ -58,6 +60,11 @@ export default function WorkoutScreen() {
   const [previewPlan, setPreviewPlan] = useState<WorkoutPlan | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isChangeModalOpen, setIsChangeModalOpen] = useState(false);
+  const [isBiweeklyModalOpen, setIsBiweeklyModalOpen] = useState(false);
+
+  const biweeklyReview: BiweeklyMesocycleReview = React.useMemo(() => {
+    return analyzeBiweeklyMesocycle(history, recentPain, exercises, plans);
+  }, [history, recentPain, exercises, plans]);
 
   useEffect(() => {
     init();
@@ -360,10 +367,68 @@ export default function WorkoutScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* 2.5 Biweekly Mesocycle Adaptation & Thinking Card */}
+      <Card
+        style={[
+          styles.biweeklyCard,
+          {
+            backgroundColor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.05)',
+            borderColor: isDark ? 'rgba(139, 92, 246, 0.25)' : 'rgba(139, 92, 246, 0.18)',
+          },
+        ]}>
+        <View style={styles.biweeklyHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="sparkles" size={15} color="#8B5CF6" />
+            <Text style={[styles.biweeklyTag, { color: '#8B5CF6' }]}>
+              {biweeklyReview.isDue ? 'BIWEEKLY MESOCYCLE REVIEW' : 'ROUTINE EVOLUTION'}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.cadencePill,
+              {
+                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.1)',
+              },
+            ]}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#8B5CF6' }}>
+              {biweeklyReview.daysSinceLastReview}d cadence
+            </Text>
+          </View>
+        </View>
+
+        <Text style={[styles.biweeklyTitle, { color: colors.text }]}>
+          AI Exercise Adaptation & Thinking
+        </Text>
+        <Text style={[styles.biweeklySummary, { color: colors.textMuted }]}>
+          {biweeklyReview.coachExecutiveSummary}
+        </Text>
+
+        <View style={styles.biweeklyActionsRow}>
+          <TouchableOpacity
+            style={[styles.biweeklyReviewBtn, { backgroundColor: '#8B5CF6' }]}
+            onPress={() => setIsBiweeklyModalOpen(true)}>
+            <Ionicons name="git-branch-outline" size={14} color="#FFFFFF" />
+            <Text style={styles.biweeklyReviewBtnText}>
+              {biweeklyReview.isDue ? 'Review Recommendations & Evolve Routine' : 'Analyze Pattern & Evolve Routine'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Card>
+
       {/* 3. Weekly Split Schedule */}
-      <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>
-        WEEKLY TRAINING SCHEDULE
-      </Text>
+      <View style={styles.scheduleHeaderRow}>
+        <Text style={[styles.sectionHeading, { color: colors.textSecondary, marginBottom: 0 }]}>
+          WEEKLY TRAINING SCHEDULE
+        </Text>
+        <TouchableOpacity
+          style={[styles.biweeklyHeaderBtn, { borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)' }]}
+          onPress={() => setIsBiweeklyModalOpen(true)}>
+          <Ionicons name="sparkles" size={11} color="#8B5CF6" />
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#8B5CF6' }}>
+            Biweekly Review
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <ScrollView
         horizontal
@@ -840,6 +905,12 @@ export default function WorkoutScreen() {
           switchTodayPlan(plan);
         }}
       />
+      <BiweeklyMesocycleModal
+        visible={isBiweeklyModalOpen}
+        review={biweeklyReview}
+        onClose={() => setIsBiweeklyModalOpen(false)}
+        onApplied={() => init()}
+      />
     </ScrollView>
   );
 }
@@ -851,6 +922,73 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.md,
     paddingBottom: Spacing.xxxl * 2,
+  },
+  scheduleHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  biweeklyHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+  },
+  biweeklyCard: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+  },
+  biweeklyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  biweeklyTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  cadencePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  biweeklyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  biweeklySummary: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: Spacing.sm + 2,
+  },
+  biweeklyActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  biweeklyReviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: BorderRadius.md,
+    gap: 6,
+    flex: 1,
+  },
+  biweeklyReviewBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   sectionHeading: {
     fontSize: 11,

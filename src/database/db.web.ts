@@ -292,7 +292,7 @@ class WebSQLiteFallback {
     }
 
     // Handle INSERT (OR REPLACE / OR IGNORE) INTO <table> (<cols>) VALUES (...)
-    const insertMatch = cleanSql.match(/INSERT\s*(?:OR\s+REPLACE\s+|OR\s+IGNORE\s+)?INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([\s\S]+?)\)$/i);
+    const insertMatch = cleanSql.match(/INSERT\s*(?:OR\s+REPLACE\s+|OR\s+IGNORE\s+)?INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([\s\S]+?)\)(?:\s+ON\s+CONFLICT.*)?$/i);
     if (insertMatch) {
       const table = insertMatch[1];
       const cols = insertMatch[2].split(',').map((c) => c.trim());
