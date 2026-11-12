@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -20,6 +21,7 @@ import { Exercise } from '@/types/database';
 import { WorkoutRepository } from '@/database/repositories/workoutRepository';
 import { ExerciseVisualGuide } from './ExerciseVisualGuide';
 import { getExerciseStretching } from '@/constants/exerciseStretching';
+import { getExerciseVideoUrl } from '@/constants/exerciseMedia';
 
 interface ExerciseDetailModalProps {
   exercise: Exercise | null;
@@ -32,6 +34,14 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 }) => {
   const { colors, isDark } = useAppTheme();
   const [stretchTab, setStretchTab] = useState<'pre' | 'post'>('pre');
+
+  const handleOpenVideo = () => {
+    if (!exercise) return;
+    const url = exercise.video_url || getExerciseVideoUrl(exercise.id, exercise.name);
+    Linking.openURL(url).catch((err) => {
+      console.warn('Failed to open YouTube video link:', err);
+    });
+  };
 
   const lastPerf = useMemo(() => {
     if (!exercise) return null;
@@ -66,9 +76,19 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.title, { color: colors.text }]}>{exercise.name}</Text>
-              <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                {exercise.category} • {exercise.equipment}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                  {exercise.category} • {exercise.equipment}
+                </Text>
+                {exercise.exercise_group ? (
+                  <View style={[styles.groupBadge, { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.2)' : '#F3E8FF' }]}>
+                    <Ionicons name="ribbon-outline" size={11} color={isDark ? '#D8B4FE' : '#7E22CE'} />
+                    <Text style={[styles.groupBadgeText, { color: isDark ? '#D8B4FE' : '#7E22CE' }]}>
+                      {exercise.exercise_group.toUpperCase()}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
             <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.cardBorder }]}>
               <Ionicons name="close" size={20} color={colors.text} />
@@ -81,6 +101,16 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
               exerciseId={exercise.id}
               exerciseName={exercise.name}
             />
+
+            {/* YouTube Video Tutorial Button */}
+            <TouchableOpacity
+              style={[styles.videoBtn, { backgroundColor: isDark ? '#B91C1C' : '#DC2626' }]}
+              onPress={handleOpenVideo}
+              activeOpacity={0.85}>
+              <Ionicons name="logo-youtube" size={18} color="#FFFFFF" />
+              <Text style={styles.videoBtnText}>Watch Video Tutorial on YouTube</Text>
+              <Ionicons name="open-outline" size={15} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
 
             {/* Quick Metrics */}
             <View style={[styles.metricsRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC' }]}>
@@ -655,6 +685,40 @@ const styles = StyleSheet.create({
   doneBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  groupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+  },
+  groupBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  videoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: BorderRadius.md,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  videoBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
   },
 });

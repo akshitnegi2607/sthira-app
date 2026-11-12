@@ -101,6 +101,17 @@ export function runMigrations() {
     );
   }
 
+  // 3c. Safe column migrations for Exercises and WorkoutPlans
+  try {
+    db.runSync('ALTER TABLE Exercises ADD COLUMN exercise_group TEXT');
+  } catch (_e) {}
+  try {
+    db.runSync('ALTER TABLE Exercises ADD COLUMN video_url TEXT');
+  } catch (_e) {}
+  try {
+    db.runSync("ALTER TABLE WorkoutPlans ADD COLUMN program_group TEXT DEFAULT 'sthira'");
+  } catch (_e) {}
+
   // 4. Seed and sync exercises
   const now = new Date().toISOString();
   for (const ex of INITIAL_EXERCISES) {
@@ -110,8 +121,9 @@ export function runMigrations() {
         equipment, difficulty_level, target_sets, target_rep_range,
         rest_seconds, instructions, common_mistakes, substitutions,
         starting_weight_kg, last_weight_kg, current_recommended_weight_kg,
+        exercise_group, video_url,
         is_custom, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
       [
         ex.id,
         ex.name,
@@ -129,6 +141,8 @@ export function runMigrations() {
         ex.starting_weight_kg ?? null,
         ex.last_weight_kg ?? null,
         ex.current_recommended_weight_kg ?? null,
+        (ex as any).exercise_group ?? null,
+        (ex as any).video_url ?? null,
         now,
       ]
     );
@@ -138,9 +152,9 @@ export function runMigrations() {
   for (const plan of INITIAL_WORKOUT_PLANS) {
     db.runSync(
       `INSERT OR REPLACE INTO WorkoutPlans (
-        id, name, day_of_week, description, is_active, created_at
-      ) VALUES (?, ?, ?, ?, 1, ?)`,
-      [plan.id, plan.name, plan.day_of_week, plan.description, now]
+        id, name, day_of_week, description, program_group, is_active, created_at
+      ) VALUES (?, ?, ?, ?, ?, 1, ?)`,
+      [plan.id, plan.name, plan.day_of_week, plan.description, (plan as any).program_group || 'sthira', now]
     );
   }
 

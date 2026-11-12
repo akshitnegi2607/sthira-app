@@ -153,6 +153,8 @@ export interface Exercise {
   starting_weight_kg?: number | null;
   last_weight_kg?: number | null;
   current_recommended_weight_kg?: number | null;
+  exercise_group?: string | null;
+  video_url?: string | null;
   is_custom: number;
   created_at: string;
 }
@@ -162,6 +164,7 @@ export interface WorkoutPlan {
   name: string;
   day_of_week?: number | null; // 0=Sun, 1=Mon, etc.
   description?: string | null;
+  program_group?: 'sthira' | 'trainer' | string | null;
   is_active: number;
   created_at: string;
 }

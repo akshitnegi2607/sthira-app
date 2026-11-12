@@ -21,6 +21,7 @@ interface WorkoutStoreState {
   plans: WorkoutPlan[];
   exercises: Exercise[];
   todayPlan: WorkoutPlan | null;
+  activeProgram: 'trainer' | 'sthira';
   history: PopulatedSession[];
   recentPain: PainEntry[];
   isLoading: boolean;
@@ -52,6 +53,7 @@ interface WorkoutStoreState {
   // Actions
   init: () => void;
   loadData: () => void;
+  setActiveProgram: (program: 'trainer' | 'sthira') => void;
   startWorkout: (planId?: string | null, title?: string, dateStr?: string) => PopulatedSession;
   switchTodayPlan: (plan: WorkoutPlan) => void;
   pauseTimer: () => void;
@@ -112,6 +114,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
   plans: [],
   exercises: [],
   todayPlan: null,
+  activeProgram: 'trainer',
   history: [],
   recentPain: [],
   isLoading: true,
@@ -143,9 +146,10 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
 
   loadData: () => {
     try {
+      const activeProgram = WorkoutRepository.getActiveProgramGroup();
       const plans = WorkoutRepository.getAllPlans();
       const exercises = WorkoutRepository.getAllExercises();
-      const todayPlan = WorkoutRepository.getTodayPlan();
+      const todayPlan = WorkoutRepository.getTodayPlan(activeProgram);
       const history = WorkoutRepository.getCompletedHistoryWithDetails(20);
       const recentPain = WorkoutRepository.getRecentPainEntries(14);
       let activeSession = WorkoutRepository.getActiveSession();
@@ -176,6 +180,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
         plans,
         exercises,
         todayPlan,
+        activeProgram,
         history,
         recentPain,
         activeSession,
@@ -191,6 +196,15 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       console.warn('Error loading workout data:', e);
       set({ isLoading: false });
     }
+  },
+
+  setActiveProgram: (prog: 'trainer' | 'sthira') => {
+    WorkoutRepository.setActiveProgramGroup(prog);
+    const todayPlan = WorkoutRepository.getTodayPlan(prog);
+    set({ activeProgram: prog, todayPlan });
+    try {
+      useDashboardStore.getState().loadDashboard();
+    } catch (_e) {}
   },
 
   startWorkout: (planId, title, dateStr) => {

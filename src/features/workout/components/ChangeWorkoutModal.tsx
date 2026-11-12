@@ -53,6 +53,20 @@ export const ChangeWorkoutModal: React.FC<ChangeWorkoutModalProps> = ({
     return plans.find((p) => p.day_of_week === yesterdayDayNumber) || null;
   }, [plans, yesterdayDayNumber]);
 
+  const [programFilter, setProgramFilter] = useState<'all' | 'trainer' | 'sthira'>('all');
+
+  const filteredPlans = useMemo(() => {
+    if (programFilter === 'trainer') {
+      return plans.filter(
+        (p) => p.program_group === 'trainer' || (typeof p.day_of_week === 'number' && [0, 2, 6].includes(p.day_of_week))
+      );
+    }
+    if (programFilter === 'sthira') {
+      return plans.filter((p) => p.program_group === 'sthira' || !p.program_group);
+    }
+    return plans;
+  }, [plans, programFilter]);
+
   if (!visible) return null;
 
   const handleSelectPlan = (plan: WorkoutPlan, mode: 'start' | 'assign') => {
@@ -208,11 +222,52 @@ export const ChangeWorkoutModal: React.FC<ChangeWorkoutModalProps> = ({
               SELECT ANY ROUTINE TO START OR ASSIGN
             </Text>
 
-            {plans.map((plan) => {
+            {/* Routine Group Filter Tabs */}
+            <View style={styles.filterTabsRow}>
+              <TouchableOpacity
+                style={[
+                  styles.filterTab,
+                  programFilter === 'all' && { backgroundColor: colors.accent, borderColor: colors.accent },
+                  programFilter !== 'all' && { backgroundColor: colors.cardElevated, borderColor: colors.cardBorder },
+                ]}
+                onPress={() => setProgramFilter('all')}>
+                <Text style={[styles.filterTabText, { color: programFilter === 'all' ? '#FFFFFF' : colors.text }]}>
+                  All ({plans.length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.filterTab,
+                  programFilter === 'trainer' && { backgroundColor: isDark ? '#7E22CE' : '#9333EA', borderColor: '#9333EA' },
+                  programFilter !== 'trainer' && { backgroundColor: colors.cardElevated, borderColor: colors.cardBorder },
+                ]}
+                onPress={() => setProgramFilter('trainer')}>
+                <Ionicons name="ribbon" size={12} color={programFilter === 'trainer' ? '#FFFFFF' : '#9333EA'} />
+                <Text style={[styles.filterTabText, { color: programFilter === 'trainer' ? '#FFFFFF' : colors.text }]}>
+                  Personal Trainer
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.filterTab,
+                  programFilter === 'sthira' && { backgroundColor: colors.accent, borderColor: colors.accent },
+                  programFilter !== 'sthira' && { backgroundColor: colors.cardElevated, borderColor: colors.cardBorder },
+                ]}
+                onPress={() => setProgramFilter('sthira')}>
+                <Text style={[styles.filterTabText, { color: programFilter === 'sthira' ? '#FFFFFF' : colors.text }]}>
+                  Sthira Core
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {filteredPlans.map((plan) => {
               const isCurrentToday = todayPlan?.id === plan.id;
               const isRest = plan.name.toLowerCase().includes('rest');
               const isYoga = plan.name.toLowerCase().includes('yoga');
               const isSwim = plan.name.toLowerCase().includes('swim');
+              const isTrainer = plan.program_group === 'trainer';
 
               return (
                 <View
@@ -221,11 +276,11 @@ export const ChangeWorkoutModal: React.FC<ChangeWorkoutModalProps> = ({
                     styles.planCard,
                     {
                       backgroundColor: colors.cardElevated,
-                      borderColor: isCurrentToday ? colors.accent : colors.cardBorder,
+                      borderColor: isCurrentToday ? colors.accent : isTrainer ? 'rgba(168, 85, 247, 0.4)' : colors.cardBorder,
                     },
                   ]}>
                   <View style={styles.planCardHeader}>
-                    <View style={styles.planIconPill}>
+                    <View style={[styles.planIconPill, isTrainer && { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : '#F3E8FF' }]}>
                       <Ionicons
                         name={
                           isRest
@@ -237,12 +292,18 @@ export const ChangeWorkoutModal: React.FC<ChangeWorkoutModalProps> = ({
                             : 'barbell-outline'
                         }
                         size={17}
-                        color={isCurrentToday ? colors.accent : colors.text}
+                        color={isCurrentToday ? colors.accent : isTrainer ? '#9333EA' : colors.text}
                       />
                     </View>
                     <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <Text style={[styles.planName, { color: colors.text }]}>{plan.name}</Text>
+                        {isTrainer && (
+                          <View style={[styles.trainerTag, { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.2)' : '#F3E8FF' }]}>
+                            <Ionicons name="ribbon-outline" size={10} color={isDark ? '#D8B4FE' : '#7E22CE'} />
+                            <Text style={[styles.trainerTagText, { color: isDark ? '#D8B4FE' : '#7E22CE' }]}>PT HUB</Text>
+                          </View>
+                        )}
                         {isCurrentToday && (
                           <View style={[styles.activeTag, { backgroundColor: colors.accent }]}>
                             <Text style={styles.activeTagText}>CURRENT TODAY</Text>
@@ -522,5 +583,37 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: Spacing.md,
     marginBottom: Spacing.xl,
+  },
+  filterTabsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: Spacing.md,
+    marginTop: Spacing.xs,
+  },
+  filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  filterTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  trainerTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: BorderRadius.full,
+  },
+  trainerTagText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

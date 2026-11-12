@@ -15,6 +15,7 @@ import {
   TextInput,
   Alert,
   SafeAreaView,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -31,6 +32,7 @@ import { getAssociatedBodyArea } from '@/services/exerciseSubstitution';
 import { PopulatedWorkoutExercise, WorkoutRepository } from '@/database/repositories/workoutRepository';
 import { Exercise, WorkoutSet } from '@/types/database';
 import { showAlert } from '@/utils/alert';
+import { getExerciseVideoUrl } from '@/constants/exerciseMedia';
 
 export const ActiveWorkoutModal: React.FC = () => {
   const { colors, isDark } = useAppTheme();
@@ -700,6 +702,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <Ionicons name="videocam" size={13} color={colors.protein} />
             <Text style={[styles.gifPillText, { color: colors.protein }]}>Form GIF</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.ytPillBtn,
+              {
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.18)' : 'rgba(220, 38, 38, 0.1)',
+                borderColor: '#DC2626',
+              },
+            ]}
+            onPress={() => {
+              const url = ex.video_url || getExerciseVideoUrl(ex.id, ex.name);
+              Linking.openURL(url).catch((err) => console.warn('Failed to open video:', err));
+            }}
+            activeOpacity={0.7}>
+            <Ionicons name="logo-youtube" size={12} color="#DC2626" />
+            <Text style={[styles.ytPillText, { color: '#DC2626' }]}>Video</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionIconBtn, { backgroundColor: colors.cardBorder }]}
             onPress={onSwap}
@@ -1249,6 +1268,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   gifPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  ytPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  ytPillText: {
     fontSize: 11,
     fontWeight: '700',
   },

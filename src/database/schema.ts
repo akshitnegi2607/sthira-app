@@ -166,6 +166,8 @@ CREATE TABLE IF NOT EXISTS Exercises (
   starting_weight_kg REAL,
   last_weight_kg REAL,
   current_recommended_weight_kg REAL,
+  exercise_group TEXT,
+  video_url TEXT,
   is_custom INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
@@ -176,6 +178,7 @@ CREATE TABLE IF NOT EXISTS WorkoutPlans (
   name TEXT NOT NULL,
   day_of_week INTEGER,
   description TEXT,
+  program_group TEXT DEFAULT 'sthira',
   is_active INTEGER DEFAULT 1,
   created_at TEXT NOT NULL
 );

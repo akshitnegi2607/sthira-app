@@ -14,6 +14,7 @@ export interface ExerciseMediaInfo {
   formCues: string[];
   beginnerTips: string;
   targetFocus: string;
+  videoUrl?: string;
 }
 
 export const EXERCISE_MEDIA_REGISTRY: Record<string, ExerciseMediaInfo> = {
@@ -31,7 +32,8 @@ export const EXERCISE_MEDIA_REGISTRY: Record<string, ExerciseMediaInfo> = {
       'Control the 2-second return until you feel a comfortable stretch in your pecs.'
     ],
     beginnerTips: 'Avoid shrugging shoulders up toward your ears. Keep feet flat on the floor for stability.',
-    targetFocus: 'Pectoralis Major & Front Deltoids'
+    targetFocus: 'Pectoralis Major & Front Deltoids',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Machine+Chest+Press'
   },
   ex_lat_pulldown: {
     exerciseId: 'ex_lat_pulldown',
@@ -95,7 +97,8 @@ export const EXERCISE_MEDIA_REGISTRY: Record<string, ExerciseMediaInfo> = {
       'Lower weights smoothly over 2 seconds; do not drop them.'
     ],
     beginnerTips: 'Use lighter weights with clean form. Bouncing with hips robs the side delts of the stimulus.',
-    targetFocus: 'Side Delts (Shoulder Width)'
+    targetFocus: 'Side Delts (Shoulder Width)',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Lateral+Raises'
   },
   ex_triceps_pushdown: {
     exerciseId: 'ex_triceps_pushdown',
@@ -223,7 +226,8 @@ export const EXERCISE_MEDIA_REGISTRY: Record<string, ExerciseMediaInfo> = {
       'Maintain steady breathing without holding your breath.'
     ],
     beginnerTips: 'Never allow hips to sag downward, which stresses lower back. If fatigued, drop knees down for modified hold.',
-    targetFocus: 'Transverse Abdominis & Deep Core Stability'
+    targetFocus: 'Transverse Abdominis & Deep Core Stability',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Plank'
   },
   ex_incline_chest_press: {
     exerciseId: 'ex_incline_chest_press',
@@ -506,6 +510,243 @@ export const EXERCISE_MEDIA_REGISTRY: Record<string, ExerciseMediaInfo> = {
     ],
     beginnerTips: 'Keep hips glued to the pad. Do not hyperextend your lower back to lift.',
     targetFocus: 'Hamstrings (Knee Flexion)'
+  },
+  ex_leverage_shoulder_press: {
+    exerciseId: 'ex_leverage_shoulder_press',
+    exerciseName: 'Leverage Shoulder Press',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0579.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Shoulder_Press/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Shoulder_Press/1.jpg',
+    tempo: '2-0-1-0 (2s lowering, 1s press)',
+    formCues: [
+      'Adjust seat so handles are at ear or chin height.',
+      'Pin upper back firmly against the seat backrest.',
+      'Press handles overhead in a smooth converging arc without locking elbows violently.',
+      'Lower smoothly over 2 seconds under complete control.'
+    ],
+    beginnerTips: 'Keep elbows angled slightly forward in the scapular plane rather than flaring out 90°.',
+    targetFocus: 'Anterior & Lateral Deltoids, Triceps',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Leverage+Shoulder+Press'
+  },
+  ex_wide_grip_lat_pulldown: {
+    exerciseId: 'ex_wide_grip_lat_pulldown',
+    exerciseName: 'Wide Grip Lat Pulldown',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/2330.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/1.jpg',
+    tempo: '2-1-1-0 (2s return, 1s squeeze)',
+    formCues: [
+      'Take a comfortable wide overhand grip on the bar.',
+      'Lean back slightly (10–15°) and drive your elbows down towards your hips.',
+      'Bring the bar down to touch your upper chest / collarbone.',
+      'Control the ascent smoothly with a full lat stretch at the top.'
+    ],
+    beginnerTips: 'Initiate the movement by depressing your shoulder blades, not pulling with your forearms.',
+    targetFocus: 'Latissimus Dorsi (V-Taper) & Biceps',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Wide+Grip+Lat+Pulldown'
+  },
+  ex_db_shrugs: {
+    exerciseId: 'ex_db_shrugs',
+    exerciseName: 'Dumbbell Shrugs',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0411.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shrug/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shrug/1.jpg',
+    tempo: '2-1-1-1 (2s descent, 1s top squeeze)',
+    formCues: [
+      'Stand upright holding dumbbells at your sides with neutral grip.',
+      'Elevate shoulders straight up towards your ears with arms straight.',
+      'Hold the peak contraction at the top for 1 full second.',
+      'Lower dumbbells slowly to the starting position.'
+    ],
+    beginnerTips: 'Do not roll your shoulders backward or forward; move strictly straight up and down.',
+    targetFocus: 'Upper Trapezius',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Dumbbell+Shrugs'
+  },
+  ex_alt_hammer_curl: {
+    exerciseId: 'ex_alt_hammer_curl',
+    exerciseName: 'Standing Alternate Hammer Curl',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0285.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternate_Hammer_Curl/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternate_Hammer_Curl/1.jpg',
+    tempo: '2-0-1-0 (2s lowering, 1s curl)',
+    formCues: [
+      'Hold dumbbells with palms facing each other (neutral grip).',
+      'Pin elbows beside your torso and curl one dumbbell up toward your front shoulder.',
+      'Squeeze the brachialis at the top, then lower with control.',
+      'Alternate arms rhythmically without using torso swing.'
+    ],
+    beginnerTips: 'Keeping thumbs pointing up builds the brachialis muscle under the biceps for arm thickness.',
+    targetFocus: 'Brachialis, Biceps & Forearms',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Hammer+Curl'
+  },
+  ex_cable_pushdown_bar: {
+    exerciseId: 'ex_cable_pushdown_bar',
+    exerciseName: 'Cable Pushdown – Bar Attachment',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0241.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Pushdown/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Pushdown/1.jpg',
+    tempo: '2-0-1-1 (2s return, 1s lockout squeeze)',
+    formCues: [
+      'Grip the straight or angled bar attachment with overhand grip.',
+      'Pin your elbows against your sides and lean forward very slightly at hips.',
+      'Push the bar down until arms are completely extended and triceps are contracted.',
+      'Resist the cable weight back up to chest height.'
+    ],
+    beginnerTips: 'Do not let your elbows drift forward and backward; keep them anchored like hinges.',
+    targetFocus: 'Triceps Brachii (Lateral & Medial Heads)',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Cable+Pushdown'
+  },
+  ex_toe_touches: {
+    exerciseId: 'ex_toe_touches',
+    exerciseName: 'Toe Touches',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0819.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Toe_Touchers/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Toe_Touchers/1.jpg',
+    tempo: '1-1-1-0 (1s reach, 1s hold)',
+    formCues: [
+      'Lie flat on back with legs raised vertically toward ceiling.',
+      'Reach arms up towards your toes by flexing your upper abs.',
+      'Lift your shoulder blades off the floor and squeeze core.',
+      'Lower shoulders smoothly back to the floor.'
+    ],
+    beginnerTips: 'Press lower back into the mat and avoid straining the neck; reach with your abdominal muscles.',
+    targetFocus: 'Rectus Abdominis (Upper Abs)',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Toe+Touches'
+  },
+  ex_bicycle_crunches: {
+    exerciseId: 'ex_bicycle_crunches',
+    exerciseName: 'Bicycle Crunches',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0276.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycle_Crunch/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycle_Crunch/1.jpg',
+    tempo: '1-1-1-0 (Controlled rotation)',
+    formCues: [
+      'Lie on back with hands lightly touching back of head, legs elevated.',
+      'Bring right elbow towards left knee while straightening right leg out.',
+      'Rotate across torso, engaging obliques on each side.',
+      'Switch sides in a smooth, continuous pedaling motion.'
+    ],
+    beginnerTips: 'Rotate from your ribcage and shoulders, do not yank your head or neck forward.',
+    targetFocus: 'Obliques & Rectus Abdominis',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Bicycle+Crunch'
+  },
+  ex_cardio_15m: {
+    exerciseId: 'ex_cardio_15m',
+    exerciseName: 'Cardio: 15 Minutes',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/3637.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Treadmill_Running/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Treadmill_Running/1.jpg',
+    tempo: 'Steady Zone 2 aerobic',
+    formCues: [
+      'Maintain steady pace on treadmill, cycle, or elliptical.',
+      'Keep posture upright and spine neutral.',
+      'Breathe steadily through nose and mouth at conversational intensity.'
+    ],
+    beginnerTips: 'Keep intensity at Zone 2 (~60–70% max heart rate) to enhance cardiovascular recovery without draining muscle hypertrophy.',
+    targetFocus: 'Aerobic Capacity & Heart Health',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Cardio'
+  },
+  ex_underhand_cable_pulldown: {
+    exerciseId: 'ex_underhand_cable_pulldown',
+    exerciseName: 'Underhand Cable Pulldown',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0863.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Underhand_Cable_Pulldowns/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Underhand_Cable_Pulldowns/1.jpg',
+    tempo: '2-1-1-0 (2s return, 1s squeeze)',
+    formCues: [
+      'Grip the pulldown bar with an underhand (supinated) grip at shoulder width.',
+      'Pull bar down smoothly towards upper chest while leaning back 10–15°.',
+      'Drive elbows down and back, tightly squeezing lower lats and biceps.',
+      'Allow bar to return under control for a deep upper back stretch.'
+    ],
+    beginnerTips: 'The underhand grip places lats in a mechanically strong position and heavily recruits biceps.',
+    targetFocus: 'Lower Lats, Biceps & Middle Back',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Underhand+Lat+Pulldown'
+  },
+  ex_pec_deck: {
+    exerciseId: 'ex_pec_deck',
+    exerciseName: 'Pec Deck',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0171.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/1.jpg',
+    tempo: '2-1-1-0 (2s opening, 1s squeeze)',
+    formCues: [
+      'Adjust seat so handles or pads align with mid-chest level.',
+      'Bring arms together in front of your chest in a hugging motion.',
+      'Squeeze chest muscles hard at peak contraction for 1 second.',
+      'Open arms back smoothly until you feel a comfortable stretch in your pecs.'
+    ],
+    beginnerTips: 'Keep a slight bend in your elbows and do not allow the arms to travel too far behind your torso.',
+    targetFocus: 'Pectoralis Major (Chest Squeeze)',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Pec+Deck'
+  },
+  ex_rear_delt_machine_flyes: {
+    exerciseId: 'ex_rear_delt_machine_flyes',
+    exerciseName: 'Rear Delt Machine Flyes',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0726.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rear_Delt_Machine_Flyes/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rear_Delt_Machine_Flyes/1.jpg',
+    tempo: '2-1-1-0 (2s return, 1s squeeze)',
+    formCues: [
+      'Sit facing the machine pad with chest firmly supported.',
+      'Grip handles with arms nearly straight and elbows slightly bent.',
+      'Pull handles back in a horizontal arc, squeezing rear shoulders and upper back.',
+      'Control the return without letting weight plates slam.'
+    ],
+    beginnerTips: 'Focus on leading with your elbows and pinching rear delts, avoiding heavy shrugging.',
+    targetFocus: 'Rear Deltoids & Rhomboids',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Rear+Delt+Fly'
+  },
+  ex_cable_curls: {
+    exerciseId: 'ex_cable_curls',
+    exerciseName: 'Cable Curls',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0163.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Curl/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Curl/1.jpg',
+    tempo: '2-0-1-0 (2s lowering, 1s curl)',
+    formCues: [
+      'Attach straight or EZ bar to low pulley of cable station.',
+      'Stand tall, keeping elbows tucked close to your torso.',
+      'Curl the bar upwards towards your shoulders and squeeze biceps.',
+      'Lower the bar slowly under constant cable tension.'
+    ],
+    beginnerTips: 'Keep your elbows stationary at your sides to keep tension exclusively on the biceps.',
+    targetFocus: 'Biceps Brachii',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Cable+Curls'
+  },
+  ex_overhead_tricep_extension: {
+    exerciseId: 'ex_overhead_tricep_extension',
+    exerciseName: 'Overhead Tricep Extension',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/0239.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Triceps_Extension/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Triceps_Extension/1.jpg',
+    tempo: '2-0-1-0 (2s descent, 1s extension)',
+    formCues: [
+      'Hold dumbbell or cable rope attachment overhead with arms extended vertically.',
+      'Keep upper arms close to ears and elbows pointing forward.',
+      'Lower weight behind head until you feel a deep stretch in triceps.',
+      'Press weight back up overhead to full extension.'
+    ],
+    beginnerTips: 'The overhead position places maximum stretch on the long head of the triceps for full arm development.',
+    targetFocus: 'Triceps Brachii (Long Head)',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Overhead+Tricep+Extension'
+  },
+  ex_incline_treadmill_walking: {
+    exerciseId: 'ex_incline_treadmill_walking',
+    exerciseName: 'Incline Treadmill Walking',
+    gifUrl: 'https://cdn.jsdelivr.net/gh/omercotkd/exercises-gifs@main/assets/3637.gif',
+    step0Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Treadmill_Running/0.jpg',
+    step1Url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Treadmill_Running/1.jpg',
+    tempo: 'Steady continuous walk',
+    formCues: [
+      'Set incline to 8–12% and walking speed to 4.5–5.5 km/h.',
+      'Walk with tall posture, engaging core and swinging arms freely.',
+      'Push through the full foot from heel to toe to activate posterior chain.',
+      'Do not grip or lean heavily onto the front handrails.'
+    ],
+    beginnerTips: 'Walking uphill hands-free substantially elevates posterior chain activation (glutes and calves) while sparing joint impact.',
+    targetFocus: 'Glutes, Hamstrings, Calves & Aerobic Conditioning',
+    videoUrl: 'https://www.youtube.com/results?search_query=My+PT+Hub+Incline+Walking'
   }
 };
 
@@ -548,7 +789,10 @@ export function getExerciseMedia(exerciseId: string, exerciseName?: string): Exe
   if (name.includes('incline') && (name.includes('chest') || name.includes('press'))) {
     return EXERCISE_MEDIA_REGISTRY.ex_incline_chest_press;
   }
-  if (name.includes('fly') || name.includes('pec deck') || name.includes('butterfly')) {
+  if (name.includes('pec deck')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_pec_deck;
+  }
+  if (name.includes('fly') || name.includes('butterfly')) {
     return EXERCISE_MEDIA_REGISTRY.ex_dumbbell_fly;
   }
   if (name.includes('push-up') || name.includes('pushup')) {
@@ -559,6 +803,12 @@ export function getExerciseMedia(exerciseId: string, exerciseName?: string): Exe
   }
 
   // Back exercises
+  if (name.includes('underhand') && (name.includes('lat') || name.includes('pulldown') || name.includes('cable'))) {
+    return EXERCISE_MEDIA_REGISTRY.ex_underhand_cable_pulldown;
+  }
+  if (name.includes('wide grip') && name.includes('pulldown')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_wide_grip_lat_pulldown;
+  }
   if (name.includes('lat') || name.includes('pulldown') || name.includes('pull-up') || name.includes('pullup')) {
     return EXERCISE_MEDIA_REGISTRY.ex_lat_pulldown;
   }
@@ -568,13 +818,22 @@ export function getExerciseMedia(exerciseId: string, exerciseName?: string): Exe
   if (name.includes('row')) {
     return EXERCISE_MEDIA_REGISTRY.ex_seated_cable_row;
   }
+  if (name.includes('shrug')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_db_shrugs;
+  }
 
   // Shoulder exercises
+  if (name.includes('rear delt')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_rear_delt_machine_flyes;
+  }
   if (name.includes('cable lateral')) {
     return EXERCISE_MEDIA_REGISTRY.ex_cable_lateral_raise;
   }
   if (name.includes('lateral') || name.includes('side raise')) {
     return EXERCISE_MEDIA_REGISTRY.ex_db_lateral_raise;
+  }
+  if (name.includes('leverage') && (name.includes('shoulder') || name.includes('press'))) {
+    return EXERCISE_MEDIA_REGISTRY.ex_leverage_shoulder_press;
   }
   if (name.includes('machine shoulder') || name.includes('seated machine press')) {
     return EXERCISE_MEDIA_REGISTRY.ex_machine_shoulder_press;
@@ -584,11 +843,23 @@ export function getExerciseMedia(exerciseId: string, exerciseName?: string): Exe
   }
 
   // Arm exercises
+  if (name.includes('alt') && name.includes('hammer')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_alt_hammer_curl;
+  }
   if (name.includes('hammer')) {
     return EXERCISE_MEDIA_REGISTRY.ex_hammer_curl;
   }
   if (name.includes('incline') && name.includes('curl')) {
     return EXERCISE_MEDIA_REGISTRY.ex_incline_db_curl;
+  }
+  if (name.includes('cable curl')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_cable_curls;
+  }
+  if (name.includes('overhead') && (name.includes('tricep') || name.includes('extension'))) {
+    return EXERCISE_MEDIA_REGISTRY.ex_overhead_tricep_extension;
+  }
+  if (name.includes('pushdown') && (name.includes('bar') || name.includes('straight'))) {
+    return EXERCISE_MEDIA_REGISTRY.ex_cable_pushdown_bar;
   }
   if (name.includes('tricep') || name.includes('pushdown')) {
     return EXERCISE_MEDIA_REGISTRY.ex_triceps_pushdown;
@@ -629,7 +900,21 @@ export function getExerciseMedia(exerciseId: string, exerciseName?: string): Exe
     return EXERCISE_MEDIA_REGISTRY.ex_leg_press;
   }
 
+  // Cardio / Treadmill
+  if (name.includes('incline') && (name.includes('walk') || name.includes('treadmill'))) {
+    return EXERCISE_MEDIA_REGISTRY.ex_incline_treadmill_walking;
+  }
+  if (name.includes('cardio') || name.includes('treadmill') || name.includes('aerobic')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_cardio_15m;
+  }
+
   // Core & Plank
+  if (name.includes('toe touch')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_toe_touches;
+  }
+  if (name.includes('bicycle')) {
+    return EXERCISE_MEDIA_REGISTRY.ex_bicycle_crunches;
+  }
   if (name.includes('core') || name.includes('ab') || name.includes('plank')) {
     return EXERCISE_MEDIA_REGISTRY.ex_plank_core;
   }
@@ -637,4 +922,20 @@ export function getExerciseMedia(exerciseId: string, exerciseName?: string): Exe
   // Default fallback
   return EXERCISE_MEDIA_REGISTRY.ex_chest_press_machine;
 }
+
+/**
+ * Resolves external YouTube video tutorial URL for an exercise.
+ * Formatted to launch official My PT Hub tutorial search:
+ * https://www.youtube.com/results?search_query=My+PT+Hub+<Exercise+Name>
+ */
+export function getExerciseVideoUrl(exerciseId: string, exerciseName?: string): string {
+  if (EXERCISE_MEDIA_REGISTRY[exerciseId]?.videoUrl) {
+    return EXERCISE_MEDIA_REGISTRY[exerciseId].videoUrl!;
+  }
+  const name = exerciseName || EXERCISE_MEDIA_REGISTRY[exerciseId]?.exerciseName || exerciseId;
+  const cleanName = name.replace(/^ex_/, '').replace(/_/g, ' ');
+  const query = encodeURIComponent(`My PT Hub ${cleanName}`);
+  return `https://www.youtube.com/results?search_query=${query}`;
+}
+
 

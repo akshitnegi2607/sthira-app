@@ -52,10 +52,16 @@ export interface ExerciseLastPerformance {
 
 export const WorkoutRepository = {
   /**
-   * Retrieves all exercises from database.
+   * Retrieves all exercises from database, optionally filtered by exercise group.
    */
-  getAllExercises(): Exercise[] {
+  getAllExercises(group?: string): Exercise[] {
     const db = getDatabase();
+    if (group && group !== 'All') {
+      return db.getAllSync<Exercise>(
+        'SELECT * FROM Exercises WHERE exercise_group = ? ORDER BY category ASC, name ASC',
+        [group]
+      );
+    }
     return db.getAllSync<Exercise>('SELECT * FROM Exercises ORDER BY category ASC, name ASC');
   },
 
@@ -233,23 +239,82 @@ export const WorkoutRepository = {
   },
 
   /**
-   * Retrieves all workout plans.
+   * Retrieves the active workout program group ('trainer' or 'sthira').
    */
-  getAllPlans(): WorkoutPlan[] {
+  getActiveProgramGroup(): 'trainer' | 'sthira' {
     const db = getDatabase();
-    return db.getAllSync<WorkoutPlan>('SELECT * FROM WorkoutPlans ORDER BY day_of_week ASC');
+    try {
+      const row = db.getFirstSync<{ value: string }>(
+        "SELECT value FROM AppSettings WHERE key = 'active_program_group' LIMIT 1"
+      );
+      if (row && (row.value === 'trainer' || row.value === 'sthira')) {
+        return row.value as 'trainer' | 'sthira';
+      }
+    } catch (e) {
+      console.warn('Error reading active_program_group:', e);
+    }
+    return 'trainer'; // Default to trainer routine for Month 1
   },
 
   /**
-   * Retrieves the scheduled plan for today.
+   * Updates the active workout program group.
    */
-  getTodayPlan(): WorkoutPlan | null {
+  setActiveProgramGroup(prog: 'trainer' | 'sthira'): void {
+    const db = getDatabase();
+    const now = new Date().toISOString();
+    try {
+      db.runSync(
+        "INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES ('active_program_group', ?, ?)",
+        [prog, now]
+      );
+    } catch (e) {
+      console.warn('Error saving active_program_group:', e);
+    }
+  },
+
+  /**
+   * Retrieves all workout plans, optionally filtered by program group.
+   */
+  getAllPlans(filterProgram?: 'all' | 'trainer' | 'sthira'): WorkoutPlan[] {
+    const db = getDatabase();
+    const all = db.getAllSync<WorkoutPlan>('SELECT * FROM WorkoutPlans ORDER BY day_of_week ASC, name ASC');
+    if (!filterProgram || filterProgram === 'all') {
+      return all;
+    }
+    if (filterProgram === 'trainer') {
+      return all.filter(
+        (p) => p.program_group === 'trainer' || (typeof p.day_of_week === 'number' && [0, 2, 6].includes(p.day_of_week))
+      );
+    }
+    if (filterProgram === 'sthira') {
+      return all.filter((p) => p.program_group === 'sthira' || !p.program_group);
+    }
+    return all;
+  },
+
+  /**
+   * Retrieves the scheduled plan for today respecting the active program group.
+   */
+  getTodayPlan(preferredProgram?: 'trainer' | 'sthira'): WorkoutPlan | null {
     const db = getDatabase();
     const dayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday...
-    return db.getFirstSync<WorkoutPlan>(
-      'SELECT * FROM WorkoutPlans WHERE day_of_week = ? LIMIT 1',
-      [dayOfWeek]
-    );
+    const prog = preferredProgram || this.getActiveProgramGroup();
+    const all = db.getAllSync<WorkoutPlan>('SELECT * FROM WorkoutPlans ORDER BY day_of_week ASC');
+
+    if (prog === 'trainer') {
+      const trainerPlan = all.find(
+        (p) => p.program_group === 'trainer' && p.day_of_week === dayOfWeek
+      );
+      if (trainerPlan) return trainerPlan;
+    } else {
+      const sthiraPlan = all.find(
+        (p) => (p.program_group === 'sthira' || !p.program_group) && p.day_of_week === dayOfWeek
+      );
+      if (sthiraPlan) return sthiraPlan;
+    }
+
+    // Fallback: any plan matching today's day of week (e.g. Yoga on Tue, Swimming on Sun)
+    return all.find((p) => p.day_of_week === dayOfWeek) || null;
   },
 
   /**

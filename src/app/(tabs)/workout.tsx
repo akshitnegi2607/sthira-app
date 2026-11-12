@@ -7,7 +7,7 @@
  * - Joint pain & fatigue tracking with injury prevention warnings
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   ScrollView,
   View,
@@ -15,6 +15,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Linking,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +34,7 @@ import { analyzeBiweeklyMesocycle, BiweeklyMesocycleReview } from '@/services/me
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { WorkoutPlan, Exercise } from '@/types/database';
 import { getTodayDateString } from '@/utils/date';
+import { getExerciseVideoUrl } from '@/constants/exerciseMedia';
 
 export default function WorkoutScreen() {
   const { colors, isDark } = useAppTheme();
@@ -40,6 +42,8 @@ export default function WorkoutScreen() {
   const plans = useWorkoutStore((s) => s.plans);
   const exercises = useWorkoutStore((s) => s.exercises);
   const todayPlan = useWorkoutStore((s) => s.todayPlan);
+  const activeProgram = useWorkoutStore((s) => s.activeProgram);
+  const setActiveProgram = useWorkoutStore((s) => s.setActiveProgram);
   const history = useWorkoutStore((s) => s.history);
   const recentPain = useWorkoutStore((s) => s.recentPain);
   const isSessionActive = useWorkoutStore((s) => s.isSessionActive);
@@ -92,17 +96,32 @@ export default function WorkoutScreen() {
   };
   const todayOrder = toWeekOrder(todayDayIndex);
 
-  const categories = ['All', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
+  const categories = ['All', 'Personal Trainer', 'Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
 
   const filteredExercises = exercises.filter((ex) => {
     const matchesCategory =
-      selectedCategory === 'All' ||
-      ex.category.toLowerCase().includes(selectedCategory.toLowerCase());
+      selectedCategory === 'All'
+        ? true
+        : selectedCategory === 'Personal Trainer'
+        ? ex.exercise_group === 'Personal Trainer' || ex.name.toLowerCase().includes('trainer')
+        : ex.category.toLowerCase().includes(selectedCategory.toLowerCase());
     const matchesQuery =
+      !exerciseQuery ||
       ex.name.toLowerCase().includes(exerciseQuery.toLowerCase()) ||
-      ex.primary_muscle.toLowerCase().includes(exerciseQuery.toLowerCase());
+      ex.primary_muscle.toLowerCase().includes(exerciseQuery.toLowerCase()) ||
+      ex.category.toLowerCase().includes(exerciseQuery.toLowerCase()) ||
+      (ex.exercise_group && ex.exercise_group.toLowerCase().includes(exerciseQuery.toLowerCase()));
     return matchesCategory && matchesQuery;
   });
+
+  const schedulePlans = useMemo(() => {
+    if (activeProgram === 'trainer') {
+      return plans.filter(
+        (p) => p.program_group === 'trainer' || (typeof p.day_of_week === 'number' && [0, 2, 6].includes(p.day_of_week))
+      );
+    }
+    return plans.filter((p) => p.program_group === 'sthira' || !p.program_group);
+  }, [plans, activeProgram]);
 
   const activeDurationMinutes = Math.floor(elapsedSeconds / 60);
 
@@ -430,11 +449,70 @@ export default function WorkoutScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Routine Program Switcher */}
+      <View style={styles.programSwitchRow}>
+        <TouchableOpacity
+          style={[
+            styles.programSwitchBtn,
+            activeProgram === 'trainer' && {
+              backgroundColor: isDark ? '#7E22CE' : '#9333EA',
+              borderColor: '#9333EA',
+            },
+            activeProgram !== 'trainer' && {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+            },
+          ]}
+          onPress={() => setActiveProgram('trainer')}>
+          <Ionicons
+            name="ribbon"
+            size={13}
+            color={activeProgram === 'trainer' ? '#FFFFFF' : '#9333EA'}
+          />
+          <Text
+            style={[
+              styles.programSwitchText,
+              { color: activeProgram === 'trainer' ? '#FFFFFF' : colors.text },
+            ]}>
+            Personal Trainer Split
+          </Text>
+          {activeProgram === 'trainer' && <View style={styles.activeDot} />}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.programSwitchBtn,
+            activeProgram === 'sthira' && {
+              backgroundColor: colors.accent,
+              borderColor: colors.accent,
+            },
+            activeProgram !== 'sthira' && {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+            },
+          ]}
+          onPress={() => setActiveProgram('sthira')}>
+          <Ionicons
+            name="barbell-outline"
+            size={13}
+            color={activeProgram === 'sthira' ? '#FFFFFF' : colors.accent}
+          />
+          <Text
+            style={[
+              styles.programSwitchText,
+              { color: activeProgram === 'sthira' ? '#FFFFFF' : colors.text },
+            ]}>
+            Sthira Core Split
+          </Text>
+          {activeProgram === 'sthira' && <View style={styles.activeDot} />}
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scheduleRow}>
-        {plans.map((plan) => {
+        {schedulePlans.map((plan) => {
           const dayLabel =
             plan.day_of_week !== null && plan.day_of_week !== undefined
               ? days[plan.day_of_week]
@@ -813,7 +891,7 @@ export default function WorkoutScreen() {
         </ScrollView>
 
         {/* Exercises List */}
-        {filteredExercises.slice(0, 10).map((ex) => (
+        {filteredExercises.slice(0, 30).map((ex) => (
           <TouchableOpacity
             key={ex.id}
             activeOpacity={0.8}
@@ -821,7 +899,17 @@ export default function WorkoutScreen() {
             <Card style={styles.libCard}>
               <View style={styles.libCardHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.libExName, { color: colors.text }]}>{ex.name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={[styles.libExName, { color: colors.text }]}>{ex.name}</Text>
+                    {ex.exercise_group ? (
+                      <View style={[styles.libGroupBadge, { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.2)' : '#F3E8FF' }]}>
+                        <Ionicons name="ribbon-outline" size={10} color={isDark ? '#D8B4FE' : '#7E22CE'} />
+                        <Text style={[styles.libGroupBadgeText, { color: isDark ? '#D8B4FE' : '#7E22CE' }]}>
+                          {ex.exercise_group.toUpperCase()}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <Text style={[styles.libMuscle, { color: colors.textMuted }]}>
                     {ex.primary_muscle} • {ex.equipment}
                   </Text>
@@ -846,24 +934,44 @@ export default function WorkoutScreen() {
                     ) : null}
                   </View>
                 </View>
-                <View
-                  style={[
-                    styles.infoLink,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(56, 189, 248, 0.12)'
-                        : 'rgba(2, 132, 199, 0.08)',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 12,
-                      gap: 4,
-                    },
-                  ]}>
-                  <Ionicons name="videocam-outline" size={13} color={colors.protein} />
-                  <Text style={[styles.infoLinkText, { color: colors.protein, fontWeight: '600' }]}>
-                    Animated Form
-                  </Text>
-                  <Ionicons name="chevron-forward" size={12} color={colors.protein} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.libVideoBtn,
+                      {
+                        backgroundColor: isDark ? 'rgba(239, 68, 68, 0.18)' : 'rgba(220, 38, 38, 0.1)',
+                        borderColor: '#DC2626',
+                      },
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      const url = ex.video_url || getExerciseVideoUrl(ex.id, ex.name);
+                      Linking.openURL(url).catch((err) => console.warn('Failed to open video:', err));
+                    }}
+                    activeOpacity={0.7}>
+                    <Ionicons name="logo-youtube" size={11} color="#DC2626" />
+                    <Text style={[styles.libVideoBtnText, { color: '#DC2626' }]}>Video</Text>
+                  </TouchableOpacity>
+
+                  <View
+                    style={[
+                      styles.infoLink,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(56, 189, 248, 0.12)'
+                          : 'rgba(2, 132, 199, 0.08)',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 12,
+                        gap: 4,
+                      },
+                    ]}>
+                    <Ionicons name="videocam-outline" size={13} color={colors.protein} />
+                    <Text style={[styles.infoLinkText, { color: colors.protein, fontWeight: '600' }]}>
+                      Form
+                    </Text>
+                    <Ionicons name="chevron-forward" size={12} color={colors.protein} />
+                  </View>
                 </View>
               </View>
             </Card>
@@ -1428,5 +1536,59 @@ const styles = StyleSheet.create({
   },
   infoLinkText: {
     fontSize: 11,
+  },
+  programSwitchRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  programSwitchBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  programSwitchText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+    marginLeft: 2,
+  },
+  libGroupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: BorderRadius.full,
+  },
+  libGroupBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  libVideoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  libVideoBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
