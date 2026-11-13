@@ -9,7 +9,13 @@ import { MealRepository } from './repositories/mealRepository';
 import { DailyLogsRepository } from './repositories/dailyLogsRepository';
 import { getTodayDateString } from '../utils/date';
 
-export function runMigrations() {
+export interface SeedProfileOptions {
+  name?: string;
+  current_weight?: number;
+  target_weight?: number;
+}
+
+export function runMigrations(customProfile?: SeedProfileOptions) {
   const db = getDatabase();
 
   // 1. Create all 22 tables and indexes
@@ -21,6 +27,10 @@ export function runMigrations() {
   );
 
   if (!profileRow || profileRow.count === 0) {
+    const profileName = customProfile?.name || INITIAL_USER_PROFILE.name;
+    const currentWeight = customProfile?.current_weight ?? INITIAL_USER_PROFILE.current_weight;
+    const targetWeight = customProfile?.target_weight ?? INITIAL_USER_PROFILE.target_weight;
+
     db.runSync(
       `INSERT INTO UserProfile (
         id, name, current_weight, height, target_weight, goal_type,
@@ -30,10 +40,10 @@ export function runMigrations() {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         INITIAL_USER_PROFILE.id,
-        INITIAL_USER_PROFILE.name,
-        INITIAL_USER_PROFILE.current_weight,
+        profileName,
+        currentWeight,
         INITIAL_USER_PROFILE.height,
-        INITIAL_USER_PROFILE.target_weight,
+        targetWeight,
         INITIAL_USER_PROFILE.goal_type,
         INITIAL_USER_PROFILE.target_rate_kg_per_week,
         INITIAL_USER_PROFILE.diet_type,
@@ -94,7 +104,7 @@ export function runMigrations() {
       [
         `weight_${baselineDate}`,
         baselineDate,
-        INITIAL_USER_PROFILE.current_weight,
+        customProfile?.current_weight ?? INITIAL_USER_PROFILE.current_weight,
         'Baseline scale weight',
         new Date().toISOString(),
       ]

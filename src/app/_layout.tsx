@@ -5,8 +5,11 @@ import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { runMigrations } from '@/database/migrations';
+import { setActiveDatabase } from '@/database/db';
 import { useProfileStore } from '@/stores/useProfileStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { LoginScreen } from '@/features/auth/components/LoginScreen';
 import { useAppTheme } from '@/hooks/use-theme';
 import { NarayanaEntryScreen } from '@/components/ui/NarayanaEntryScreen';
 import { NarayanaAppBackground } from '@/components/ui/NarayanaAppBackground';
@@ -19,16 +22,32 @@ export default function RootLayout() {
   const { colors, isDark } = useAppTheme();
   const [dbReady, setDbReady] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
+
+  const initAuth = useAuthStore((s) => s.initAuth);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const loadProfile = useProfileStore((s) => s.loadProfile);
   const loadDashboard = useDashboardStore((s) => s.loadDashboard);
 
   useEffect(() => {
     async function prepare() {
       try {
-        // Run SQLite migrations & initial data seeding
-        runMigrations();
-        loadProfile();
-        loadDashboard();
+        // Initialize multi-user authentication & mount active user database
+        initAuth();
+        const active = useAuthStore.getState().activeAccount;
+
+        if (active) {
+          setActiveDatabase(active.dbName, active.webStorageKey);
+          runMigrations({
+            name: active.displayName,
+            current_weight: active.initialWeight,
+            target_weight: active.targetWeight,
+          });
+          loadProfile();
+          loadDashboard();
+        } else {
+          // If no active session, ensure master db initialized
+          runMigrations();
+        }
 
         // Background non-blocking sync with Supabase if configured
         if (isSupabaseConfigured()) {
@@ -45,7 +64,30 @@ export default function RootLayout() {
     }
 
     prepare();
-  }, [loadProfile, loadDashboard]);
+  }, [initAuth, loadProfile, loadDashboard]);
+
+  // If user is logged out, render the LoginScreen
+  if (dbReady && !isAuthenticated) {
+    return (
+      <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
+          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <NarayanaAppBackground />
+          <LoginScreen />
+
+          {/* Sacred App Entry Screen on initial cold start */}
+          {!hasEntered && (
+            <View style={StyleSheet.absoluteFill}>
+              <NarayanaEntryScreen
+                isReady={dbReady}
+                onReadyToEnter={() => setHasEntered(true)}
+              />
+            </View>
+          )}
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.background }}>

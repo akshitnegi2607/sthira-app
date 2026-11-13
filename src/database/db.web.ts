@@ -10,15 +10,17 @@ interface WebDBRecord {
 
 class WebSQLiteFallback {
   private tables: Map<string, WebDBRecord[]> = new Map();
+  private storageKey: string;
 
-  constructor() {
+  constructor(storageKey: string = '__aicoach_web_db__') {
+    this.storageKey = storageKey;
     this.loadFromStorage();
   }
 
   private loadFromStorage() {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        const stored = window.localStorage.getItem('__aicoach_web_db__');
+        const stored = window.localStorage.getItem(this.storageKey);
         if (stored) {
           const parsed = JSON.parse(stored);
           for (const [table, rows] of Object.entries(parsed)) {
@@ -71,7 +73,7 @@ class WebSQLiteFallback {
         for (const [table, rows] of this.tables.entries()) {
           obj[table] = rows;
         }
-        window.localStorage.setItem('__aicoach_web_db__', JSON.stringify(obj));
+        window.localStorage.setItem(this.storageKey, JSON.stringify(obj));
       }
     } catch (e) {
       console.warn('Could not write web database to localStorage', e);
@@ -374,13 +376,41 @@ class WebSQLiteFallback {
   }
 }
 
-let webDbInstance: WebSQLiteFallback | null = null;
+let currentWebStorageKey = '__aicoach_web_db__';
+const webDbInstances = new Map<string, WebSQLiteFallback>();
+
+export function setActiveWebDatabase(storageKey: string) {
+  if (storageKey) {
+    currentWebStorageKey = storageKey;
+  }
+}
+
+export function resetWebDatabases() {
+  webDbInstances.clear();
+}
 
 export function getDatabase(): any {
-  if (!webDbInstance) {
-    webDbInstance = new WebSQLiteFallback();
+  if (!webDbInstances.has(currentWebStorageKey)) {
+    webDbInstances.set(currentWebStorageKey, new WebSQLiteFallback(currentWebStorageKey));
   }
-  return webDbInstance;
+  return webDbInstances.get(currentWebStorageKey)!;
+}
+
+export function setActiveDatabase(dbName: string, webKey?: string) {
+  const key = webKey || (dbName ? `__${dbName.replace('.db', '')}_web_db__` : '__aicoach_web_db__');
+  setActiveWebDatabase(key);
+}
+
+export function getActiveDatabaseName(): string {
+  return currentWebStorageKey;
+}
+
+export function getActiveWebStorageKey(): string {
+  return currentWebStorageKey;
+}
+
+export function resetDatabaseInstance() {
+  resetWebDatabases();
 }
 
 export function executeSqlSync(sql: string) {

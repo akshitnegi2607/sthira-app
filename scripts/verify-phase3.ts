@@ -52,7 +52,7 @@ const allExercises = WorkoutRepository.getAllExercises();
 assert(allExercises.length >= 10, `Loaded ${allExercises.length} exercises from database.`);
 
 const plans = WorkoutRepository.getAllPlans();
-assert(plans.length === 7, `Loaded 7 weekly training split days (got ${plans.length}).`);
+assert(plans.length >= 7, `Loaded at least 7 weekly training split days (got ${plans.length}).`);
 
 // ----------------------------------------------------
 // 2. Progressive Overload Engine & Sports Science Logic

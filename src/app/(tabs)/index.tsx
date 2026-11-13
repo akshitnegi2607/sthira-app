@@ -79,6 +79,7 @@ export default function HomeScreen() {
         }>
         {/* 1. TOP: Today's Overview (Weight, Calories, Protein, Hydration, Sleep) */}
         <TodayOverviewCard
+          userName={profile.name}
           log={todayLog}
           goals={goals}
           currentWeight={profile.current_weight}

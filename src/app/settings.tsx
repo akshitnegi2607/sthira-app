@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -17,6 +17,7 @@ import { useProfileStore } from '@/stores/useProfileStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
+import { AccountManagementSection } from '@/features/settings/components/AccountManagementSection';
 import { DataBackupSection } from '@/features/settings/components/DataBackupSection';
 import { SupabaseSyncSection } from '@/features/settings/components/SupabaseSyncSection';
 import { GeminiConfigSection } from '@/features/settings/components/GeminiConfigSection';
@@ -57,6 +58,27 @@ export default function SettingsScreen() {
   const [waterTarget, setWaterTarget] = useState(goals.water_target_liters.toString());
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    setName(profile.name);
+    setCurrentWeight(profile.current_weight.toString());
+    setTargetWeight(profile.target_weight.toString());
+    setHeight(profile.height.toString());
+    setTargetRate(profile.target_rate_kg_per_week.toString());
+    setDietType(profile.diet_type);
+    setEatsEggs(profile.eats_eggs === 1);
+    setEatsOnion(profile.eats_onion === 1);
+    setEatsGarlic(profile.eats_garlic === 1);
+    setEatsMushrooms(profile.eats_mushrooms === 1);
+    setGymDays(profile.gym_days_per_week.toString());
+    setTuesdayActivity(profile.tuesday_activity);
+    setSundayActivity(profile.sunday_activity);
+    setSaturdayRest(profile.saturday_rest === 1);
+    setCaloriesTarget(goals.calories_target.toString());
+    setProteinTargetMax(goals.protein_target_max.toString());
+    setFatTargetMax(goals.fat_target_max.toString());
+    setWaterTarget(goals.water_target_liters.toString());
+  }, [profile, goals]);
 
   const handleSave = () => {
     updateProfile({
@@ -315,6 +337,9 @@ export default function SettingsScreen() {
         onPress={handleSave}
         style={{ marginTop: Spacing.md }}
       />
+
+      {/* Multi-Account Switching & Data Isolation */}
+      <AccountManagementSection />
 
       {/* Google Gemini AI Meal Parsing Config */}
       <GeminiConfigSection />

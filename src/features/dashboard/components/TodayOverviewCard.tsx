@@ -8,6 +8,7 @@ import { StatTile } from '@/components/ui/StatTile';
 import { DailyLog, Goals } from '@/types/database';
 
 interface TodayOverviewCardProps {
+  userName?: string;
   log: DailyLog;
   goals: Goals;
   currentWeight: number;
@@ -15,6 +16,7 @@ interface TodayOverviewCardProps {
 }
 
 export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
+  userName,
   log,
   goals,
   currentWeight,
@@ -52,7 +54,7 @@ export const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
             TODAY'S STATUS
           </Text>
           <Text style={[styles.mainTitle, { color: colors.text }]}>
-            Daily Snapshot
+            {userName ? `${userName}'s Snapshot` : 'Daily Snapshot'}
           </Text>
         </View>
         <StatusBadge status={log?.coach_status ?? 'ON TRACK'} />

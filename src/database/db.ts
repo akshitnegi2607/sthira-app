@@ -7,9 +7,48 @@ export interface AppDatabase {
   runSync: (sql: string, params?: any[]) => { changes: number; lastInsertRowId: number };
 }
 
-const DB_NAME = 'aicoach.db';
+const DEFAULT_DB_NAME = 'aicoach.db';
+const DEFAULT_WEB_KEY = '__aicoach_web_db__';
 
+let currentDbName = DEFAULT_DB_NAME;
+let currentWebKey = DEFAULT_WEB_KEY;
 let databaseInstance: AppDatabase | null = null;
+
+/**
+ * Dynamically switches the active SQLite database (for multi-user support).
+ * Native uses `dbName` file, and web uses `webKey` localStorage partition.
+ */
+export function setActiveDatabase(dbName: string, webKey?: string) {
+  const targetDbName = dbName || DEFAULT_DB_NAME;
+  const targetWebKey = webKey || (dbName ? `__${dbName.replace('.db', '')}_web_db__` : DEFAULT_WEB_KEY);
+
+  if (currentDbName !== targetDbName || currentWebKey !== targetWebKey) {
+    currentDbName = targetDbName;
+    currentWebKey = targetWebKey;
+    databaseInstance = null;
+
+    try {
+      const { setActiveWebDatabase } = require('./db.web');
+      if (typeof setActiveWebDatabase === 'function') {
+        setActiveWebDatabase(currentWebKey);
+      }
+    } catch {
+      // Ignore if web fallback is not applicable
+    }
+  }
+}
+
+export function getActiveDatabaseName(): string {
+  return currentDbName;
+}
+
+export function getActiveWebStorageKey(): string {
+  return currentWebKey;
+}
+
+export function resetDatabaseInstance() {
+  databaseInstance = null;
+}
 
 export function getDatabase(): AppDatabase {
   if (databaseInstance) return databaseInstance;
@@ -17,14 +56,17 @@ export function getDatabase(): AppDatabase {
   try {
     const SQLite = require('expo-sqlite');
     if (SQLite && typeof SQLite.openDatabaseSync === 'function') {
-      databaseInstance = SQLite.openDatabaseSync(DB_NAME);
+      databaseInstance = SQLite.openDatabaseSync(currentDbName);
       return databaseInstance!;
     }
   } catch {
     // Native SQLite not available (e.g. web or test environment)
   }
 
-  const { getDatabase: getWebDb } = require('./db.web');
+  const { getDatabase: getWebDb, setActiveWebDatabase } = require('./db.web');
+  if (typeof setActiveWebDatabase === 'function') {
+    setActiveWebDatabase(currentWebKey);
+  }
   databaseInstance = getWebDb();
   return databaseInstance!;
 }

@@ -1,18 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Tabs, useRouter } from 'expo-router';
-import { TouchableOpacity, Platform, StyleSheet, View } from 'react-native';
+import { TouchableOpacity, Platform, StyleSheet, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
 import { useCalendarStore } from '@/stores/useCalendarStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { DailyHistoryCalendarModal } from '@/features/calendar/components/DailyHistoryCalendarModal';
+import { AccountSwitchModal } from '@/features/auth/components/AccountSwitchModal';
 
 export default function TabsLayout() {
   const { colors, isDark } = useAppTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const openCalendar = useCalendarStore((s) => s.openCalendar);
+  const activeAccount = useAuthStore((s) => s.activeAccount);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   // Detect any mobile device on web (iPhone, iPad, Android) or native
   const isMobile =
@@ -71,18 +75,38 @@ export default function TabsLayout() {
           headerRight: () => (
             <View style={styles.headerRightContainer}>
               <TouchableOpacity
+                style={[
+                  styles.accountPill,
+                  {
+                    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
+                    borderColor: activeAccount?.role === 'master' ? '#F59E0B' : colors.cardBorder,
+                  },
+                ]}
+                onPress={() => setIsAccountModalOpen(true)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.accountAvatarText}>
+                  {activeAccount?.avatarEmoji || '👑'}
+                </Text>
+                <Text style={[styles.accountNameText, { color: colors.text }]}>
+                  {activeAccount?.displayName || 'Jay'}
+                </Text>
+                <Ionicons name="chevron-down" size={11} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => openCalendar()}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="calendar-outline" size={22} color={colors.textSecondary} />
+                <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => router.push('/settings')}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
+                <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           ),
@@ -159,6 +183,10 @@ export default function TabsLayout() {
       />
     </Tabs>
     <DailyHistoryCalendarModal />
+    <AccountSwitchModal
+      visible={isAccountModalOpen}
+      onClose={() => setIsAccountModalOpen(false)}
+    />
   </>
   );
 }
@@ -174,6 +202,23 @@ const styles = StyleSheet.create({
     padding: 6,
     marginHorizontal: 2,
     borderRadius: 8,
+  },
+  accountPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginRight: 2,
+  },
+  accountAvatarText: {
+    fontSize: 13,
+  },
+  accountNameText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 
