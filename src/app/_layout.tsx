@@ -49,8 +49,9 @@ export default function RootLayout() {
           runMigrations();
         }
 
-        // Background non-blocking sync with Supabase if configured
-        if (isSupabaseConfigured()) {
+        // Background non-blocking sync with Supabase ONLY for Jay's master account
+        const isMaster = active ? (active.role === 'master' || active.id === 'jay') : true;
+        if (isMaster && isSupabaseConfigured()) {
           SupabaseSyncService.syncAll().catch((err) => {
             console.warn('[Startup] Supabase background sync failed:', err);
           });

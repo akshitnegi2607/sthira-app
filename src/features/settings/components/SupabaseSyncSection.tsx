@@ -403,19 +403,24 @@ export const SupabaseSyncSection: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>
-        CENTRAL CLOUD DATABASE (SUPABASE)
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs }}>
+        <Text style={[styles.sectionHeading, { color: colors.textSecondary, marginBottom: 0 }]}>
+          CENTRAL CLOUD DATABASE (SUPABASE)
+        </Text>
+        <View style={{ backgroundColor: 'rgba(217, 119, 6, 0.15)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
+          <Text style={{ fontSize: 10, fontWeight: '700', color: colors.accent }}>JAY ONLY</Text>
+        </View>
+      </View>
 
       <Card style={styles.card}>
         <View style={styles.headerRow}>
           <Ionicons name="cloud-done-outline" size={24} color={colors.accent} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
-              Multi-Device Live Cloud Sync
+              Jay Master Profile Live Sync
             </Text>
             <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
-              Seamless real-time synchronization between Expo Go & Mobile Browser
+              Syncs Jay's master logs across Desktop and Mobile (Friends data remains strictly local & private)
             </Text>
           </View>
           <View

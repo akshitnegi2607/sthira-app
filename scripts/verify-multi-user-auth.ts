@@ -7,6 +7,7 @@ import { DailyLogsRepository } from '../src/database/repositories/dailyLogsRepos
 import { MealRepository } from '../src/database/repositories/mealRepository';
 import { WorkoutRepository } from '../src/database/repositories/workoutRepository';
 import { getActiveDatabaseName, getActiveWebStorageKey } from '../src/database/db';
+import { SupabaseSyncService } from '../src/services/supabaseSyncService';
 
 let passed = 0;
 let failed = 0;
@@ -177,12 +178,49 @@ assert(!AuthService.isAuthenticated(), 'isAuthenticated is false after logout');
 AuthService.login('Jay', 'Quercus2026');
 assert(AuthService.isAuthenticated(), 'Re-login to Jay succeeds');
 
-console.log(`\n========================================`);
-console.log(`RESULTS: ${passed} passed, ${failed} failed`);
-console.log(`========================================\n`);
+// 9. Cloud Sync Exclusivity to Jay Master Profile
+async function runAsyncTests() {
+  console.log('\n[9] Cloud Sync Exclusivity to Jay Master Profile');
+  // Jay is active
+  const jaySync = await SupabaseSyncService.syncAll();
+  assert(
+    !jaySync.message.includes('exclusive to Jay master profile'),
+    'Jay master account is allowed to execute sync (not blocked by exclusivity guard)'
+  );
 
-if (failed > 0) {
-  process.exit(1);
-} else {
-  process.exit(0);
+  // Switch to Akku
+  AuthService.login('Akku', 'Akku1234');
+  const akkuSync = await SupabaseSyncService.syncAll();
+  assert(
+    akkuSync.message.includes('exclusive to Jay master profile'),
+    'Akku sync blocked with exclusivity message'
+  );
+  assert(akkuSync.pushed === 0 && akkuSync.pulled === 0, 'Akku has 0 pushed and 0 pulled items');
+
+  const akkuConn = await SupabaseSyncService.testConnection();
+  assert(!akkuConn.success && akkuConn.message.includes('exclusive to Jay master profile'), 'Akku testConnection blocked');
+
+  // Switch to Div
+  AuthService.login('Div', 'Isha1234');
+  const divSync = await SupabaseSyncService.syncAll();
+  assert(
+    divSync.message.includes('exclusive to Jay master profile'),
+    'Div sync blocked with exclusivity message'
+  );
+
+  // Switch back to Jay
+  AuthService.login('Jay', 'Quercus2026');
+  assert(AuthService.getActiveAccount()?.id === 'jay', 'Safely returned to Jay master profile');
+
+  console.log(`\n========================================`);
+  console.log(`RESULTS: ${passed} passed, ${failed} failed`);
+  console.log(`========================================\n`);
+
+  if (failed > 0) {
+    process.exit(1);
+  } else {
+    process.exit(0);
+  }
 }
+
+runAsyncTests();

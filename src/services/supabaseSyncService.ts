@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { getDatabase } from '@/database/db';
+import { getDatabase } from '../database/db';
 import { getSupabaseClient, isSupabaseConfigured, cleanSupabaseUrl } from './supabaseClient';
-import { useProfileStore } from '@/stores/useProfileStore';
-import { useDashboardStore } from '@/stores/useDashboardStore';
-import { useWorkoutStore } from '@/stores/useWorkoutStore';
-import { useProgressStore } from '@/stores/useProgressStore';
-import { useJournalStore } from '@/stores/useJournalStore';
-import { useNutritionStore } from '@/stores/useNutritionStore';
-import { MealRepository } from '@/database/repositories/mealRepository';
-import { DailyLogsRepository } from '@/database/repositories/dailyLogsRepository';
+import { MealRepository } from '../database/repositories/mealRepository';
+import { DailyLogsRepository } from '../database/repositories/dailyLogsRepository';
+import { AuthService } from './authService';
+
+let onSyncCompleteCallback: (() => void) | null = null;
+export function setOnSyncCompleteCallback(cb: () => void) {
+  onSyncCompleteCallback = cb;
+}
 
 export type SyncState = 'idle' | 'syncing' | 'synced' | 'error' | 'not_configured';
 
@@ -71,6 +71,12 @@ export const SupabaseSyncService = {
    * Test connection to Supabase instance.
    */
   async testConnection(customUrl?: string, customKey?: string): Promise<{ success: boolean; message: string }> {
+    const active = AuthService.getActiveAccount();
+    const isMasterUser = active ? (active.role === 'master' || active.id === 'jay') : true;
+    if (!isMasterUser) {
+      return { success: false, message: 'Cloud sync is exclusive to Jay master profile.' };
+    }
+
     const cleanedUrl = customUrl ? cleanSupabaseUrl(customUrl) : undefined;
     const cleanedKey = customKey ? customKey.trim() : undefined;
 
@@ -103,6 +109,18 @@ export const SupabaseSyncService = {
    * Bi-directional sync between local SQLite and remote Supabase database.
    */
   async syncAll(): Promise<{ success: boolean; message: string; pushed: number; pulled: number }> {
+    const active = AuthService.getActiveAccount();
+    const isMasterUser = active ? (active.role === 'master' || active.id === 'jay') : true;
+    if (!isMasterUser) {
+      updateStatus({ state: 'idle', errorMessage: null });
+      return {
+        success: true,
+        message: 'Cloud sync is exclusive to Jay master profile (friends data remains private & local).',
+        pushed: 0,
+        pulled: 0,
+      };
+    }
+
     if (!isSupabaseConfigured()) {
       updateStatus({ state: 'not_configured', errorMessage: 'Supabase not configured' });
       return { success: false, message: 'Supabase not configured', pushed: 0, pulled: 0 };
@@ -282,25 +300,12 @@ export const SupabaseSyncService = {
         db.runSync("DELETE FROM WorkoutSets WHERE workout_exercise_id NOT IN (SELECT id FROM WorkoutExercises)");
       } catch {}
 
-      // 4. Refresh Zustand stores so active UI updates immediately
-      try {
-        useProfileStore.getState().loadProfile();
-      } catch {}
-      try {
-        useDashboardStore.getState().loadDashboard();
-      } catch {}
-      try {
-        useWorkoutStore.getState().loadData();
-      } catch {}
-      try {
-        useProgressStore.getState().loadProgressData();
-      } catch {}
-      try {
-        useJournalStore.getState().loadJournalData();
-      } catch {}
-      try {
-        useNutritionStore.getState().loadNutritionData();
-      } catch {}
+      // 4. Refresh active stores via callback if registered
+      if (onSyncCompleteCallback) {
+        try {
+          onSyncCompleteCallback();
+        } catch {}
+      }
 
       const nowIso = new Date().toISOString();
       updateStatus({

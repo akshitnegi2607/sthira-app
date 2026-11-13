@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { useProfileStore } from '@/stores/useProfileStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
@@ -25,6 +26,9 @@ import { GeminiConfigSection } from '@/features/settings/components/GeminiConfig
 export default function SettingsScreen() {
   const { colors, isDark } = useAppTheme();
   const router = useRouter();
+
+  const activeAccount = useAuthStore((s) => s.activeAccount);
+  const isMasterUser = activeAccount ? (activeAccount.role === 'master' || activeAccount.id === 'jay') : true;
 
   const profile = useProfileStore((s) => s.profile);
   const goals = useProfileStore((s) => s.goals);
@@ -344,8 +348,8 @@ export default function SettingsScreen() {
       {/* Google Gemini AI Meal Parsing Config */}
       <GeminiConfigSection />
 
-      {/* Central Cloud Database Live Sync */}
-      <SupabaseSyncSection />
+      {/* Central Cloud Database Live Sync (Jay Master Profile Only) */}
+      {isMasterUser && <SupabaseSyncSection />}
 
       {/* Local-first multi-device sync and JSON backup */}
       <DataBackupSection />

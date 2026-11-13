@@ -9,6 +9,7 @@ import { useProgressStore } from './useProgressStore';
 import { useJournalStore } from './useJournalStore';
 import { useCalendarStore } from './useCalendarStore';
 import { getTodayDateString } from '@/utils/date';
+import { setOnSyncCompleteCallback } from '@/services/supabaseSyncService';
 
 /**
  * Reloads all application stores to reflect the newly active user's SQLite database.
@@ -57,6 +58,8 @@ export function reloadActiveUserStores() {
     console.warn('Failed to reload CalendarStore on user switch', e);
   }
 }
+
+setOnSyncCompleteCallback(reloadActiveUserStores);
 
 interface AuthState {
   activeAccount: UserAccount | null;

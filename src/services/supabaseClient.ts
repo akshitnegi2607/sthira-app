@@ -1,5 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { getDatabase } from '@/database/db';
+import { getDatabase } from '../database/db';
+
+declare const process: any;
 
 let cachedClient: SupabaseClient | null = null;
 let cachedUrl: string | null = null;
