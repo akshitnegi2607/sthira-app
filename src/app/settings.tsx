@@ -120,6 +120,9 @@ export default function SettingsScreen() {
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}>
+      {/* Active Account Status & Sign Out */}
+      <AccountManagementSection />
+
       {/* Profile Section */}
       <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>
         PERSONAL PROFILE
@@ -341,9 +344,6 @@ export default function SettingsScreen() {
         onPress={handleSave}
         style={{ marginTop: Spacing.md }}
       />
-
-      {/* Multi-Account Switching & Data Isolation */}
-      <AccountManagementSection />
 
       {/* Google Gemini AI Meal Parsing Config */}
       <GeminiConfigSection />

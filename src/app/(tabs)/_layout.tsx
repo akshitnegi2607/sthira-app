@@ -15,6 +15,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const openCalendar = useCalendarStore((s) => s.openCalendar);
   const activeAccount = useAuthStore((s) => s.activeAccount);
+  const logout = useAuthStore((s) => s.logout);
 
   // Detect any mobile device on web (iPhone, iPad, Android) or native
   const isMobile =
@@ -100,10 +101,11 @@ export default function TabsLayout() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerButton}
-                onPress={() => router.push('/settings')}
+                onPress={() => logout()}
                 activeOpacity={0.7}
+                accessibilityLabel="Sign Out"
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
+                <Ionicons name="log-out-outline" size={21} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           ),
