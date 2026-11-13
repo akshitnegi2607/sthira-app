@@ -8,7 +8,6 @@ import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { DailyHistoryCalendarModal } from '@/features/calendar/components/DailyHistoryCalendarModal';
-import { AccountSwitchModal } from '@/features/auth/components/AccountSwitchModal';
 
 export default function TabsLayout() {
   const { colors, isDark } = useAppTheme();
@@ -16,7 +15,6 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const openCalendar = useCalendarStore((s) => s.openCalendar);
   const activeAccount = useAuthStore((s) => s.activeAccount);
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   // Detect any mobile device on web (iPhone, iPad, Android) or native
   const isMobile =
@@ -82,7 +80,7 @@ export default function TabsLayout() {
                     borderColor: activeAccount?.role === 'master' ? '#F59E0B' : colors.cardBorder,
                   },
                 ]}
-                onPress={() => setIsAccountModalOpen(true)}
+                onPress={() => router.push('/settings')}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Text style={styles.accountAvatarText}>
@@ -91,7 +89,6 @@ export default function TabsLayout() {
                 <Text style={[styles.accountNameText, { color: colors.text }]}>
                   {activeAccount?.displayName || 'Jay'}
                 </Text>
-                <Ionicons name="chevron-down" size={11} color={colors.textSecondary} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -183,10 +180,6 @@ export default function TabsLayout() {
       />
     </Tabs>
     <DailyHistoryCalendarModal />
-    <AccountSwitchModal
-      visible={isAccountModalOpen}
-      onClose={() => setIsAccountModalOpen(false)}
-    />
   </>
   );
 }

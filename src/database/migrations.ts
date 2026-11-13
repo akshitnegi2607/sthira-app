@@ -166,6 +166,13 @@ export function runMigrations(customProfile?: SeedProfileOptions) {
       ) VALUES (?, ?, ?, ?, ?, 1, ?)`,
       [plan.id, plan.name, plan.day_of_week, plan.description, (plan as any).program_group || 'sthira', now]
     );
+
+    if (plan.id.startsWith('plan_trainer_') && plan.exercise_ids) {
+      db.runSync(
+        'INSERT OR REPLACE INTO AppSettings (key, value, updated_at) VALUES (?, ?, ?)',
+        [`plan_exercises_${plan.id}`, JSON.stringify(plan.exercise_ids), now]
+      );
+    }
   }
 
   // 6. Seed initial foods if not present

@@ -2,302 +2,180 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppTheme } from '@/hooks/use-theme';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { SthiraBrandLogo } from '@/components/ui/SthiraBrandLogo';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { UserAccount } from '@/types/auth';
 
 interface LoginScreenProps {
   onSuccess?: () => void;
 }
 
 export function LoginScreen({ onSuccess }: LoginScreenProps) {
-  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const accounts = useAuthStore((s) => s.accounts);
   const login = useAuthStore((s) => s.login);
+  const isLoading = useAuthStore((s) => s.isLoading);
 
-  const [selectedAccountId, setSelectedAccountId] = useState<string>(
-    accounts[0]?.id || 'jay'
-  );
-  const [pin, setPin] = useState<string>('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId) || accounts[0];
-
-  const handleSelectAccount = (acc: UserAccount) => {
-    setSelectedAccountId(acc.id);
-    setPin('');
+  const handleLogin = () => {
     setErrorMessage(null);
-  };
-
-  const handleKeyPress = (num: string) => {
-    if (pin.length < 4) {
-      const nextPin = pin + num;
-      setPin(nextPin);
-      setErrorMessage(null);
-      if (nextPin.length === 4) {
-        attemptLogin(selectedAccountId, nextPin);
-      }
+    if (!username.trim() || !password.trim()) {
+      setErrorMessage('Please enter both username and password.');
+      return;
     }
-  };
 
-  const handleDelete = () => {
-    if (pin.length > 0) {
-      setPin(pin.slice(0, -1));
-      setErrorMessage(null);
-    }
-  };
-
-  const handleClear = () => {
-    setPin('');
-    setErrorMessage(null);
-  };
-
-  const handleAutoFillDemoPin = () => {
-    if (!selectedAccount) return;
-    setPin(selectedAccount.pin);
-    attemptLogin(selectedAccountId, selectedAccount.pin);
-  };
-
-  const attemptLogin = (accountId: string, inputPin: string) => {
-    setIsSubmitting(true);
-    const result = login(accountId, inputPin);
+    const result = login(username, password);
     if (result.success) {
-      setErrorMessage(null);
-      if (onSuccess) {
-        onSuccess();
-      }
+      if (onSuccess) onSuccess();
     } else {
-      setErrorMessage(result.error || 'Incorrect PIN. Try again.');
-      setPin('');
+      setErrorMessage(result.error || 'Invalid username or password.');
     }
-    setIsSubmitting(false);
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl },
-        ]}
-        showsVerticalScrollIndicator={false}>
-        {/* Sthira Lotus Brand Header */}
-        <View style={styles.brandHeader}>
-          <SthiraBrandLogo size="medium" showTagline />
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Select your personal profile to continue
-          </Text>
-        </View>
+    <View style={styles.container}>
+      {/* Full-screen Sacred Background of Lord Narayana */}
+      <Image
+        source={require('@/../assets/images/narayana_vishwaroop.jpg')}
+        style={styles.bgImage}
+        resizeMode="cover"
+      />
 
-        {/* 4 Profiles Selection */}
-        <View style={styles.accountsGrid}>
-          {accounts.map((acc) => {
-            const isSelected = acc.id === selectedAccountId;
-            const isMaster = acc.role === 'master';
+      {/* Dark Vignette Overlay for Calm Contrast and Legibility */}
+      <View style={styles.darkOverlay} />
 
-            return (
-              <TouchableOpacity
-                key={acc.id}
-                activeOpacity={0.8}
-                onPress={() => handleSelectAccount(acc)}
-                style={[
-                  styles.accountCard,
-                  {
-                    backgroundColor: isSelected
-                      ? isDark
-                        ? '#1E293B'
-                        : '#F1F5F9'
-                      : colors.card,
-                    borderColor: isSelected ? colors.accent : colors.cardBorder,
-                    borderWidth: isSelected ? 2 : 1,
-                  },
-                ]}>
-                <View style={styles.accountTopRow}>
-                  <Text style={styles.accountAvatar}>{acc.avatarEmoji}</Text>
-                  {isMaster ? (
-                    <View
-                      style={[
-                        styles.roleBadge,
-                        { backgroundColor: isDark ? '#78350F' : '#FEF3C7' },
-                      ]}>
-                      <Text
-                        style={[
-                          styles.roleBadgeText,
-                          { color: isDark ? '#FBBF24' : '#B45309' },
-                        ]}>
-                        MASTER
-                      </Text>
-                    </View>
-                  ) : (
-                    <View
-                      style={[
-                        styles.roleBadge,
-                        { backgroundColor: isDark ? '#1E293B' : '#E2E8F0' },
-                      ]}>
-                      <Text
-                        style={[
-                          styles.roleBadgeText,
-                          { color: colors.textSecondary },
-                        ]}>
-                        FRIEND
-                      </Text>
-                    </View>
-                  )}
-                </View>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {/* Lotus Brand Header */}
+          <View style={styles.brandHeader}>
+            <SthiraBrandLogo size="medium" showTagline />
+            <Text style={styles.appTagline}>
+              Personal AI Fitness & Nutrition Coach
+            </Text>
+          </View>
 
-                <Text style={[styles.accountName, { color: colors.text }]}>
-                  {acc.displayName}
-                </Text>
-                <Text
-                  numberOfLines={2}
-                  style={[styles.accountBio, { color: colors.textMuted }]}>
-                  {acc.bio || 'Personal Fitness Coach'}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Selected Account PIN Entry Box */}
-        {selectedAccount && (
-          <Card style={styles.pinCard}>
-            <View style={styles.pinHeader}>
-              <Text style={[styles.pinPromptTitle, { color: colors.text }]}>
-                Enter PIN for {selectedAccount.displayName}
-              </Text>
-              <Text style={[styles.pinPromptSubtitle, { color: colors.textSecondary }]}>
-                {selectedAccount.role === 'master'
-                  ? '🔒 Master Profile Data Protected'
-                  : '📂 Isolated Friend Database'}
+          {/* Secure Login Card */}
+          <View style={styles.loginCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Sign In</Text>
+              <Text style={styles.cardSubtitle}>
+                Access your private workout routines & nutrition logs
               </Text>
             </View>
 
-            {/* 4 PIN Dots */}
-            <View style={styles.pinDotsRow}>
-              {[0, 1, 2, 3].map((idx) => {
-                const isFilled = pin.length > idx;
-                return (
-                  <View
-                    key={idx}
-                    style={[
-                      styles.pinDot,
-                      {
-                        backgroundColor: isFilled ? colors.accent : 'transparent',
-                        borderColor: isFilled ? colors.accent : colors.textMuted,
-                      },
-                    ]}
-                  />
-                );
-              })}
-            </View>
-
-            {/* Error Message */}
+            {/* Error Message Pill */}
             {errorMessage ? (
-              <View style={[styles.errorPill, { backgroundColor: '#FEE2E2' }]}>
-                <Ionicons name="alert-circle" size={16} color="#DC2626" />
+              <View style={styles.errorPill}>
+                <Ionicons name="alert-circle" size={16} color="#F87171" />
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
 
-            {/* Numeric Keypad */}
-            <View style={styles.keypad}>
-              <View style={styles.keypadRow}>
-                {['1', '2', '3'].map((n) => (
-                  <TouchableOpacity
-                    key={n}
-                    style={[styles.keypadKey, { backgroundColor: colors.background }]}
-                    onPress={() => handleKeyPress(n)}
-                    activeOpacity={0.6}>
-                    <Text style={[styles.keypadKeyText, { color: colors.text }]}>{n}</Text>
-                  </TouchableOpacity>
-                ))}
+            {/* Username Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Username</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="person-outline"
+                  size={18}
+                  color="#94A3B8"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter username"
+                  placeholderTextColor="#64748B"
+                  value={username}
+                  onChangeText={(val) => {
+                    setUsername(val);
+                    setErrorMessage(null);
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                />
               </View>
-              <View style={styles.keypadRow}>
-                {['4', '5', '6'].map((n) => (
-                  <TouchableOpacity
-                    key={n}
-                    style={[styles.keypadKey, { backgroundColor: colors.background }]}
-                    onPress={() => handleKeyPress(n)}
-                    activeOpacity={0.6}>
-                    <Text style={[styles.keypadKeyText, { color: colors.text }]}>{n}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.keypadRow}>
-                {['7', '8', '9'].map((n) => (
-                  <TouchableOpacity
-                    key={n}
-                    style={[styles.keypadKey, { backgroundColor: colors.background }]}
-                    onPress={() => handleKeyPress(n)}
-                    activeOpacity={0.6}>
-                    <Text style={[styles.keypadKeyText, { color: colors.text }]}>{n}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.keypadRow}>
-                <TouchableOpacity
-                  style={[styles.keypadKey, styles.keypadActionKey]}
-                  onPress={handleClear}
-                  activeOpacity={0.6}>
-                  <Text style={[styles.keypadActionText, { color: colors.textMuted }]}>
-                    Clear
-                  </Text>
-                </TouchableOpacity>
+            </View>
 
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={18}
+                  color="#94A3B8"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.textInput, { paddingRight: 40 }]}
+                  placeholder="Enter password"
+                  placeholderTextColor="#64748B"
+                  value={password}
+                  onChangeText={(val) => {
+                    setPassword(val);
+                    setErrorMessage(null);
+                  }}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                />
                 <TouchableOpacity
-                  style={[styles.keypadKey, { backgroundColor: colors.background }]}
-                  onPress={() => handleKeyPress('0')}
-                  activeOpacity={0.6}>
-                  <Text style={[styles.keypadKeyText, { color: colors.text }]}>0</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.keypadKey, styles.keypadActionKey]}
-                  onPress={handleDelete}
-                  activeOpacity={0.6}>
-                  <Ionicons name="backspace-outline" size={22} color={colors.text} />
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={18}
+                    color="#94A3B8"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Quick Demo Helper */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleAutoFillDemoPin}
-              style={[
-                styles.demoHelperPill,
-                {
-                  backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
-                  borderColor: colors.cardBorder,
-                },
-              ]}>
-              <Ionicons name="key-outline" size={14} color={colors.accent} />
-              <Text style={[styles.demoHelperText, { color: colors.accent }]}>
-                Quick Fill PIN ({selectedAccount.pin})
-              </Text>
-            </TouchableOpacity>
-
+            {/* Sign In Button */}
             <Button
-              title={isSubmitting ? 'Verifying...' : `Enter ${selectedAccount.displayName}'s Coach`}
-              onPress={() => attemptLogin(selectedAccountId, pin)}
-              disabled={pin.length < 4 || isSubmitting}
-              style={{ marginTop: Spacing.sm }}
+              title={isLoading ? 'Signing In...' : 'Sign In'}
+              onPress={handleLogin}
+              disabled={isLoading || !username.trim() || !password.trim()}
+              style={styles.signInButton}
             />
-          </Card>
-        )}
-      </ScrollView>
+
+            {/* Privacy & Isolation Footnote */}
+            <View style={styles.privacyFootnote}>
+              <Ionicons name="shield-checkmark-outline" size={13} color="#10B981" />
+              <Text style={styles.privacyText}>
+                Local-first • Strictly isolated database per user
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -305,147 +183,135 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0B0F17',
+  },
+  bgImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  darkOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(11, 15, 23, 0.78)',
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.lg,
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
   },
   brandHeader: {
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
-  headerSubtitle: {
+  appTagline: {
+    color: '#CBD5E1',
     fontSize: 13,
     fontWeight: '500',
     marginTop: Spacing.xs,
+    letterSpacing: 0.3,
     textAlign: 'center',
   },
-  accountsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
+  loginCard: {
+    backgroundColor: 'rgba(30, 41, 59, 0.88)',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  cardHeader: {
     marginBottom: Spacing.lg,
   },
-  accountCard: {
-    width: '48%',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    justifyContent: 'space-between',
-    minHeight: 110,
-  },
-  accountTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  accountAvatar: {
-    fontSize: 26,
-  },
-  roleBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  roleBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  accountName: {
-    fontSize: 16,
+  cardTitle: {
+    fontSize: 22,
     fontWeight: '700',
-    marginTop: Spacing.xs,
+    color: '#F8FAFC',
+    letterSpacing: 0.3,
   },
-  accountBio: {
-    fontSize: 11,
-    marginTop: 2,
-    lineHeight: 14,
-  },
-  pinCard: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    alignItems: 'center',
-  },
-  pinHeader: {
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  pinPromptTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  pinPromptSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  pinDotsRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginVertical: Spacing.md,
-  },
-  pinDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#94A3B8',
+    marginTop: 4,
+    lineHeight: 18,
   },
   errorPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing.sm,
-  },
-  errorText: {
-    color: '#DC2626',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  keypad: {
-    width: '100%',
-    maxWidth: 280,
-    gap: Spacing.xs + 2,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
     marginBottom: Spacing.md,
   },
-  keypadRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.xs + 2,
-  },
-  keypadKey: {
-    flex: 1,
-    height: 52,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  keypadKeyText: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  keypadActionKey: {
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  keypadActionText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  demoHelperPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-  },
-  demoHelperText: {
+  errorText: {
+    color: '#FCA5A5',
     fontSize: 12,
     fontWeight: '600',
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: Spacing.md,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#CBD5E1',
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: '#334155',
+    paddingHorizontal: Spacing.md,
+    height: 48,
+  },
+  inputIcon: {
+    marginRight: Spacing.sm,
+  },
+  textInput: {
+    flex: 1,
+    color: '#F8FAFC',
+    fontSize: 15,
+    height: '100%',
+  },
+  eyeButton: {
+    padding: 6,
+  },
+  signInButton: {
+    marginTop: Spacing.sm,
+  },
+  privacyFootnote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: Spacing.lg,
+  },
+  privacyText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
 });

@@ -665,60 +665,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-      {/* Exercise Card Header */}
+      {/* Exercise Card Header: Title & Quick Actions */}
       <View style={styles.cardHeader}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.titleContainer}>
           <Text style={[styles.exTitle, { color: colors.text }]}>{ex.name}</Text>
           <Text style={[styles.exSub, { color: colors.textMuted }]}>
             Target: {ex.target_sets} sets × {ex.target_rep_range} • {ex.equipment}
           </Text>
         </View>
 
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[
-              styles.stretchPillBtn,
-              {
-                backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
-                borderColor: '#F59E0B',
-              },
-            ]}
-            onPress={onStretches}
-            activeOpacity={0.7}>
-            <Ionicons name="flame" size={12} color="#F59E0B" />
-            <Text style={[styles.stretchPillText, { color: '#F59E0B' }]}>Stretches</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.gifPillBtn,
-              {
-                backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.1)',
-                borderColor: colors.protein,
-              },
-            ]}
-            onPress={onInfo}
-            activeOpacity={0.7}>
-            <Ionicons name="videocam" size={13} color={colors.protein} />
-            <Text style={[styles.gifPillText, { color: colors.protein }]}>Form GIF</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.ytPillBtn,
-              {
-                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.18)' : 'rgba(220, 38, 38, 0.1)',
-                borderColor: '#DC2626',
-              },
-            ]}
-            onPress={() => {
-              const url = ex.video_url || getExerciseVideoUrl(ex.id, ex.name);
-              Linking.openURL(url).catch((err) => console.warn('Failed to open video:', err));
-            }}
-            activeOpacity={0.7}>
-            <Ionicons name="logo-youtube" size={12} color="#DC2626" />
-            <Text style={[styles.ytPillText, { color: '#DC2626' }]}>Video</Text>
-          </TouchableOpacity>
+        <View style={styles.headerRightActions}>
           <TouchableOpacity
             style={[styles.actionIconBtn, { backgroundColor: colors.cardBorder }]}
             onPress={onSwap}
@@ -744,6 +700,54 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <Ionicons name="trash-outline" size={15} color={colors.statusAlert} />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Exercise Media & Guidance Tools Row */}
+      <View style={styles.exerciseToolsRow}>
+        <TouchableOpacity
+          style={[
+            styles.stretchPillBtn,
+            {
+              backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
+              borderColor: '#F59E0B',
+            },
+          ]}
+          onPress={onStretches}
+          activeOpacity={0.7}>
+          <Ionicons name="flame" size={12} color="#F59E0B" />
+          <Text style={[styles.stretchPillText, { color: '#F59E0B' }]}>Stretches</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.gifPillBtn,
+            {
+              backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.1)',
+              borderColor: colors.protein,
+            },
+          ]}
+          onPress={onInfo}
+          activeOpacity={0.7}>
+          <Ionicons name="videocam" size={13} color={colors.protein} />
+          <Text style={[styles.gifPillText, { color: colors.protein }]}>Form Guide</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.ytPillBtn,
+            {
+              backgroundColor: isDark ? 'rgba(239, 68, 68, 0.18)' : 'rgba(220, 38, 38, 0.1)',
+              borderColor: '#DC2626',
+            },
+          ]}
+          onPress={() => {
+            const url = ex.video_url || getExerciseVideoUrl(ex.id, ex.name);
+            Linking.openURL(url).catch((err) => console.warn('Failed to open video:', err));
+          }}
+          activeOpacity={0.7}>
+          <Ionicons name="logo-youtube" size={12} color="#DC2626" />
+          <Text style={[styles.ytPillText, { color: '#DC2626' }]}>Video</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Progressive Overload & Target Coach Banner */}
@@ -990,19 +994,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  titleContainer: {
+    flex: 1,
+    paddingRight: Spacing.sm,
   },
   exTitle: {
     fontSize: 16,
     fontWeight: '700',
+    lineHeight: 22,
   },
   exSub: {
     fontSize: 11,
     marginTop: 2,
+    lineHeight: 15,
   },
-  headerActions: {
+  headerRightActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.xs,
+  },
+  exerciseToolsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs + 2,
+    marginBottom: Spacing.sm,
+    flexWrap: 'wrap',
   },
   actionIconBtn: {
     width: 28,
